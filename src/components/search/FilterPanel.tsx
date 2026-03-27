@@ -1,10 +1,14 @@
 'use client';
 
 import { useState } from 'react';
+import RegionFilter from '@/components/search/RegionFilter';
 import ClubFilter from '@/components/search/ClubFilter';
 import TimeFilter from '@/components/search/TimeFilter';
 import PriceFilter from '@/components/search/PriceFilter';
 import { useFilters } from '@/hooks/useFilters';
+import { getClubsByRegion, type RegionKey } from '@/lib/constants/regions';
+import { useCallback } from 'react';
+import { useFilterStore } from '@/hooks/useFilters';
 
 interface FilterPanelProps {
   /** Whether to show the panel initially expanded (default: true on desktop, false on mobile) */
@@ -14,6 +18,23 @@ interface FilterPanelProps {
 export default function FilterPanel({ defaultOpen = false }: FilterPanelProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const { resetFilters, selectedClubs, timeRange, priceMin, priceMax } = useFilters();
+  const store = useFilterStore();
+
+  const handleToggleRegion = useCallback((region: RegionKey) => {
+    const regionClubs = getClubsByRegion([region]);
+    const currentSet = new Set(store.selectedClubs);
+    const allSelected = regionClubs.every((id) => currentSet.has(id));
+
+    if (allSelected) {
+      // Deselect all clubs in this region
+      const next = store.selectedClubs.filter((id) => !regionClubs.includes(id));
+      store.setSelectedClubs(next);
+    } else {
+      // Select all clubs in this region (union with current)
+      const next = [...new Set([...store.selectedClubs, ...regionClubs])];
+      store.setSelectedClubs(next);
+    }
+  }, [store]);
 
   const activeFilterCount =
     selectedClubs.length +
@@ -77,6 +98,17 @@ export default function FilterPanel({ defaultOpen = false }: FilterPanelProps) {
       {/* Collapsible body */}
       {isOpen && (
         <div className="border-t border-gray-100 px-4 py-4 space-y-5">
+          {/* Region filter */}
+          <section>
+            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+              지역
+            </h3>
+            <RegionFilter
+              selectedClubs={store.selectedClubs}
+              onToggleRegion={handleToggleRegion}
+            />
+          </section>
+
           {/* Club filter */}
           <section>
             <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">

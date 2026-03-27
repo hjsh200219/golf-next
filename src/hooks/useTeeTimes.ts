@@ -11,8 +11,12 @@ async function fetcher(url: string): Promise<TeeTime[]> {
   return res.json();
 }
 
-export function useTeeTimes(date: string | null) {
-  const key = date ? `/api/tee-times?date=${date}` : null;
+export function useTeeTimes(date: string | null, clubIds?: string[]) {
+  const params = new URLSearchParams();
+  if (date) params.set('date', date);
+  if (clubIds && clubIds.length > 0) params.set('clubs', clubIds.join(','));
+
+  const key = date ? `/api/tee-times?${params.toString()}` : null;
 
   const { data, error, isLoading, isValidating, mutate } = useSWR<TeeTime[]>(key, fetcher, {
     revalidateOnFocus: false,

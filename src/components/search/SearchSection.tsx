@@ -8,11 +8,14 @@ import { useTeeTimes } from '@/hooks/useTeeTimes';
 import { useSearchParams } from 'next/navigation';
 import { toDateString } from '@/lib/utils/date';
 import { useCallback, useState } from 'react';
+import { useFilterStore } from '@/hooks/useFilters';
 
 export default function SearchSection() {
   const searchParams = useSearchParams();
   const date = searchParams.get('date') || toDateString(new Date());
-  const { data, isLoading, isValidating, refresh } = useTeeTimes(date);
+  const selectedClubs = useFilterStore((s) => s.selectedClubs);
+  const clubIds = selectedClubs.length > 0 ? selectedClubs : undefined;
+  const { data, isLoading, isValidating, refresh } = useTeeTimes(date, clubIds);
   const [isScraping, setIsScraping] = useState(false);
   const [scrapeMessage, setScrapeMessage] = useState('');
 
