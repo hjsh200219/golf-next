@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import type { Database } from '@/lib/types/database';
+import { createLogger } from '@/lib/logger';
+
+const log = createLogger('favorites');
 
 type UserFavorite = Database['public']['Tables']['user_favorites']['Row'];
 
 // GET /api/favorites — list the authenticated user's favorite clubs
 export async function GET() {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const supabase = createServerSupabaseClient() as any;
 
     const {
@@ -29,7 +32,7 @@ export async function GET() {
       };
 
     if (error) {
-      console.error('[favorites] Failed to fetch favorites:', error);
+      log.error('Failed to fetch favorites', { error: error.message });
       return NextResponse.json(
         { error: 'Failed to fetch favorites' },
         { status: 500 },
@@ -38,7 +41,7 @@ export async function GET() {
 
     return NextResponse.json(data ?? []);
   } catch (err) {
-    console.error('[favorites] Unexpected error in GET:', err);
+    log.error('Unexpected error in GET', { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 },
@@ -49,7 +52,7 @@ export async function GET() {
 // POST /api/favorites — add a club to favorites
 export async function POST(request: NextRequest) {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const supabase = createServerSupabaseClient() as any;
 
     const {
@@ -99,7 +102,7 @@ export async function POST(request: NextRequest) {
       .single() as { data: UserFavorite | null; error: { message: string } | null };
 
     if (error) {
-      console.error('[favorites] Failed to add favorite:', error);
+      log.error('Failed to add favorite', { error: error.message });
       return NextResponse.json(
         { error: 'Failed to add favorite' },
         { status: 500 },
@@ -108,7 +111,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(data, { status: 201 });
   } catch (err) {
-    console.error('[favorites] Unexpected error in POST:', err);
+    log.error('Unexpected error in POST', { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 },
@@ -119,7 +122,7 @@ export async function POST(request: NextRequest) {
 // DELETE /api/favorites — remove a club from favorites
 export async function DELETE(request: NextRequest) {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const supabase = createServerSupabaseClient() as any;
 
     const {
@@ -154,7 +157,7 @@ export async function DELETE(request: NextRequest) {
       .eq('club_id', clubId) as { error: { message: string } | null; count: number | null };
 
     if (error) {
-      console.error('[favorites] Failed to delete favorite:', error);
+      log.error('Failed to delete favorite', { error: error.message });
       return NextResponse.json(
         { error: 'Failed to remove favorite' },
         { status: 500 },
@@ -170,7 +173,7 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (err) {
-    console.error('[favorites] Unexpected error in DELETE:', err);
+    log.error('Unexpected error in DELETE', { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 },

@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { createLogger } from '@/lib/logger';
 import type { Database } from '@/lib/types/database';
+
+const log = createLogger('tee-times');
 
 type TeeTime = Database['public']['Tables']['tee_times']['Row'];
 
@@ -47,7 +50,7 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = createServerSupabaseClient();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     let query: any = supabase
       .from('tee_times')
       .select('*')
@@ -98,7 +101,7 @@ export async function GET(request: NextRequest) {
     const { data, error } = await query as { data: TeeTime[] | null; error: { message: string } | null };
 
     if (error) {
-      console.error('[tee-times] Supabase error:', error);
+      log.error('Supabase error', { error: error.message });
       return NextResponse.json(
         { error: 'Failed to fetch tee times' },
         { status: 500 },
@@ -107,7 +110,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(data ?? []);
   } catch (err) {
-    console.error('[tee-times] Unexpected error:', err);
+    log.error('Unexpected error', { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 },

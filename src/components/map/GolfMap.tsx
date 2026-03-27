@@ -17,7 +17,7 @@ interface GolfMapProps {
 
 declare global {
   interface Window {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     google: any;
     _golfMapInitialized?: boolean;
   }
@@ -38,9 +38,9 @@ export default function GolfMap({
   teeTimeCounts = {},
 }: GolfMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   const mapInstanceRef = useRef<any>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   const markersRef = useRef<any[]>([]);
 
   const [mapLoaded, setMapLoaded] = useState(false);

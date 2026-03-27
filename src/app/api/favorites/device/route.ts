@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import type { Database } from '@/lib/types/database';
+import { createLogger } from '@/lib/logger';
+
+const log = createLogger('favorites/device');
 
 type DeviceFavorite = Database['public']['Tables']['device_favorites']['Row'];
 
@@ -33,7 +36,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const supabase = createAdminClient() as any;
 
     const { data, error } = await supabase
@@ -46,7 +49,7 @@ export async function GET(request: NextRequest) {
       };
 
     if (error) {
-      console.error('[favorites/device] Failed to fetch device favorites:', error);
+      log.error('Failed to fetch device favorites', { error: error.message });
       return NextResponse.json(
         { error: 'Failed to fetch device favorites' },
         { status: 500 },
@@ -61,14 +64,14 @@ export async function GET(request: NextRequest) {
         .eq('device_id', deviceId) as Promise<{ error: { message: string } | null }>)
         .then(({ error: updateError }) => {
           if (updateError) {
-            console.error('[favorites/device] Failed to update last_accessed_at:', updateError);
+            log.error('Failed to update last_accessed_at', { error: updateError.message });
           }
         });
     }
 
     return NextResponse.json(data ?? []);
   } catch (err) {
-    console.error('[favorites/device] Unexpected error in GET:', err);
+    log.error('Unexpected error in GET', { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 },
@@ -109,7 +112,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const supabase = createAdminClient() as any;
 
     // Check current count for this device
@@ -119,7 +122,7 @@ export async function POST(request: NextRequest) {
       .eq('device_id', deviceId) as { count: number | null; error: { message: string } | null };
 
     if (countError) {
-      console.error('[favorites/device] Failed to count device favorites:', countError);
+      log.error('Failed to count device favorites', { error: countError.message });
       return NextResponse.json(
         { error: 'Failed to validate device favorites count' },
         { status: 500 },
@@ -164,7 +167,7 @@ export async function POST(request: NextRequest) {
       .single() as { data: DeviceFavorite | null; error: { message: string } | null };
 
     if (error) {
-      console.error('[favorites/device] Failed to add device favorite:', error);
+      log.error('Failed to add device favorite', { error: error.message });
       return NextResponse.json(
         { error: 'Failed to add device favorite' },
         { status: 500 },
@@ -173,7 +176,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(data, { status: 201 });
   } catch (err) {
-    console.error('[favorites/device] Unexpected error in POST:', err);
+    log.error('Unexpected error in POST', { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 },
@@ -214,7 +217,7 @@ export async function DELETE(request: NextRequest) {
   }
 
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const supabase = createAdminClient() as any;
 
     const { error, count } = await supabase
@@ -224,7 +227,7 @@ export async function DELETE(request: NextRequest) {
       .eq('club_id', clubId) as { error: { message: string } | null; count: number | null };
 
     if (error) {
-      console.error('[favorites/device] Failed to delete device favorite:', error);
+      log.error('Failed to delete device favorite', { error: error.message });
       return NextResponse.json(
         { error: 'Failed to remove device favorite' },
         { status: 500 },
@@ -240,7 +243,7 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (err) {
-    console.error('[favorites/device] Unexpected error in DELETE:', err);
+    log.error('Unexpected error in DELETE', { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 },

@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { toGeohash } from '@/lib/utils/geohash';
 import type { Database } from '@/lib/types/database';
+import { createLogger } from '@/lib/logger';
+
+const log = createLogger('weather');
 
 const CACHE_TTL_MINUTES = 30;
 
@@ -83,7 +86,7 @@ export async function GET(request: NextRequest) {
   const now = new Date().toISOString();
 
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const supabase = createAdminClient() as any;
 
     // Check weather cache
@@ -98,7 +101,7 @@ export async function GET(request: NextRequest) {
       .maybeSingle() as { data: WeatherCache | null; error: { message: string } | null };
 
     if (cacheError) {
-      console.error('[weather] Cache lookup error:', cacheError);
+      log.error('Cache lookup error', { error: cacheError.message });
       // Non-fatal — proceed to fetch from API
     }
 
@@ -135,9 +138,7 @@ export async function GET(request: NextRequest) {
 
     if (!owmResponse.ok) {
       const errorText = await owmResponse.text().catch(() => '');
-      console.error(
-        `[weather] OpenWeatherMap API error ${owmResponse.status}: ${errorText}`,
-      );
+      log.error(`OpenWeatherMap API error ${owmResponse.status}`, { error: errorText });
       return NextResponse.json(
         { error: `Weather API returned ${owmResponse.status}` },
         { status: 502 },
@@ -159,7 +160,7 @@ export async function GET(request: NextRequest) {
     }) as { error: { message: string } | null };
 
     if (insertError) {
-      console.error('[weather] Failed to cache weather data:', insertError);
+      log.error('Failed to cache weather data', { error: insertError.message });
       // Non-fatal — return the data anyway
     }
 
@@ -171,7 +172,7 @@ export async function GET(request: NextRequest) {
       data: weatherData,
     });
   } catch (err) {
-    console.error('[weather] Unexpected error:', err);
+    log.error('Unexpected error', { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 },

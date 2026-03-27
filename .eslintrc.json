@@ -1,0 +1,64 @@
+{
+  "extends": "next/core-web-vitals",
+  "parser": "@typescript-eslint/parser",
+  "plugins": ["import"],
+  "settings": {
+    "import/resolver": {
+      "typescript": {
+        "project": "./tsconfig.json"
+      }
+    }
+  },
+  "rules": {
+    "import/no-restricted-paths": [
+      "error",
+      {
+        "zones": [
+          {
+            "target": "./src/lib/types/**",
+            "from": "./src/lib/!(types)/**",
+            "message": "Types layer must not import from other layers."
+          },
+          {
+            "target": "./src/lib/constants/**",
+            "from": "./src/(hooks|components|app)/**",
+            "message": "Constants must not import from Hooks, Components, or Pages."
+          },
+          {
+            "target": "./src/lib/utils/**",
+            "from": "./src/(hooks|components|app)/**",
+            "message": "Utils must not import from Hooks, Components, or Pages."
+          },
+          {
+            "target": "./src/lib/scrapers/**",
+            "from": "./src/(hooks|components)/**",
+            "message": "Scrapers are server-only. Must not import from Hooks or Components."
+          },
+          {
+            "target": "./src/hooks/**",
+            "from": "./src/app/api/**",
+            "message": "Hooks must not import API routes directly. Use fetch() instead."
+          },
+          {
+            "target": "./src/components/**",
+            "from": "./src/lib/scrapers/**",
+            "message": "Components must not import scrapers. Use API routes + hooks."
+          },
+          {
+            "target": "./src/app/api/**",
+            "from": "./src/(hooks|components)/**",
+            "message": "API routes are server-only. Must not import Hooks or Components."
+          }
+        ]
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": ["__tests__/**"],
+      "rules": {
+        "import/no-restricted-paths": "off"
+      }
+    }
+  ]
+}

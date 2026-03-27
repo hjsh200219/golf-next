@@ -7,26 +7,56 @@ import ResultSummary from '@/components/results/ResultSummary';
 import { useTeeTimes } from '@/hooks/useTeeTimes';
 import { useSearchParams } from 'next/navigation';
 import { toDateString } from '@/lib/utils/date';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useFilterStore } from '@/hooks/useFilters';
+import { useFavorites } from '@/hooks/useFavorites';
+import { toast } from 'sonner';
+
+const POLL_INTERVAL = 2000;
+const POLL_TIMEOUT = 30000;
 
 export default function SearchSection() {
   const searchParams = useSearchParams();
   const date = searchParams.get('date') || toDateString(new Date());
   const selectedClubs = useFilterStore((s) => s.selectedClubs);
-  const clubIds = selectedClubs.length > 0 ? selectedClubs : undefined;
-  const { data, isLoading, isValidating, refresh } = useTeeTimes(date, clubIds);
+  const { favoriteIds } = useFavorites();
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
+
+  const effectiveClubs = favoritesOnly && favoriteIds.length > 0
+    ? favoriteIds
+    : selectedClubs.length > 0 ? selectedClubs : undefined;
+
+  const { data, isLoading, isValidating, error, refresh } = useTeeTimes(date, effectiveClubs);
   const [isScraping, setIsScraping] = useState(false);
-  const [scrapeMessage, setScrapeMessage] = useState('');
+  const [scrapeProgress, setScrapeProgress] = useState('');
+  const abortRef = useRef<AbortController | null>(null);
 
   const teeTimes = data ?? [];
   const scrapedAt = teeTimes.length > 0 ? teeTimes[0].scraped_at : null;
   const busy = isLoading || isValidating || isScraping;
 
+  const pollJobStatus = useCallback(async (jobId: number) => {
+    const start = Date.now();
+    while (Date.now() - start < POLL_TIMEOUT) {
+      await new Promise((r) => setTimeout(r, POLL_INTERVAL));
+      try {
+        const res = await fetch(`/api/scrape/status?jobId=${jobId}`);
+        if (!res.ok) break;
+        const { job, summary } = await res.json();
+        setScrapeProgress(`수집 중... (${summary.completed}/${summary.total})`);
+        if (job.status === 'completed' || job.status === 'failed') {
+          return job.status;
+        }
+      } catch {
+        break;
+      }
+    }
+    return 'timeout';
+  }, []);
+
   const handleRefresh = useCallback(async () => {
     setIsScraping(true);
-    const beforeCount = teeTimes.length;
-    setScrapeMessage('스크래핑 요청 중...');
+    setScrapeProgress('스크래핑 요청 중...');
 
     try {
       const res = await fetch('/api/refresh', {
@@ -36,67 +66,86 @@ export default function SearchSection() {
       });
 
       if (res.ok) {
-        setScrapeMessage('골프장 데이터 수집 중... (약 15초 소요)');
-        await new Promise((r) => setTimeout(r, 15000));
-        setScrapeMessage('결과 불러오는 중...');
-        await refresh();
-        const afterCount = data?.length ?? 0;
-        const diff = afterCount - beforeCount;
-        if (diff > 0) {
-          setScrapeMessage(`수집 완료! ${diff}건 추가됨`);
+        const responseData = await res.json();
+        const jobId = responseData.jobIds?.[0];
+
+        if (jobId) {
+          const status = await pollJobStatus(jobId);
+          if (status === 'completed') {
+            setScrapeProgress('결과 불러오는 중...');
+            await refresh();
+            toast.success('데이터가 갱신되었습니다');
+          } else if (status === 'failed') {
+            toast.error('일부 골프장 수집에 실패했습니다');
+            await refresh();
+          } else {
+            setScrapeProgress('결과 불러오는 중...');
+            await refresh();
+            toast.info('수집 시간이 초과되었습니다. 결과를 확인해 주세요');
+          }
         } else {
-          setScrapeMessage('수집 완료! 데이터가 갱신되었습니다');
+          // Fallback: no jobId, wait briefly and refresh
+          await new Promise((r) => setTimeout(r, 5000));
+          await refresh();
+          toast.success('데이터가 갱신되었습니다');
         }
-        setTimeout(() => setScrapeMessage(''), 3000);
       } else {
         const errData = await res.json().catch(() => ({}));
-        setScrapeMessage(errData.error || '요청 실패');
-        setTimeout(() => setScrapeMessage(''), 3000);
+        toast.error(errData.error || '요청에 실패했습니다');
       }
     } catch {
-      setScrapeMessage('요청 중 오류 발생');
-      setTimeout(() => setScrapeMessage(''), 3000);
+      toast.error('네트워크 오류가 발생했습니다');
     } finally {
       setIsScraping(false);
+      setScrapeProgress('');
     }
-  }, [date, refresh, teeTimes.length, data]);
+  }, [date, refresh, pollJobStatus]);
 
   return (
     <div className="space-y-4">
-      <SearchBar onSearch={handleRefresh} />
-      <FilterPanel />
       <div className="flex flex-wrap items-center gap-3">
+        <SearchBar onSearch={handleRefresh} />
         <ResultSummary count={teeTimes.length} scrapedAt={scrapedAt} isLoading={isLoading} />
-        <button
-          onClick={handleRefresh}
-          disabled={busy}
-          className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-gray-500 ring-1 ring-gray-200 spring-hover hover:bg-gray-50 hover:text-gray-700 active:scale-[0.97] disabled:opacity-50"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className={`h-3.5 w-3.5 ${busy ? 'animate-spin' : ''}`}
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
-          {busy ? '조회 중...' : '새로 수집'}
-        </button>
       </div>
-      {scrapeMessage && (
-        <div className={`flex items-center gap-2 rounded-xl px-4 py-3 text-sm animate-fade-up ${
-          isScraping ? 'bg-green-50 text-green-700' : 'bg-blue-50 text-blue-700'
-        }`}>
-          {isScraping && (
-            <div className="h-4 w-4 animate-spin rounded-full border-2 border-green-600 border-t-transparent" />
-          )}
-          {!isScraping && <span>✓</span>}
-          {scrapeMessage}
+
+      <FilterPanel
+        favoritesOnly={favoritesOnly}
+        onToggleFavoritesOnly={() => setFavoritesOnly((p) => !p)}
+        hasFavorites={favoriteIds.length > 0}
+      />
+
+      {scrapeProgress && (
+        <div className="flex items-center gap-2 rounded-xl bg-golf-surface px-4 py-3 text-sm animate-fade-up text-golf-primary ring-1 ring-golf-primary/10">
+          <div className="h-4 w-4 animate-spin rounded-full border-2 border-golf-primary border-t-transparent" />
+          {scrapeProgress}
         </div>
       )}
-      <TeeTimeTable data={teeTimes} isLoading={isLoading} />
+
+      {error ? (
+        <div className="animate-fade-up flex flex-col items-center justify-center rounded-2xl border border-red-200 bg-red-50 py-12 text-center">
+          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-red-100">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+            </svg>
+          </div>
+          <p className="text-sm font-medium text-red-700">데이터를 불러올 수 없습니다</p>
+          <p className="mt-1 text-xs text-red-500">{error.message}</p>
+          <button
+            onClick={() => refresh()}
+            className="mt-4 rounded-lg bg-red-100 px-4 py-2 text-xs font-medium text-red-700 hover:bg-red-200 spring-hover"
+          >
+            다시 시도
+          </button>
+        </div>
+      ) : (
+        <TeeTimeTable
+          data={teeTimes}
+          isLoading={isLoading}
+          scrapedAt={scrapedAt}
+          onRefresh={handleRefresh}
+          busy={busy}
+        />
+      )}
     </div>
   );
 }

@@ -31,10 +31,30 @@ function ClubCard({ club }: { club: GolfClub }) {
 export default function FavoriteClubList({
   onlyFavorites = false,
 }: FavoriteClubListProps) {
-  const { data: clubs, isLoading: clubsLoading } = useClubs();
+  const { data: clubs, isLoading: clubsLoading, error: clubsError, mutate: retryClubs } = useClubs();
   const { favoriteIds, isLoading: favLoading } = useFavorites();
 
   const isLoading = clubsLoading || favLoading;
+
+  if (clubsError) {
+    return (
+      <div className="animate-fade-up flex flex-col items-center justify-center rounded-2xl border border-red-200 bg-red-50 py-12 text-center">
+        <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-red-100">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+          </svg>
+        </div>
+        <p className="text-sm font-medium text-red-700">골프장 목록을 불러올 수 없습니다</p>
+        <p className="mt-1 text-xs text-red-500">{clubsError.message}</p>
+        <button
+          onClick={() => retryClubs()}
+          className="mt-4 rounded-lg bg-red-100 px-4 py-2 text-xs font-medium text-red-700 hover:bg-red-200 spring-hover"
+        >
+          다시 시도
+        </button>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (

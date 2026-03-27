@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import type { Database } from '@/lib/types/database';
+import { createLogger } from '@/lib/logger';
+
+const log = createLogger('scrape');
 
 type ScrapeJob = Database['public']['Tables']['scrape_jobs']['Row'];
 type GolfClub = Pick<Database['public']['Tables']['golf_clubs']['Row'], 'id' | 'name' | 'scraper_type'>;
@@ -10,7 +13,7 @@ function validateApiKey(request: NextRequest): boolean {
   const envKey = process.env.SCRAPE_API_KEY;
 
   if (!envKey) {
-    console.error('[scrape] SCRAPE_API_KEY env var is not set');
+    log.error('SCRAPE_API_KEY env var is not set');
     return false;
   }
 
@@ -52,7 +55,7 @@ export async function POST(request: NextRequest) {
   const validDates = dates as string[];
 
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const supabase = createAdminClient() as any;
 
     // Fetch all active clubs
@@ -62,7 +65,7 @@ export async function POST(request: NextRequest) {
       .eq('is_active', true) as { data: GolfClub[] | null; error: { message: string } | null };
 
     if (clubsError) {
-      console.error('[scrape] Failed to fetch clubs:', clubsError);
+      log.error('Failed to fetch clubs', { error: clubsError.message });
       return NextResponse.json(
         { error: 'Failed to fetch active clubs' },
         { status: 500 },
@@ -94,7 +97,7 @@ export async function POST(request: NextRequest) {
         .single() as { data: Pick<ScrapeJob, 'id'> | null; error: { message: string } | null };
 
       if (jobError || !job) {
-        console.error(`[scrape] Failed to create job for date ${date}:`, jobError);
+        log.error(`Failed to create job for date ${date}`, { error: jobError?.message });
         return NextResponse.json(
           { error: `Failed to create scrape job for date ${date}` },
           { status: 500 },
@@ -116,7 +119,7 @@ export async function POST(request: NextRequest) {
         .insert(clubResults) as { error: { message: string } | null };
 
       if (resultsError) {
-        console.error(`[scrape] Failed to insert club results for job ${job.id}:`, resultsError);
+        log.error(`Failed to insert club results for job ${job.id}`, { error: resultsError.message });
         // Non-fatal — job was created, continue
       }
 
@@ -138,10 +141,7 @@ export async function POST(request: NextRequest) {
             date,
           }),
         }).catch((err) => {
-          console.error(
-            `[scrape] Failed to trigger scraper for club ${club.id}, date ${date}:`,
-            err,
-          );
+          log.error(`Failed to trigger scraper for club ${club.id}, date ${date}`, { error: err instanceof Error ? err.message : String(err) });
         });
       }
 
@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
       { status: 201 },
     );
   } catch (err) {
-    console.error('[scrape] Unexpected error:', err);
+    log.error('Unexpected error', { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 },

@@ -42,7 +42,7 @@ export default function WeatherDashboard() {
   const clubLat = selectedClub?.lat ?? firstCourse?.lat ?? null;
   const clubLon = selectedClub?.lon ?? firstCourse?.lon ?? null;
 
-  const { data: weather, isLoading: weatherLoading } = useWeather(
+  const { data: weather, isLoading: weatherLoading, error: weatherError, mutate: retryWeather } = useWeather(
     clubLat,
     clubLon,
   );
@@ -59,8 +59,28 @@ export default function WeatherDashboard() {
     if (weatherLoading) {
       return (
         <div className="flex items-center justify-center py-10">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-green-500 border-t-transparent" />
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-golf-primary border-t-transparent" />
           <span className="ml-2 text-sm text-gray-500">날씨 정보 불러오는 중...</span>
+        </div>
+      );
+    }
+
+    if (weatherError) {
+      return (
+        <div className="animate-fade-up flex flex-col items-center justify-center py-12 text-center">
+          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-red-100">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+            </svg>
+          </div>
+          <p className="text-sm font-medium text-red-700">날씨 데이터를 불러올 수 없습니다</p>
+          <p className="mt-1 text-xs text-red-500">{weatherError.message}</p>
+          <button
+            onClick={() => retryWeather()}
+            className="mt-4 rounded-lg bg-red-100 px-4 py-2 text-xs font-medium text-red-700 hover:bg-red-200 spring-hover"
+          >
+            다시 시도
+          </button>
         </div>
       );
     }
@@ -105,7 +125,7 @@ export default function WeatherDashboard() {
             value={selectedClubId}
             onChange={(e) => setSelectedClubId(e.target.value)}
             disabled={clubsLoading}
-            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:opacity-50"
+            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 focus:border-golf-primary focus:outline-none focus:ring-1 focus:ring-golf-primary disabled:opacity-50"
           >
             <option value="">-- 골프장 선택 --</option>
             {(clubs ?? []).map((club) => (
@@ -128,7 +148,7 @@ export default function WeatherDashboard() {
               className={[
                 'whitespace-nowrap border-b-2 py-3 text-sm font-medium transition-colors focus:outline-none',
                 activeTab === key
-                  ? 'border-green-600 text-green-700'
+                  ? 'border-golf-primary text-golf-primary'
                   : 'border-transparent text-gray-500 hover:text-gray-700',
               ].join(' ')}
               aria-current={activeTab === key ? 'page' : undefined}

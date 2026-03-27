@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import type { Database } from '@/lib/types/database';
+import { createLogger } from '@/lib/logger';
+
+const log = createLogger('scrape/status');
 
 type ScrapeJob = Database['public']['Tables']['scrape_jobs']['Row'];
 type ScrapeClubResult = Database['public']['Tables']['scrape_club_results']['Row'];
@@ -25,7 +28,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const supabase = createAdminClient() as any;
 
     // Fetch job record
@@ -42,7 +45,7 @@ export async function GET(request: NextRequest) {
           { status: 404 },
         );
       }
-      console.error('[scrape/status] Failed to fetch job:', jobError);
+      log.error('Failed to fetch job', { error: jobError.message });
       return NextResponse.json(
         { error: 'Failed to fetch scrape job' },
         { status: 500 },
@@ -60,7 +63,7 @@ export async function GET(request: NextRequest) {
       };
 
     if (resultsError) {
-      console.error('[scrape/status] Failed to fetch club results:', resultsError);
+      log.error('Failed to fetch club results', { error: resultsError.message });
       return NextResponse.json(
         { error: 'Failed to fetch club results' },
         { status: 500 },
@@ -86,7 +89,7 @@ export async function GET(request: NextRequest) {
       clubResults: results,
     });
   } catch (err) {
-    console.error('[scrape/status] Unexpected error:', err);
+    log.error('Unexpected error', { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 },
