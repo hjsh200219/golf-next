@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import LoginButton from '@/components/auth/LoginButton';
@@ -19,9 +20,22 @@ export default function Header() {
         <div className="flex items-center justify-between h-14">
           <Link
             href="/"
-            className="text-lg font-bold tracking-tight text-golf-primary spring-hover hover:opacity-80"
+            className="flex items-center gap-2 spring-hover hover:opacity-80"
           >
-            GolfShin
+            <Image
+              src="/images/logo.webp"
+              alt="GolfShin"
+              width={649}
+              height={503}
+              className="h-9 w-auto"
+            />
+            <Image
+              src="/images/typographic.webp"
+              alt="GOLF SHIN"
+              width={735}
+              height={98}
+              className="h-5 w-auto"
+            />
           </Link>
           <div className="flex items-center gap-1">
             <nav className="hidden md:flex gap-0.5">

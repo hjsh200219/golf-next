@@ -1,11 +1,15 @@
 import { ImageResponse } from 'next/og';
+import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
 
-export const runtime = 'edge';
 export const alt = '골프 예약 조회 | GolfShin';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
-export default function OgImage() {
+export default async function OgImage() {
+  const logoBuffer = await readFile(join(process.cwd(), 'public/images/logo.png'));
+  const logoSrc = `data:image/png;base64,${logoBuffer.toString('base64')}`;
+
   return new ImageResponse(
     (
       <div
@@ -20,29 +24,13 @@ export default function OgImage() {
           fontFamily: 'system-ui, sans-serif',
         }}
       >
-        {/* Golf ball icon */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginBottom: 24,
-          }}
-        >
-          <svg
-            width="120"
-            height="120"
-            viewBox="0 0 512 512"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <circle cx="256" cy="240" r="80" fill="white" />
-            <rect x="248" y="160" width="16" height="200" rx="8" fill="#16a34a" />
-            <rect x="224" y="340" width="64" height="16" rx="8" fill="white" />
-          </svg>
-        </div>
+        <img
+          src={logoSrc}
+          width="200"
+          height="155"
+          style={{ marginBottom: 24 }}
+        />
 
-        {/* Site name */}
         <div
           style={{
             fontSize: 72,
@@ -52,10 +40,9 @@ export default function OgImage() {
             marginBottom: 12,
           }}
         >
-          GolfShin
+          GOLF SHIN
         </div>
 
-        {/* Tagline */}
         <div
           style={{
             fontSize: 32,
@@ -67,7 +54,6 @@ export default function OgImage() {
           실시간 골프장 티타임 예약 조회
         </div>
 
-        {/* Feature badges */}
         <div
           style={{
             display: 'flex',
