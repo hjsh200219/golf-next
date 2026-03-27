@@ -109,7 +109,7 @@ export default function SearchBar({ onSearch }: SearchBarProps) {
       {/* Search Button */}
       <button
         onClick={handleSearch}
-        className="flex items-center justify-center gap-2 self-stretch rounded-xl bg-golf-primary px-7 text-sm font-semibold text-white shadow-btn spring-hover hover:shadow-btn-hover hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-golf-primary/40 focus-visible:ring-offset-2"
+        className="flex items-center justify-center gap-1.5 rounded-xl bg-golf-primary px-5 py-2.5 text-sm font-semibold text-white shadow-btn spring-hover hover:shadow-btn-hover hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-golf-primary/40 focus-visible:ring-offset-2"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
