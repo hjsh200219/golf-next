@@ -21,7 +21,7 @@ export default function SearchSection() {
       <SearchBar />
       <FilterPanel />
       <ResultSummary count={teeTimes.length} scrapedAt={scrapedAt} isLoading={isLoading} />
-      <TeeTimeTable />
+      <TeeTimeTable data={teeTimes} isLoading={isLoading} />
     </div>
   );
 }
