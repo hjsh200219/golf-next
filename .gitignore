@@ -43,3 +43,4 @@ public/swe-worker-*.js
 *.tsbuildinfo
 next-env.d.ts
 .gstack/
+.omc/

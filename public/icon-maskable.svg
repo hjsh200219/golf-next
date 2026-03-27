@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <rect width="512" height="512" fill="#16a34a"/>
+  <circle cx="256" cy="220" r="64" fill="white"/>
+  <rect x="250" y="156" width="12" height="160" rx="6" fill="#16a34a"/>
+  <rect x="232" y="300" width="48" height="12" rx="6" fill="white"/>
+  <text x="256" y="410" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="700" font-size="56" fill="white">GOLF</text>
+</svg>
