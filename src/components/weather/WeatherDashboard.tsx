@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useClubs } from '@/hooks/useClubs';
 import { useWeather } from '@/hooks/useWeather';
 import HourlyChart from '@/components/weather/HourlyChart';
@@ -26,6 +26,13 @@ export default function WeatherDashboard() {
   const { data: clubs, isLoading: clubsLoading } = useClubs();
   const [selectedClubId, setSelectedClubId] = useState<string>('');
   const [activeTab, setActiveTab] = useState<TabKey>('hourly');
+
+  // 클럽 로드 시 첫 번째 클럽 자동 선택
+  useEffect(() => {
+    if (clubs && clubs.length > 0 && !selectedClubId) {
+      setSelectedClubId(clubs[0].id);
+    }
+  }, [clubs, selectedClubId]);
 
   const selectedClub: GolfClub | undefined = clubs?.find(
     (c) => c.id === selectedClubId,
