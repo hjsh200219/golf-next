@@ -7,31 +7,27 @@ import ResultSummary from '@/components/results/ResultSummary';
 import { useTeeTimes } from '@/hooks/useTeeTimes';
 import { useSearchParams } from 'next/navigation';
 import { toDateString } from '@/lib/utils/date';
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 
 export default function SearchSection() {
   const searchParams = useSearchParams();
   const date = searchParams.get('date') || toDateString(new Date());
-  const { data, isLoading, mutate } = useTeeTimes(date);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const { data, isLoading, isValidating, refresh } = useTeeTimes(date);
 
   const teeTimes = data ?? [];
   const scrapedAt = teeTimes.length > 0 ? teeTimes[0].scraped_at : null;
+  const showLoading = isLoading || isValidating;
 
-  const handleRefresh = useCallback(async () => {
-    setIsRefreshing(true);
-    await mutate();
-    setIsRefreshing(false);
-  }, [mutate]);
-
-  const showLoading = isLoading || isRefreshing;
+  const handleRefresh = useCallback(() => {
+    refresh();
+  }, [refresh]);
 
   return (
     <div className="space-y-4">
       <SearchBar onSearch={handleRefresh} />
       <FilterPanel />
       <div className="flex flex-wrap items-center gap-3">
-        <ResultSummary count={teeTimes.length} scrapedAt={scrapedAt} isLoading={showLoading} />
+        <ResultSummary count={teeTimes.length} scrapedAt={scrapedAt} isLoading={isLoading} />
         <button
           onClick={handleRefresh}
           disabled={showLoading}
@@ -39,7 +35,7 @@ export default function SearchSection() {
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className={`h-3.5 w-3.5 ${showLoading ? 'animate-spin' : ''}`}
+            className={`h-3.5 w-3.5 ${isValidating ? 'animate-spin' : ''}`}
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -47,16 +43,16 @@ export default function SearchSection() {
           >
             <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
           </svg>
-          {showLoading ? '조회 중...' : '다시 조회'}
+          {isValidating ? '조회 중...' : '다시 조회'}
         </button>
       </div>
-      {showLoading && (
-        <div className="flex items-center gap-2 rounded-xl bg-green-50 px-4 py-3 text-sm text-green-700">
+      {isValidating && !isLoading && (
+        <div className="flex items-center gap-2 rounded-xl bg-green-50 px-4 py-3 text-sm text-green-700 animate-fade-up">
           <div className="h-4 w-4 animate-spin rounded-full border-2 border-green-600 border-t-transparent" />
-          데이터를 가져오는 중입니다...
+          데이터를 새로 가져오는 중...
         </div>
       )}
-      <TeeTimeTable data={teeTimes} isLoading={showLoading} />
+      <TeeTimeTable data={teeTimes} isLoading={isLoading} />
     </div>
   );
 }
