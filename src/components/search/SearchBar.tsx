@@ -6,7 +6,11 @@ import { getNextNDays, formatDateKorean, toDateString } from '@/lib/utils/date';
 
 const DAY_LABELS = ['오늘', '내일', '모레'];
 
-export default function SearchBar() {
+interface SearchBarProps {
+  onSearch?: () => void;
+}
+
+export default function SearchBar({ onSearch }: SearchBarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -34,7 +38,8 @@ export default function SearchBar() {
       params.set('date', dates[0]);
     }
     router.push(`${pathname}?${params.toString()}`);
-  }, [router, pathname, searchParams, dates]);
+    onSearch?.();
+  }, [router, pathname, searchParams, dates, onSearch]);
 
   return (
     <div className="animate-fade-up flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">

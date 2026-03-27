@@ -188,6 +188,15 @@ export abstract class BaseScraper {
     };
   }
 
+  protected async textWithEncoding(res: Response, encoding?: string): Promise<string> {
+    if (!encoding || encoding === 'utf-8') {
+      return res.text();
+    }
+    const buffer = await res.arrayBuffer();
+    const decoder = new TextDecoder(encoding);
+    return decoder.decode(buffer);
+  }
+
   protected formatTime(time: string): string {
     const t = time.replace(/\s/g, '');
     if (t.length === 4 && !t.includes(':')) {

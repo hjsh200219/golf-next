@@ -34,7 +34,7 @@ export default class PineStoneScraper extends BaseScraper {
       this.commonHeaders(origin, `${origin}/GolfRes/onepage/real_timelist.asp`),
     );
 
-    const html = await res.text();
+    const html = await this.textWithEncoding(res, 'euc-kr');
     const $ = this.parseHtml(html);
     const rows: TeeTimeRow[] = [];
 

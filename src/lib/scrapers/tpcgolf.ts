@@ -29,7 +29,7 @@ export default class TpcGolfScraper extends BaseScraper {
       this.commonHeaders(origin, `${origin}/Reservation/TimeTable.asp`),
     );
 
-    const html = await res.text();
+    const html = await this.textWithEncoding(res, 'euc-kr');
     const $ = this.parseHtml(html);
     const rows: TeeTimeRow[] = [];
 
