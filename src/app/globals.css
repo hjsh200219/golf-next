@@ -16,6 +16,7 @@
       'Segoe UI Symbol', sans-serif;
     word-break: keep-all;
     overflow-wrap: break-word;
+    overflow-x: hidden;
     color: #1a1a1a;
     background: #fafbfc;
   }

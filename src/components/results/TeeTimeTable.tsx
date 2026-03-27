@@ -13,6 +13,7 @@ import type { TeeTime } from '@/lib/types/tee-time';
 import { formatPrice } from '@/lib/utils/price';
 import { formatTime } from '@/lib/utils/time';
 import { formatDateKorean } from '@/lib/utils/date';
+import { cleanEventText } from '@/lib/utils/event';
 import LoadingState from '@/components/results/LoadingState';
 
 interface TeeTimeTableProps {
@@ -64,14 +65,16 @@ const columns = [
   columnHelper.accessor('event', {
     header: '비고',
     enableSorting: false,
-    cell: (info) =>
-      info.getValue() ? (
+    cell: (info) => {
+      const cleaned = cleanEventText(info.getValue());
+      return cleaned ? (
         <span className="inline-flex items-center rounded-md bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 ring-1 ring-inset ring-amber-200/60">
-          {info.getValue()}
+          {cleaned}
         </span>
       ) : (
         <span className="text-gray-300">-</span>
-      ),
+      );
+    },
   }),
 ];
 
@@ -108,8 +111,41 @@ export default function TeeTimeTable({ data, isLoading = false }: TeeTimeTablePr
   }
 
   return (
-    <div className="animate-fade-up overflow-x-auto rounded-2xl bg-white shadow-card ring-1 ring-gray-100">
-      <table className="w-full min-w-[640px] text-sm">
+    <>
+    {/* Mobile card view */}
+    <div className="animate-fade-up md:hidden space-y-2">
+      {table.getRowModel().rows.map((row) => {
+        const r = row.original;
+        const cleaned = cleanEventText(r.event);
+        return (
+          <div key={row.id} className="rounded-xl bg-white p-3.5 shadow-card ring-1 ring-gray-100">
+            <div className="flex items-start justify-between gap-2">
+              <span className="font-semibold text-gray-900 text-sm leading-tight">{r.cc_name}</span>
+              <span className="font-mono text-golf-primary font-semibold tabular-nums text-sm shrink-0">
+                {formatTime(r.teeoff)}
+              </span>
+            </div>
+            <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-gray-500">
+              {r.course && (
+                <span className="inline-flex items-center rounded-md bg-gray-50 px-1.5 py-0.5 font-medium text-gray-600 ring-1 ring-inset ring-gray-200/60">
+                  {r.course}
+                </span>
+              )}
+              <span className="font-semibold text-gray-800 tabular-nums">{formatPrice(r.price)}</span>
+              {cleaned && (
+                <span className="inline-flex items-center rounded-md bg-amber-50 px-1.5 py-0.5 font-medium text-amber-700 ring-1 ring-inset ring-amber-200/60">
+                  {cleaned}
+                </span>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+
+    {/* Desktop table view */}
+    <div className="animate-fade-up hidden md:block overflow-x-auto rounded-2xl bg-white shadow-card ring-1 ring-gray-100">
+      <table className="w-full text-sm">
         <thead>
           {table.getHeaderGroups().map((headerGroup) => (
             <tr key={headerGroup.id} className="border-b border-gray-100">
@@ -161,5 +197,6 @@ export default function TeeTimeTable({ data, isLoading = false }: TeeTimeTablePr
         </tbody>
       </table>
     </div>
+    </>
   );
 }

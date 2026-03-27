@@ -9,7 +9,9 @@ import MinutelyChart from '@/components/weather/MinutelyChart';
 import HourlyTable from '@/components/weather/HourlyTable';
 import type { Database } from '@/lib/types/database';
 
-type GolfClub = Database['public']['Tables']['golf_clubs']['Row'];
+type GolfClub = Database['public']['Tables']['golf_clubs']['Row'] & {
+  courses?: Array<{ lat: number | null; lon: number | null; course_name: string }>;
+};
 
 type TabKey = 'hourly' | 'daily' | 'minutely' | 'table';
 
@@ -29,9 +31,13 @@ export default function WeatherDashboard() {
     (c) => c.id === selectedClubId,
   );
 
+  const firstCourse = selectedClub?.courses?.[0];
+  const clubLat = selectedClub?.lat ?? firstCourse?.lat ?? null;
+  const clubLon = selectedClub?.lon ?? firstCourse?.lon ?? null;
+
   const { data: weather, isLoading: weatherLoading } = useWeather(
-    selectedClub?.lat ?? null,
-    selectedClub?.lon ?? null,
+    clubLat,
+    clubLon,
   );
 
   function renderContent() {
