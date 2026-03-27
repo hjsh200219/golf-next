@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { createScraper } from '@/lib/scrapers';
 import type { LoginCredentials } from '@/lib/scrapers/base';
+import { createLogger } from '@/lib/logger';
+
+const log = createLogger('scrape/club');
 
 function getCredentials(): LoginCredentials {
   return {
@@ -80,7 +83,7 @@ export async function POST(request: NextRequest) {
         });
 
       if (upsertError) {
-        console.error(`[scrape/club] Upsert error for ${clubId}:`, upsertError);
+        log.error(`Upsert error for ${clubId}`, { error: upsertError.message });
       }
     }
 

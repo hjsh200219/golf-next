@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { createLogger } from '@/lib/logger';
 import type { Database } from '@/lib/types/database';
+
+const log = createLogger('clubs');
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 3600;
@@ -22,7 +25,7 @@ export async function GET() {
       };
 
     if (clubsError) {
-      console.error('[clubs] Failed to fetch clubs:', clubsError);
+      log.error('Failed to fetch clubs', { error: clubsError.message });
       return NextResponse.json(
         { error: 'Failed to fetch clubs' },
         { status: 500 },
@@ -46,7 +49,7 @@ export async function GET() {
       };
 
     if (coursesError) {
-      console.error('[clubs] Failed to fetch courses:', coursesError);
+      log.error('Failed to fetch courses', { error: coursesError.message });
       return NextResponse.json(
         { error: 'Failed to fetch club courses' },
         { status: 500 },
@@ -70,7 +73,7 @@ export async function GET() {
 
     return NextResponse.json(result);
   } catch (err) {
-    console.error('[clubs] Unexpected error:', err);
+    log.error('Unexpected error', { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 },
