@@ -60,6 +60,7 @@ export async function POST(request: NextRequest) {
 
     // Upsert tee times
     if (result.success && result.teeTimes.length > 0) {
+      const now = new Date().toISOString();
       const rows = result.teeTimes.map((t) => ({
         club_id: clubId,
         cc_name: t.cc_name,
@@ -68,6 +69,7 @@ export async function POST(request: NextRequest) {
         course: t.course ?? '',
         price: t.price,
         event: t.event,
+        scraped_at: now,
       }));
 
       const { error: upsertError } = await (supabase as any)

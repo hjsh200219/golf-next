@@ -22,6 +22,7 @@ export default function SearchSection() {
 
   const handleRefresh = useCallback(async () => {
     setIsScraping(true);
+    const beforeCount = teeTimes.length;
     setScrapeMessage('스크래핑 요청 중...');
 
     try {
@@ -33,22 +34,29 @@ export default function SearchSection() {
 
       if (res.ok) {
         setScrapeMessage('골프장 데이터 수집 중... (약 15초 소요)');
-        // Wait for scrapers to finish
         await new Promise((r) => setTimeout(r, 15000));
         setScrapeMessage('결과 불러오는 중...');
         await refresh();
-        setScrapeMessage('');
+        const afterCount = data?.length ?? 0;
+        const diff = afterCount - beforeCount;
+        if (diff > 0) {
+          setScrapeMessage(`수집 완료! ${diff}건 추가됨`);
+        } else {
+          setScrapeMessage('수집 완료! 데이터가 갱신되었습니다');
+        }
+        setTimeout(() => setScrapeMessage(''), 3000);
       } else {
-        setScrapeMessage('');
-        await refresh();
+        const errData = await res.json().catch(() => ({}));
+        setScrapeMessage(errData.error || '요청 실패');
+        setTimeout(() => setScrapeMessage(''), 3000);
       }
     } catch {
-      setScrapeMessage('');
-      await refresh();
+      setScrapeMessage('요청 중 오류 발생');
+      setTimeout(() => setScrapeMessage(''), 3000);
     } finally {
       setIsScraping(false);
     }
-  }, [date, refresh]);
+  }, [date, refresh, teeTimes.length, data]);
 
   return (
     <div className="space-y-4">
@@ -74,10 +82,15 @@ export default function SearchSection() {
           {busy ? '조회 중...' : '새로 수집'}
         </button>
       </div>
-      {(isScraping || (isValidating && !isLoading)) && (
-        <div className="flex items-center gap-2 rounded-xl bg-green-50 px-4 py-3 text-sm text-green-700 animate-fade-up">
-          <div className="h-4 w-4 animate-spin rounded-full border-2 border-green-600 border-t-transparent" />
-          {scrapeMessage || '데이터를 가져오는 중...'}
+      {scrapeMessage && (
+        <div className={`flex items-center gap-2 rounded-xl px-4 py-3 text-sm animate-fade-up ${
+          isScraping ? 'bg-green-50 text-green-700' : 'bg-blue-50 text-blue-700'
+        }`}>
+          {isScraping && (
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-green-600 border-t-transparent" />
+          )}
+          {!isScraping && <span>✓</span>}
+          {scrapeMessage}
         </div>
       )}
       <TeeTimeTable data={teeTimes} isLoading={isLoading} />
