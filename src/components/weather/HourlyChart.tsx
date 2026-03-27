@@ -101,10 +101,7 @@ export default function HourlyChart({ data }: HourlyChartProps) {
             formatter={(value: number, name: string) =>
               name === 'temp' ? [`${value}°C`, '기온'] : [`${value}%`, '강수 확률']
             }
-            labelFormatter={(_, payload) => {
-              if (payload?.[0]?.payload?.fullLabel) return payload[0].payload.fullLabel;
-              return '';
-            }}
+            labelFormatter={(_label: string) => _label}
             labelStyle={{ fontSize: 12, fontWeight: 600 }}
             contentStyle={{ borderRadius: 8, border: '1px solid #e5e7eb', fontSize: 12 }}
           />
