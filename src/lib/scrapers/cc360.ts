@@ -30,7 +30,7 @@ export default class Cc360Scraper extends BaseScraper {
       this.commonHeaders(origin, 'https://www.360cc.co.kr/reservation/list/real_timeinfo_list.do'),
     );
 
-    const html = await this.textWithEncoding(res, 'euc-kr');
+    const html = await res.text();
     const $ = this.parseHtml(html);
     const rows: TeeTimeRow[] = [];
 

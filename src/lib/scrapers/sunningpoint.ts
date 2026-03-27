@@ -30,7 +30,7 @@ export default class SunningPointScraper extends BaseScraper {
       this.commonHeaders(origin, 'https://www.sunningpoint.com/golfRes/real_timeList.asp'),
     );
 
-    const html = await this.textWithEncoding(res, 'euc-kr');
+    const html = await res.text();
     const $ = this.parseHtml(html);
     const rows: TeeTimeRow[] = [];
 

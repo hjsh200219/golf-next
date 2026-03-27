@@ -34,7 +34,7 @@ export default class LavieBellScraper extends BaseScraper {
       this.commonHeaders(origin, `${origin}/oldcourse/GolfRes/onepage/real_timelist.asp`),
     );
 
-    const html = await this.textWithEncoding(res, 'euc-kr');
+    const html = await res.text();
     const $ = this.parseHtml(html);
     const rows: TeeTimeRow[] = [];
 
