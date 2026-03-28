@@ -1,5 +1,21 @@
 import { BaseScraper, TeeTimeRow } from './base';
 
+// Course name → actual golf club name mapping
+const COURSE_TO_CLUB: Record<string, string> = {
+  '서': '레이크사이드CC',
+  '동': '레이크사이드CC',
+  '남': '레이크사이드CC',
+  '북': '안성베네스트GC',
+  'Birch': '가평베네스트GC',
+  'Maple': '가평베네스트GC',
+  'Pine': '가평베네스트GC',
+  'GLRS': '글렌로스GC',
+};
+
+function getClubName(course: string): string {
+  return COURSE_TO_CLUB[course] ?? '삼성골프';
+}
+
 export default class SamsungGolfScraper extends BaseScraper {
   get clubId(): string {
     return 'samsunggolf';
@@ -18,16 +34,16 @@ export default class SamsungGolfScraper extends BaseScraper {
       this.commonHeaders(origin, `${origin}/user/sign/login.do`),
     );
 
-    // Step 2: Fetch data for each course
-    const courses: Record<string, string> = {
-      '5': 'course1',
-      '6': 'course2',
-      '8': 'course3',
+    // Step 2: Fetch data for each course group
+    const courseGroups: Record<string, string> = {
+      '5': 'group1',
+      '6': 'group2',
+      '8': 'group3',
     };
 
     const rows: TeeTimeRow[] = [];
 
-    for (const [code] of Object.entries(courses)) {
+    for (const [code] of Object.entries(courseGroups)) {
       const res = await this.postForm(
         `${origin}/reservation/list/ajax_real_timeinfo_list_golf_samsung.do`,
         {
@@ -58,7 +74,7 @@ export default class SamsungGolfScraper extends BaseScraper {
 
         rows.push({
           date: this.dateDash,
-          cc_name: '삼성골프',
+          cc_name: getClubName(course),
           teeoff,
           course,
           price,
