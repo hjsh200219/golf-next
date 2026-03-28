@@ -124,8 +124,10 @@ export async function POST(request: NextRequest) {
       }
 
       // Trigger individual scraper calls per club (fire-and-forget)
-      const vercelUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null;
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? vercelUrl ?? 'http://localhost:3000';
+      // Use the incoming request's origin to avoid deployment-specific URL issues
+      const requestOrigin = new URL(request.url).origin;
+      const baseUrl = requestOrigin !== 'http://localhost' ? requestOrigin
+        : (process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000');
 
       for (const club of clubs) {
         const scraperUrl = `${baseUrl}/api/scrape/club`;

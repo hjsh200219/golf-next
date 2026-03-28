@@ -17,8 +17,9 @@ export async function GET(request: NextRequest) {
     dates.push(`${y}-${m}-${day}`);
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL
-    ?? (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+  const requestOrigin = new URL(request.url).origin;
+  const baseUrl = requestOrigin !== 'http://localhost' ? requestOrigin
+    : (process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000');
 
   const res = await fetch(`${baseUrl}/api/scrape`, {
     method: 'POST',
