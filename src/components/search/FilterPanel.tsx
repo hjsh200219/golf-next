@@ -1,14 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import RegionFilter from '@/components/search/RegionFilter';
 import ClubFilter from '@/components/search/ClubFilter';
 import TimeFilter from '@/components/search/TimeFilter';
 import PriceFilter from '@/components/search/PriceFilter';
-import { useFilters } from '@/hooks/useFilters';
+import { useFilters, useFilterStore } from '@/hooks/useFilters';
 import { getClubsByRegion, type RegionKey } from '@/lib/constants/regions';
-import { useCallback } from 'react';
-import { useFilterStore } from '@/hooks/useFilters';
 
 interface FilterPanelProps {
   /** Whether to show the panel initially expanded (default: true on desktop, false on mobile) */

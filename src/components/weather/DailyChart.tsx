@@ -24,13 +24,13 @@ interface ChartDataPoint {
   pop: number;
 }
 
-const WEEK_DAYS = ['일', '월', '화', '수', '목', '금', '토'];
+import { getKoreanDayOfWeek } from '@/lib/utils/date';
 
 function formatDay(dt: number): string {
   const d = new Date(dt * 1000);
   const month = d.getMonth() + 1;
   const day = d.getDate();
-  const dow = WEEK_DAYS[d.getDay()];
+  const dow = getKoreanDayOfWeek(d);
   return `${month}/${day}(${dow})`;
 }
 

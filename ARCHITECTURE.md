@@ -21,7 +21,7 @@
         ▼            ▼                         ▼
 ┌──────────────┐ ┌────────────┐      ┌────────────────────┐
 │   Supabase   │ │OpenWeather │      │  Golf Club Sites   │
-│  (Postgres)  │ │  Map API   │      │   (26 scrapers)    │
+│  (Postgres)  │ │  Map API   │      │   (27 scrapers)    │
 └──────────────┘ └────────────┘      └────────────────────┘
 ```
 
@@ -51,7 +51,7 @@ Types → Constants → Utils → Supabase Client → Hooks → Components → P
 
 - **Auth**: Supabase Auth via middleware (`src/middleware.ts`) — auto-refreshes session on every request
 - **Error Handling**: API routes return `{ error: string }` with appropriate HTTP status; client hooks handle via SWR `error` state
-- **Logging**: No structured logging yet (tech debt)
+- **Logging**: Structured logger in `src/lib/logger.ts`
 
 ## Domain Map
 
@@ -63,7 +63,7 @@ The primary feature. Users search for available golf tee times across 26+ clubs.
 
 **Key files**:
 - `src/lib/scrapers/base.ts` — Abstract scraper with login, parsing, cookie management
-- `src/lib/scrapers/index.ts` — Registry of all 26 scrapers
+- `src/lib/scrapers/index.ts` — Registry of all 27 scrapers
 - `src/app/api/tee-times/route.ts` — Query endpoint with date/club/time/price filters
 - `src/components/search/SearchSection.tsx` — Main search UI orchestrator
 

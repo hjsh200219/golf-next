@@ -38,8 +38,8 @@ src/
 │   └── weather/      # WeatherDashboard, HourlyChart, DailyChart
 ├── hooks/            # Custom React hooks (useTeeTimes, useClubs, useWeather, etc.)
 ├── lib/
-│   ├── constants/    # Static data (regions, club-mappings, time-ranges)
-│   ├── scrapers/     # 26 club-specific scrapers extending BaseScraper
+│   ├── constants/    # Static data (regions, club-mappings)
+│   ├── scrapers/     # 27 club-specific scrapers extending BaseScraper
 │   ├── supabase/     # Supabase client helpers (client, server, middleware)
 │   ├── types/        # TypeScript types (database, tee-time, weather)
 │   └── utils/        # Utility functions (date, price, time, geohash, weather)
@@ -75,4 +75,6 @@ src/
 | [docs/SECURITY.md](./docs/SECURITY.md) | Auth, RLS, API security |
 | [docs/PRODUCT_SENSE.md](./docs/PRODUCT_SENSE.md) | Product principles and user journeys |
 | [docs/QUALITY_SCORE.md](./docs/QUALITY_SCORE.md) | Quality grades by domain |
+| [docs/PLANS.md](./docs/PLANS.md) | Plans index |
+| [docs/RELIABILITY.md](./docs/RELIABILITY.md) | Reliability standards |
 | [docs/generated/db-schema.md](./docs/generated/db-schema.md) | Database schema reference |
