@@ -26,16 +26,16 @@ describe('SearchBar', () => {
   it('renders the three date tabs with Korean labels', () => {
     render(<SearchBar />);
 
-    expect(screen.getByText('오늘')).toBeInTheDocument();
     expect(screen.getByText('내일')).toBeInTheDocument();
     expect(screen.getByText('모레')).toBeInTheDocument();
+    expect(screen.getByText('글피')).toBeInTheDocument();
   });
 
   it('renders exactly three date tab buttons', () => {
     render(<SearchBar />);
 
     // The date buttons have aria-pressed attribute
-    const dateTabs = screen.getAllByRole('button', { name: /오늘|내일|모레/i });
+    const dateTabs = screen.getAllByRole('button', { name: /내일|모레|글피/i });
     // Each button contains both the label and a date sub-span
     // We look for all buttons with aria-pressed
     const pressedButtons = screen
@@ -45,19 +45,15 @@ describe('SearchBar', () => {
     expect(pressedButtons).toHaveLength(3);
   });
 
-  it('defaults to today (first tab) when no date param is in the URL', () => {
+  it('defaults to tomorrow (second tab) when no date param is in the URL', () => {
     render(<SearchBar />);
 
-    // With no ?date= param, the first date (today) should be selected.
-    // aria-pressed="true" marks the active tab.
     const pressedButtons = screen
       .getAllByRole('button')
       .filter((btn) => btn.getAttribute('aria-pressed') === 'true');
 
     expect(pressedButtons).toHaveLength(1);
-
-    // The selected button should contain "오늘"
-    expect(pressedButtons[0]).toHaveTextContent('오늘');
+    expect(pressedButtons[0]).toHaveTextContent('내일');
   });
 
   it('the non-selected tabs have aria-pressed set to false', () => {
@@ -70,8 +66,8 @@ describe('SearchBar', () => {
     expect(unpressedButtons).toHaveLength(2);
 
     const labels = unpressedButtons.map((btn) => btn.textContent);
-    expect(labels.join('')).toContain('내일');
     expect(labels.join('')).toContain('모레');
+    expect(labels.join('')).toContain('글피');
   });
 
   it('renders the search (조회) button', () => {
@@ -98,8 +94,8 @@ describe('SearchBar', () => {
       .getAllByRole('button')
       .filter((btn) => btn.hasAttribute('aria-pressed'));
 
-    expect(pressedButtons[0]).toHaveTextContent('오늘');
-    expect(pressedButtons[1]).toHaveTextContent('내일');
-    expect(pressedButtons[2]).toHaveTextContent('모레');
+    expect(pressedButtons[0]).toHaveTextContent('내일');
+    expect(pressedButtons[1]).toHaveTextContent('모레');
+    expect(pressedButtons[2]).toHaveTextContent('글피');
   });
 });

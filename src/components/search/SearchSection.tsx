@@ -17,7 +17,9 @@ const POLL_TIMEOUT = 30000;
 
 export default function SearchSection() {
   const searchParams = useSearchParams();
-  const date = searchParams.get('date') || toDateString(new Date());
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const date = searchParams.get('date') || toDateString(tomorrow);
   const selectedClubs = useFilterStore((s) => s.selectedClubs);
   const { favoriteIds } = useFavorites();
   const [favoritesOnly, setFavoritesOnly] = useState(false);

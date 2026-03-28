@@ -4,7 +4,7 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useCallback, useState } from 'react';
 import { getNextNDays, formatDateKorean, toDateString } from '@/lib/utils/date';
 
-const DAY_LABELS = ['오늘', '내일', '모레'];
+const DAY_LABELS = ['내일', '모레', '글피'];
 
 interface SearchBarProps {
   onSearch?: () => void;
@@ -15,8 +15,9 @@ export default function SearchBar({ onSearch }: SearchBarProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const today = new Date();
-  const dates = getNextNDays(3, today);
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const dates = getNextNDays(3, tomorrow);
   const selectedDate = searchParams.get('date') ?? dates[0];
   const [showDatePicker, setShowDatePicker] = useState(false);
 
@@ -95,7 +96,7 @@ export default function SearchBar({ onSearch }: SearchBarProps) {
             <input
               type="date"
               value={selectedDate}
-              min={toDateString(today)}
+              min={toDateString(tomorrow)}
               onChange={(e) => {
                 if (e.target.value) selectDate(e.target.value);
               }}
