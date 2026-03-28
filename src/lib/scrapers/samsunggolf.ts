@@ -1,23 +1,13 @@
 import { BaseScraper, TeeTimeRow } from './base';
 
-// Course name → actual golf club name
-// courseIdM 5 = Birch/Maple/Pine (가평베네스트)
-// courseIdM 6 = 서/남/동/북 (레이크사이드 + 안성베네스트 혼합)
-// courseIdM 8 = GLRS (글렌로스)
-const COURSE_TO_CLUB: Record<string, string> = {
-  '서': '레이크사이드CC',
-  '남': '레이크사이드CC',
-  '북': '안성베네스트GC',
-  '동': '안성베네스트GC',
-  'Birch': '가평베네스트GC',
-  'Maple': '가평베네스트GC',
-  'Pine': '가평베네스트GC',
-  'GLRS': '글렌로스GC',
+// courseIdM → club name (verified from original Python scraper)
+// 레이크사이드CC is scraped separately (not included here)
+const CODE_TO_CLUB: Record<string, string> = {
+  '5': '가평베네스트GC',
+  '6': '안성베네스트GC',
+  '7': '동래베네스트GC',
+  '8': '글렌로스GC',
 };
-
-function getClubName(courseName: string): string {
-  return COURSE_TO_CLUB[courseName] ?? '삼성골프';
-}
 
 export default class SamsungGolfScraper extends BaseScraper {
   get clubId(): string {
@@ -38,15 +28,12 @@ export default class SamsungGolfScraper extends BaseScraper {
     );
 
     // Step 2: Fetch data for each course group
-    const courseGroups: Record<string, string> = {
-      '5': 'group1',
-      '6': 'group2',
-      '8': 'group3',
-    };
+    // 5=가평베네스트, 6=안성베네스트, 7=동래베네스트, 8=글렌로스
+    const courseGroups = ['5', '6', '7', '8'];
 
     const rows: TeeTimeRow[] = [];
 
-    for (const code of Object.keys(courseGroups)) {
+    for (const code of courseGroups) {
       const res = await this.postForm(
         `${origin}/reservation/list/ajax_real_timeinfo_list_golf_samsung.do`,
         {
@@ -77,7 +64,7 @@ export default class SamsungGolfScraper extends BaseScraper {
 
         rows.push({
           date: this.dateDash,
-          cc_name: getClubName(course),
+          cc_name: CODE_TO_CLUB[code] ?? '삼성골프',
           teeoff,
           course,
           price,
