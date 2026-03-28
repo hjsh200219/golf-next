@@ -33,7 +33,7 @@ src/
 │   ├── favorites/    # FavoriteClubList, FavoriteToggle
 │   ├── layout/       # Header, MobileNav
 │   ├── map/          # GolfMap, ClubMarker, MapTooltip
-│   ├── results/      # TeeTimeCard, TeeTimeTable, ResultSummary
+│   ├── results/      # TeeTimeCard, TeeTimeTable, ClubGroupView, ResultSummary
 │   ├── search/       # SearchSection, FilterPanel, RegionFilter, etc.
 │   └── weather/      # WeatherDashboard, HourlyChart, DailyChart
 ├── hooks/            # Custom React hooks (useTeeTimes, useClubs, useWeather, etc.)
@@ -42,7 +42,7 @@ src/
 │   ├── scrapers/     # 27 club-specific scrapers extending BaseScraper
 │   ├── supabase/     # Supabase client helpers (client, server, middleware)
 │   ├── types/        # TypeScript types (database, tee-time, weather)
-│   └── utils/        # Utility functions (date, price, time, geohash, weather)
+│   └── utils/        # Utility functions (date, price, time, group, event, geohash, weather)
 └── middleware.ts      # Supabase session + auth redirect
 ```
 
@@ -55,6 +55,10 @@ src/
 - **Favorites**: Dual system — `user_favorites` (authenticated) + `device_favorites` (anonymous via device UUID).
 - **Weather**: OpenWeatherMap API with Supabase caching via geohash.
 - **PWA**: next-pwa with offline fallback, service worker auto-registration.
+- **View Mode**: `useUIPreferences` Zustand store (separate from filter store) provides club-grouped vs time-ordered view toggle.
+- **Event Display**: `formatEventDisplay` in `utils/event.ts` classifies tee-time events into discount (할인) vs info categories, filtering garbage data.
+- **Date Tabs**: 내일/모레/글피 (tomorrow-focused, not today). Golf reservations are typically booked 1+ days ahead.
+- **Scrape Schedule**: Vercel Cron runs hourly (`0 * * * *`) at `/api/scrape/cron`.
 
 ## Design System
 
@@ -63,6 +67,7 @@ src/
 - **Primary**: `#15803d` (green-700), **Accent**: `#4ade80`
 - **Background**: `#f8faf9`, glassmorphism cards, noise texture overlay
 - **Animations**: `fadeUp`, `shimmer` loading, spring-based hover transitions
+- **Favicon**: `logo.webp` (transparent bg, shared with header logo)
 
 ## Docs Index
 
