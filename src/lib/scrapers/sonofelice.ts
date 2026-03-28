@@ -12,9 +12,9 @@ interface TimeScdResponse {
 }
 
 const COURSE_CODES: Record<string, string> = {
+  '60': '비발디 East',
   '01': '소노펠리체CC 델피노',
-  '02': '비발디 West',
-  '04': '비발디 East',
+  '61': '비발디 West',
 };
 
 export default class SonoFeliceScraper extends BaseScraper {

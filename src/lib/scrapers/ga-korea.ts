@@ -3,7 +3,7 @@ import { BaseScraper, TeeTimeRow } from './base';
 const COURSES: Record<string, string> = {
   '611': '골드CC',
   '612': '코리아CC',
-  '601': '강화웰빙CC',
+  '601': '강화웰빌CC',
 };
 
 export default class GaKoreaScraper extends BaseScraper {
@@ -56,10 +56,11 @@ export default class GaKoreaScraper extends BaseScraper {
         const course = String(row['BK_COS_NM'] ?? courseName);
         const rawPrice = `${row['BK_B_CHARGE_NM'] ?? ''}${row['BK_S_CHARGE_NM'] ?? ''}`;
         const { price, event } = this.processPrice(rawPrice, '');
+        const ccName = COURSES[String(row['CO_DIV'])] ?? courseName;
 
         rows.push({
           date: this.dateDash,
-          cc_name: courseName,
+          cc_name: ccName,
           teeoff,
           course,
           price,
