@@ -12,7 +12,7 @@ interface ClubGroupViewProps {
 }
 
 function ClubSection({ clubName, items }: { clubName: string; items: TeeTime[] }) {
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
 
   const lowestPrice = items.reduce((min, tt) => {
     if (tt.price === null) return min;
