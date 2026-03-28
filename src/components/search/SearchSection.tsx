@@ -7,7 +7,7 @@ import ResultSummary from '@/components/results/ResultSummary';
 import { useTeeTimes } from '@/hooks/useTeeTimes';
 import { useSearchParams } from 'next/navigation';
 import { toDateString } from '@/lib/utils/date';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useFilterStore, useUIPreferences } from '@/hooks/useFilters';
 import { useFavorites } from '@/hooks/useFavorites';
 import { toast } from 'sonner';
@@ -32,7 +32,6 @@ export default function SearchSection() {
   const { data, isLoading, isValidating, error, refresh } = useTeeTimes(date, effectiveClubs);
   const [isScraping, setIsScraping] = useState(false);
   const [scrapeProgress, setScrapeProgress] = useState('');
-  const abortRef = useRef<AbortController | null>(null);
 
   const teeTimes = data ?? [];
   const scrapedAt = teeTimes.length > 0 ? teeTimes[0].scraped_at : null;

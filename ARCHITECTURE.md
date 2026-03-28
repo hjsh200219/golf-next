@@ -121,6 +121,6 @@ Supabase Auth with session management via middleware.
 |---------|---------|----------------|
 | Supabase | DB + Auth | App non-functional |
 | OpenWeatherMap | Weather data | Weather page unavailable |
-| Golf club websites (26) | Tee-time data | Individual club data stale |
+| Golf club websites (27) | Tee-time data | Individual club data stale |
 | Google Maps | Map visualization | Map component broken |
 | Vercel | Hosting + Cron | App offline |
