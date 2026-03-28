@@ -27,10 +27,7 @@ import SamsungGolfScraper from './samsunggolf';
 import PurunsolScraper from './purunsol';
 import PhilosgcScraper from './philosgc';
 import SungmoonScraper from './sungmoon';
-import BearCreekScraper from './bearcreek';
-import BearsBestScraper from './bearsbest';
 import CascadiaScraper from './cascadia';
-import JungbuScraper from './jungbu';
 import OakValleyScraper from './oakvalley';
 import OwnersScraper from './owners';
 import RayCastleScraper from './raycastle';
@@ -68,10 +65,7 @@ export const SCRAPER_MAP: Record<string, ScraperConstructor> = {
   purunsol: PurunsolScraper,
   philosgc: PhilosgcScraper,
   sungmoon: SungmoonScraper,
-  bearcreek: BearCreekScraper,
-  bearsbest: BearsBestScraper,
   cascadia: CascadiaScraper,
-  jungbu: JungbuScraper,
   oakvalley: OakValleyScraper,
   owners: OwnersScraper,
   raycastle: RayCastleScraper,
