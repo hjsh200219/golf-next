@@ -8,7 +8,7 @@ import { useTeeTimes } from '@/hooks/useTeeTimes';
 import { useSearchParams } from 'next/navigation';
 import { toDateString } from '@/lib/utils/date';
 import { useCallback, useRef, useState } from 'react';
-import { useFilterStore } from '@/hooks/useFilters';
+import { useFilterStore, useUIPreferences } from '@/hooks/useFilters';
 import { useFavorites } from '@/hooks/useFavorites';
 import { toast } from 'sonner';
 
@@ -21,6 +21,7 @@ export default function SearchSection() {
   const selectedClubs = useFilterStore((s) => s.selectedClubs);
   const { favoriteIds } = useFavorites();
   const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const { viewMode, setViewMode } = useUIPreferences();
 
   const effectiveClubs = favoritesOnly && favoriteIds.length > 0
     ? favoriteIds
@@ -106,6 +107,30 @@ export default function SearchSection() {
       <div className="flex flex-wrap items-center gap-3">
         <SearchBar onSearch={handleRefresh} />
         <ResultSummary count={teeTimes.length} scrapedAt={scrapedAt} isLoading={isLoading} />
+        <div className="flex rounded-lg ring-1 ring-gray-200 overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setViewMode('club')}
+            className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+              viewMode === 'club'
+                ? 'bg-golf-primary text-white'
+                : 'bg-white text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            골프장별
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode('time')}
+            className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+              viewMode === 'time'
+                ? 'bg-golf-primary text-white'
+                : 'bg-white text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            시간순
+          </button>
+        </div>
       </div>
 
       <FilterPanel
@@ -144,6 +169,7 @@ export default function SearchSection() {
           scrapedAt={scrapedAt}
           onRefresh={handleRefresh}
           busy={busy}
+          viewMode={viewMode}
         />
       )}
     </div>

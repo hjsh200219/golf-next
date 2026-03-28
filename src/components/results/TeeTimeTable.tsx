@@ -15,6 +15,8 @@ import { formatTime } from '@/lib/utils/time';
 import { formatDateKorean } from '@/lib/utils/date';
 import { cleanEventText } from '@/lib/utils/event';
 import LoadingState from '@/components/results/LoadingState';
+import ClubGroupView from '@/components/results/ClubGroupView';
+import type { ViewMode } from '@/hooks/useFilters';
 
 interface TeeTimeTableProps {
   data?: TeeTime[];
@@ -22,6 +24,7 @@ interface TeeTimeTableProps {
   scrapedAt?: string | null;
   onRefresh?: () => void;
   busy?: boolean;
+  viewMode?: ViewMode;
 }
 
 const columnHelper = createColumnHelper<TeeTime>();
@@ -81,7 +84,7 @@ const columns = [
   }),
 ];
 
-export default function TeeTimeTable({ data, isLoading = false, scrapedAt, onRefresh, busy = false }: TeeTimeTableProps) {
+export default function TeeTimeTable({ data, isLoading = false, scrapedAt, onRefresh, busy = false, viewMode = 'time' }: TeeTimeTableProps) {
   const [sorting, setSorting] = useState<SortingState>([
     { id: 'teeoff', desc: false },
   ]);
@@ -123,6 +126,10 @@ export default function TeeTimeTable({ data, isLoading = false, scrapedAt, onRef
         )}
       </div>
     );
+  }
+
+  if (viewMode === 'club') {
+    return <ClubGroupView data={data ?? []} />;
   }
 
   return (

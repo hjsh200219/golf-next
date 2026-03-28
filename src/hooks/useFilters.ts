@@ -47,6 +47,20 @@ export const useFilterStore = create<FilterState>((set) => ({
     }),
 }));
 
+// --- UI Preferences (separate from filter state) ---
+
+export type ViewMode = 'club' | 'time';
+
+interface UIPreferencesState {
+  viewMode: ViewMode;
+  setViewMode: (mode: ViewMode) => void;
+}
+
+export const useUIPreferences = create<UIPreferencesState>((set) => ({
+  viewMode: 'club',
+  setViewMode: (mode) => set({ viewMode: mode }),
+}));
+
 /**
  * useFilters — convenience hook that syncs Zustand filter state
  * with URL search parameters for shareable/bookmarkable URLs.
