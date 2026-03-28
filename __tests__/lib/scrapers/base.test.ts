@@ -88,9 +88,9 @@ describe('BaseScraper', () => {
 });
 
 describe('SCRAPER_MAP', () => {
-  it('contains all 27 active scrapers', async () => {
+  it('contains all 37 active scrapers', async () => {
     const { SCRAPER_MAP } = await import('@/lib/scrapers/index');
-    expect(Object.keys(SCRAPER_MAP)).toHaveLength(27);
+    expect(Object.keys(SCRAPER_MAP)).toHaveLength(37);
   });
 
   it('all scrapers can be instantiated', async () => {

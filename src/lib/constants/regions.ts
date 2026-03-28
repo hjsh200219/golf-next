@@ -22,6 +22,7 @@ export const CLUB_REGION_MAP: Record<string, RegionKey> = {
   yangju: '경기북부',
   midas: '경기북부',
   seowon: '경기북부',
+  owners: '경기북부',
   tpcgolf: '경기북부',
 
   // 경기 남부 (용인, 안성, 이천, 여주)
@@ -38,6 +39,7 @@ export const CLUB_REGION_MAP: Record<string, RegionKey> = {
   cc360: '경기남부',
   skyvalley: '경기남부',
   ferrum: '경기남부',
+  cascadia: '경기남부',
 
   // 강원 (춘천, 홍천, 원주, 고성)
   sonofelice: '강원',
@@ -55,10 +57,7 @@ export const CLUB_REGION_MAP: Record<string, RegionKey> = {
   // 충청 (충남, 충북)
   pinestone: '충청',
   rainbowhills: '충청',
-
-  // 기타 (DB에 있으나 비활성이 아닌 클럽)
   jungbu: '충청',
-  cascadia: '경기남부',
 };
 
 export function getClubsByRegion(regions: RegionKey[]): string[] {
