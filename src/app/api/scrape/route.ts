@@ -123,25 +123,30 @@ export async function POST(request: NextRequest) {
         // Non-fatal — job was created, continue
       }
 
-      // Trigger individual scraper calls per club (fire-and-forget)
+      // Trigger individual scraper calls in batches to avoid overwhelming serverless limits
       const baseUrl = process.env.APP_URL ?? 'http://localhost:3000';
+      const BATCH_SIZE = 5;
 
-      for (const club of clubs) {
-        const scraperUrl = `${baseUrl}/api/scrape/club`;
-        fetch(scraperUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': process.env.SCRAPE_API_KEY ?? '',
-          },
-          body: JSON.stringify({
-            jobId: job.id,
-            clubId: club.id,
-            date,
-          }),
-        }).catch((err) => {
-          log.error(`Failed to trigger scraper for club ${club.id}, date ${date}`, { error: err instanceof Error ? err.message : String(err) });
-        });
+      for (let i = 0; i < clubs.length; i += BATCH_SIZE) {
+        const batch = clubs.slice(i, i + BATCH_SIZE);
+        await Promise.allSettled(
+          batch.map((club) =>
+            fetch(`${baseUrl}/api/scrape/club`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': process.env.SCRAPE_API_KEY ?? '',
+              },
+              body: JSON.stringify({
+                jobId: job.id,
+                clubId: club.id,
+                date,
+              }),
+            }).catch((err) => {
+              log.error(`Failed to trigger scraper for club ${club.id}, date ${date}`, { error: err instanceof Error ? err.message : String(err) });
+            })
+          )
+        );
       }
 
       // Update job status to running

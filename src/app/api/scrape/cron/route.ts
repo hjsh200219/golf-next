@@ -1,14 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+export const maxDuration = 60;
+
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  // Split 14 days across hours to avoid overwhelming serverless limits
+  // Even hours: D+1 ~ D+7, Odd hours: D+8 ~ D+14
+  const hour = new Date().getUTCHours();
+  const isEvenHour = hour % 2 === 0;
+  const startDay = isEvenHour ? 1 : 8;
+  const endDay = isEvenHour ? 7 : 14;
+
   const today = new Date();
   const dates: string[] = [];
-  for (let i = 1; i <= 14; i++) {
+  for (let i = startDay; i <= endDay; i++) {
     const d = new Date(today);
     d.setDate(d.getDate() + i);
     const y = d.getFullYear();
@@ -32,6 +41,7 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json({
     triggered: true,
+    range: `D+${startDay} ~ D+${endDay}`,
     dates,
     scrapeResponse: body,
   });
