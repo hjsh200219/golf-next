@@ -13,7 +13,7 @@ import type { TeeTime } from '@/lib/types/tee-time';
 import { formatPrice } from '@/lib/utils/price';
 import { formatTime } from '@/lib/utils/time';
 import { formatDateKorean } from '@/lib/utils/date';
-import { cleanEventText } from '@/lib/utils/event';
+import { formatEventDisplay } from '@/lib/utils/event';
 import LoadingState from '@/components/results/LoadingState';
 import ClubGroupView from '@/components/results/ClubGroupView';
 import type { ViewMode } from '@/hooks/useFilters';
@@ -62,17 +62,20 @@ const columns = [
       </span>
     ),
   }),
-  columnHelper.accessor('event', {
+  columnHelper.display({
+    id: 'event_display',
     header: '비고',
-    enableSorting: false,
-    cell: (info) => {
-      const cleaned = cleanEventText(info.getValue());
-      return cleaned ? (
-        <span className="inline-flex items-center rounded-md bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 ring-1 ring-inset ring-amber-200/60">
-          {cleaned}
+    cell: ({ row }) => {
+      const display = formatEventDisplay(row.original.event, row.original.price);
+      if (!display) return null;
+      return display.type === 'discount' ? (
+        <span className="inline-flex items-center gap-1 rounded-md bg-red-50 px-2 py-0.5 text-xs font-medium text-red-600 ring-1 ring-inset ring-red-200/60">
+          할인 {display.label}
         </span>
       ) : (
-        <span className="text-gray-300">-</span>
+        <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600 ring-1 ring-inset ring-blue-200/60">
+          {display.label}
+        </span>
       );
     },
   }),
@@ -132,7 +135,7 @@ export default function TeeTimeTable({ data, isLoading = false, scrapedAt, onRef
     <div className="animate-fade-up md:hidden space-y-2">
       {table.getRowModel().rows.map((row) => {
         const r = row.original;
-        const cleaned = cleanEventText(r.event);
+        const display = formatEventDisplay(r.event, r.price);
         return (
           <div key={row.id} className="rounded-xl bg-white p-3.5 shadow-card ring-1 ring-gray-100 active:bg-gray-50 transition-colors">
             <div className="flex items-center justify-between gap-2">
@@ -153,10 +156,16 @@ export default function TeeTimeTable({ data, isLoading = false, scrapedAt, onRef
                 </span>
               )}
               <span>{formatDateKorean(r.date)}</span>
-              {cleaned && (
-                <span className="inline-flex items-center rounded-md bg-amber-50 px-1.5 py-0.5 font-medium text-amber-700 ring-1 ring-inset ring-amber-200/60">
-                  {cleaned}
-                </span>
+              {display && (
+                display.type === 'discount' ? (
+                  <span className="inline-flex items-center gap-1 rounded-md bg-red-50 px-1.5 py-0.5 font-medium text-red-600 ring-1 ring-inset ring-red-200/60">
+                    할인 {display.label}
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center rounded-md bg-blue-50 px-1.5 py-0.5 font-medium text-blue-600 ring-1 ring-inset ring-blue-200/60">
+                    {display.label}
+                  </span>
+                )
               )}
             </div>
           </div>

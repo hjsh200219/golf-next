@@ -5,7 +5,7 @@ import type { TeeTime } from '@/lib/types/tee-time';
 import { groupByClub } from '@/lib/utils/group';
 import { formatPrice } from '@/lib/utils/price';
 import { formatTime } from '@/lib/utils/time';
-import { cleanEventText } from '@/lib/utils/event';
+import { formatEventDisplay } from '@/lib/utils/event';
 
 interface ClubGroupViewProps {
   data: TeeTime[];
@@ -69,7 +69,7 @@ function ClubSection({ clubName, items }: { clubName: string; items: TeeTime[] }
           {/* Mobile cards */}
           <div className="md:hidden divide-y divide-gray-100/80">
             {items.map((tt) => {
-              const cleaned = cleanEventText(tt.event);
+              const display = formatEventDisplay(tt.event, tt.price);
               return (
                 <div key={tt.id} className="px-4 py-3 active:bg-gray-50 transition-colors">
                   <div className="flex items-center justify-between gap-3">
@@ -87,11 +87,18 @@ function ClubSection({ clubName, items }: { clubName: string; items: TeeTime[] }
                       {formatPrice(tt.price)}
                     </span>
                   </div>
-                  {cleaned && (
+                  {display && (
                     <div className="mt-1.5 pl-0.5">
-                      <span className="inline-flex items-center rounded-md bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700 ring-1 ring-inset ring-amber-200/60">
-                        {cleaned}
-                      </span>
+                      {display.type === 'discount' ? (
+                        <span className="inline-flex items-center gap-1 rounded-md bg-red-50 px-2 py-0.5 text-[11px] font-medium text-red-600 ring-1 ring-inset ring-red-200/60">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clipRule="evenodd" transform="rotate(180 10 10)" /></svg>
+                          할인 {display.label}
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-600 ring-1 ring-inset ring-blue-200/60">
+                          {display.label}
+                        </span>
+                      )}
                     </div>
                   )}
                 </div>
@@ -112,7 +119,7 @@ function ClubSection({ clubName, items }: { clubName: string; items: TeeTime[] }
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {items.map((tt, i) => {
-                  const cleaned = cleanEventText(tt.event);
+                  const display = formatEventDisplay(tt.event, tt.price);
                   return (
                     <tr
                       key={tt.id}
@@ -136,13 +143,17 @@ function ClubSection({ clubName, items }: { clubName: string; items: TeeTime[] }
                         <span className="font-semibold text-gray-800 tabular-nums text-[13px]">{formatPrice(tt.price)}</span>
                       </td>
                       <td className="px-4 py-2.5">
-                        {cleaned ? (
-                          <span className="inline-flex items-center rounded-md bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 ring-1 ring-inset ring-amber-200/60">
-                            {cleaned}
-                          </span>
-                        ) : (
-                          <span className="text-gray-300">-</span>
-                        )}
+                        {display ? (
+                          display.type === 'discount' ? (
+                            <span className="inline-flex items-center gap-1 rounded-md bg-red-50 px-2 py-0.5 text-xs font-medium text-red-600 ring-1 ring-inset ring-red-200/60">
+                              할인 {display.label}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600 ring-1 ring-inset ring-blue-200/60">
+                              {display.label}
+                            </span>
+                          )
+                        ) : null}
                       </td>
                     </tr>
                   );
