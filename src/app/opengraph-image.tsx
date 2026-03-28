@@ -24,8 +24,10 @@ export default async function OgImage() {
           fontFamily: 'system-ui, sans-serif',
         }}
       >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={logoSrc}
+          alt="GolfShin logo"
           width="200"
           height="155"
           style={{ marginBottom: 24 }}
@@ -60,7 +62,7 @@ export default async function OgImage() {
             gap: 16,
           }}
         >
-          {['30개+ 골프장', '5분 간격 업데이트', '무료 서비스'].map((text) => (
+          {['34개 골프장', '매시간 업데이트', '무료 서비스'].map((text) => (
             <div
               key={text}
               style={{
