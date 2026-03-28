@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
 
   const today = new Date();
   const dates: string[] = [];
-  for (let i = 1; i <= 3; i++) {
+  for (let i = 1; i <= 14; i++) {
     const d = new Date(today);
     d.setDate(d.getDate() + i);
     const y = d.getFullYear();
