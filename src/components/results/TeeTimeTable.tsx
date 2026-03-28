@@ -36,16 +36,10 @@ const columns = [
       <span className="font-semibold text-gray-900 text-[13px]">{info.getValue()}</span>
     ),
   }),
-  columnHelper.accessor('date', {
-    header: '날짜',
-    cell: (info) => (
-      <span className="text-gray-500 text-[13px]">{formatDateKorean(info.getValue())}</span>
-    ),
-  }),
   columnHelper.accessor('teeoff', {
     header: '시간',
     cell: (info) => (
-      <span className="font-mono text-golf-primary font-semibold tabular-nums text-[13px]">
+      <span className="inline-flex items-center justify-center rounded-md bg-golf-primary/10 px-2 py-0.5 font-mono text-golf-primary font-bold tabular-nums text-[13px]">
         {formatTime(info.getValue())}
       </span>
     ),
@@ -53,7 +47,7 @@ const columns = [
   columnHelper.accessor('course', {
     header: '코스',
     cell: (info) => info.getValue() ? (
-      <span className="inline-flex items-center rounded-md bg-gray-50 px-2 py-0.5 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-200/60">
+      <span className="inline-flex items-center rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
         {info.getValue()}
       </span>
     ) : (
@@ -61,9 +55,9 @@ const columns = [
     ),
   }),
   columnHelper.accessor('price', {
-    header: '가격',
+    header: () => <span className="block text-right">가격</span>,
     cell: (info) => (
-      <span className="font-semibold text-gray-800 tabular-nums text-[13px]">
+      <span className="block text-right font-semibold text-gray-800 tabular-nums text-[13px]">
         {formatPrice(info.getValue())}
       </span>
     ),
@@ -116,7 +110,7 @@ export default function TeeTimeTable({ data, isLoading = false, scrapedAt, onRef
           <button
             onClick={onRefresh}
             disabled={busy}
-            className="mt-4 flex items-center gap-1.5 rounded-lg bg-golf-primary/10 px-4 py-2 text-xs font-medium text-golf-primary hover:bg-golf-primary/20 spring-hover disabled:opacity-50"
+            className="mt-4 flex items-center gap-1.5 rounded-lg bg-golf-primary/10 px-4 py-2 text-xs font-medium text-golf-primary cursor-pointer hover:bg-golf-primary/20 transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className={`h-3.5 w-3.5 ${busy ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -140,20 +134,25 @@ export default function TeeTimeTable({ data, isLoading = false, scrapedAt, onRef
         const r = row.original;
         const cleaned = cleanEventText(r.event);
         return (
-          <div key={row.id} className="rounded-xl bg-white p-3.5 shadow-card ring-1 ring-gray-100">
-            <div className="flex items-start justify-between gap-2">
-              <span className="font-semibold text-gray-900 text-sm leading-tight">{r.cc_name}</span>
-              <span className="font-mono text-golf-primary font-semibold tabular-nums text-sm shrink-0">
-                {formatTime(r.teeoff)}
+          <div key={row.id} className="rounded-xl bg-white p-3.5 shadow-card ring-1 ring-gray-100 active:bg-gray-50 transition-colors">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span className="inline-flex items-center justify-center rounded-lg bg-golf-primary/10 px-2.5 py-1 font-mono text-golf-primary font-bold tabular-nums text-[15px] shrink-0">
+                  {formatTime(r.teeoff)}
+                </span>
+                <span className="font-semibold text-gray-900 text-sm leading-tight truncate">{r.cc_name}</span>
+              </div>
+              <span className="font-semibold text-gray-900 tabular-nums text-sm shrink-0">
+                {formatPrice(r.price)}
               </span>
             </div>
-            <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-gray-500">
+            <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs text-gray-500 pl-0.5">
               {r.course && (
-                <span className="inline-flex items-center rounded-md bg-gray-50 px-1.5 py-0.5 font-medium text-gray-600 ring-1 ring-inset ring-gray-200/60">
+                <span className="inline-flex items-center rounded-md bg-gray-100 px-1.5 py-0.5 font-medium text-gray-600">
                   {r.course}
                 </span>
               )}
-              <span className="font-semibold text-gray-800 tabular-nums">{formatPrice(r.price)}</span>
+              <span>{formatDateKorean(r.date)}</span>
               {cleaned && (
                 <span className="inline-flex items-center rounded-md bg-amber-50 px-1.5 py-0.5 font-medium text-amber-700 ring-1 ring-inset ring-amber-200/60">
                   {cleaned}
@@ -170,7 +169,7 @@ export default function TeeTimeTable({ data, isLoading = false, scrapedAt, onRef
       <table className="w-full text-sm">
         <thead>
           {table.getHeaderGroups().map((headerGroup) => (
-            <tr key={headerGroup.id} className="border-b border-gray-100">
+            <tr key={headerGroup.id} className="border-b border-gray-100 bg-gray-50/40">
               {headerGroup.headers.map((header) => {
                 const canSort = header.column.getCanSort();
                 const sortDir = header.column.getIsSorted();
@@ -179,8 +178,8 @@ export default function TeeTimeTable({ data, isLoading = false, scrapedAt, onRef
                     key={header.id}
                     onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
                     className={[
-                      'px-4 py-3.5 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-400',
-                      canSort ? 'cursor-pointer select-none hover:text-gray-600 spring-hover' : '',
+                      'px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-400',
+                      canSort ? 'cursor-pointer select-none hover:text-gray-600 transition-colors duration-150' : '',
                     ].join(' ')}
                     aria-sort={
                       sortDir === 'asc' ? 'ascending'
@@ -206,8 +205,7 @@ export default function TeeTimeTable({ data, isLoading = false, scrapedAt, onRef
           {table.getRowModel().rows.map((row, i) => (
             <tr
               key={row.id}
-              className="spring-hover hover:bg-golf-surface-hover"
-              style={{ animationDelay: `${Math.min(i, 10) * 20}ms` }}
+              className={`transition-colors duration-100 hover:bg-golf-surface-hover ${i % 2 === 1 ? 'bg-gray-50/30' : ''}`}
             >
               {row.getVisibleCells().map((cell) => (
                 <td key={cell.id} className="px-4 py-3 text-gray-700">
