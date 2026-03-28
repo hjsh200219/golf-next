@@ -26,9 +26,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'date (YYYY-MM-DD) is required' }, { status: 400 });
   }
 
-  const requestOrigin = new URL(request.url).origin;
-  const baseUrl = requestOrigin !== 'http://localhost' ? requestOrigin
-    : (process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000');
+  const baseUrl = process.env.APP_URL ?? 'http://localhost:3000';
 
   try {
     const res = await fetch(`${baseUrl}/api/scrape`, {

@@ -124,10 +124,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Trigger individual scraper calls per club (fire-and-forget)
-      // Use the incoming request's origin to avoid deployment-specific URL issues
-      const requestOrigin = new URL(request.url).origin;
-      const baseUrl = requestOrigin !== 'http://localhost' ? requestOrigin
-        : (process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000');
+      const baseUrl = process.env.APP_URL ?? 'http://localhost:3000';
 
       for (const club of clubs) {
         const scraperUrl = `${baseUrl}/api/scrape/club`;
