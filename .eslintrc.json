@@ -59,6 +59,13 @@
       "rules": {
         "import/no-restricted-paths": "off"
       }
+    },
+    {
+      "files": ["src/app/opengraph-image.tsx", "src/app/twitter-image.tsx"],
+      "rules": {
+        "@next/next/no-img-element": "off",
+        "jsx-a11y/alt-text": "off"
+      }
     }
   ]
 }
