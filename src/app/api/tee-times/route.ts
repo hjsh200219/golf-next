@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { createLogger } from '@/lib/logger';
-import type { Database } from '@/lib/types/database';
 
 const log = createLogger('tee-times');
-
-type TeeTime = Database['public']['Tables']['tee_times']['Row'];
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
@@ -50,8 +47,30 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = createServerSupabaseClient();
 
+    // Validate price params early so we don't build a partial query
+    let parsedPriceMin: number | undefined;
+    let parsedPriceMax: number | undefined;
 
-    let query: any = supabase
+    if (price_min !== null && price_min !== '') {
+      parsedPriceMin = Number(price_min);
+      if (isNaN(parsedPriceMin)) {
+        return NextResponse.json(
+          { error: 'price_min must be a number' },
+          { status: 400 },
+        );
+      }
+    }
+    if (price_max !== null && price_max !== '') {
+      parsedPriceMax = Number(price_max);
+      if (isNaN(parsedPriceMax)) {
+        return NextResponse.json(
+          { error: 'price_max must be a number' },
+          { status: 400 },
+        );
+      }
+    }
+
+    let query = supabase
       .from('tee_times')
       .select('*')
       .eq('date', date)
@@ -77,28 +96,14 @@ export async function GET(request: NextRequest) {
     }
 
     // Filter by price range
-    if (price_min !== null && price_min !== '') {
-      const min = Number(price_min);
-      if (isNaN(min)) {
-        return NextResponse.json(
-          { error: 'price_min must be a number' },
-          { status: 400 },
-        );
-      }
-      query = query.gte('price', min);
+    if (parsedPriceMin !== undefined) {
+      query = query.gte('price', parsedPriceMin);
     }
-    if (price_max !== null && price_max !== '') {
-      const max = Number(price_max);
-      if (isNaN(max)) {
-        return NextResponse.json(
-          { error: 'price_max must be a number' },
-          { status: 400 },
-        );
-      }
-      query = query.lte('price', max);
+    if (parsedPriceMax !== undefined) {
+      query = query.lte('price', parsedPriceMax);
     }
 
-    const { data, error } = await query as { data: TeeTime[] | null; error: { message: string } | null };
+    const { data, error } = await query;
 
     if (error) {
       log.error('Supabase error', { error: error.message });

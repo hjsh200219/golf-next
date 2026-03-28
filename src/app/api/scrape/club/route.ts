@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const supabase = createAdminClient() as ReturnType<typeof createAdminClient> & { from: (table: string) => unknown };
+  const supabase = createAdminClient();
   const start = Date.now();
 
   try {
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
         scraped_at: now,
       }));
 
-      const { error: upsertError } = await (supabase as any)
+      const { error: upsertError } = await supabase
         .from('tee_times')
         .upsert(rows, {
           onConflict: 'club_id,date,teeoff,course',
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update scrape_club_results
-    await (supabase as any)
+    await supabase
       .from('scrape_club_results')
       .update({
         status: result.success ? 'success' : 'failed',
@@ -101,17 +101,17 @@ export async function POST(request: NextRequest) {
       .eq('club_id', clubId);
 
     // Update job progress
-    const { data: jobResults } = await (supabase as any)
+    const { data: jobResults } = await supabase
       .from('scrape_club_results')
-      .select('status')
+      .select('status, club_id')
       .eq('job_id', jobId);
 
     if (jobResults) {
       const completed = jobResults.filter(
-        (r: { status: string }) => r.status === 'success' || r.status === 'failed',
+        (r) => r.status === 'success' || r.status === 'failed',
       ).length;
       const failed = jobResults.filter(
-        (r: { status: string }) => r.status === 'failed',
+        (r) => r.status === 'failed',
       );
 
       const updateData: Record<string, unknown> = {
@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
       };
 
       if (failed.length > 0) {
-        updateData.failed_clubs = failed.map((r: { club_id: string }) => r.club_id);
+        updateData.failed_clubs = failed.map((r) => r.club_id);
       }
 
       if (completed === jobResults.length) {
@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
         updateData.completed_at = new Date().toISOString();
       }
 
-      await (supabase as any)
+      await supabase
         .from('scrape_jobs')
         .update(updateData)
         .eq('id', jobId);
@@ -143,7 +143,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const durationMs = Date.now() - start;
 
-    await (supabase as any)
+    await supabase
       .from('scrape_club_results')
       .update({
         status: 'failed',

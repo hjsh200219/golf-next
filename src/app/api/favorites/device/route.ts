@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
-import type { Database } from '@/lib/types/database';
 import { createLogger } from '@/lib/logger';
 
 const log = createLogger('favorites/device');
-
-type DeviceFavorite = Database['public']['Tables']['device_favorites']['Row'];
 
 const UUID_V4_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -36,17 +33,13 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-
-    const supabase = createAdminClient() as any;
+    const supabase = createAdminClient();
 
     const { data, error } = await supabase
       .from('device_favorites')
       .select('*')
       .eq('device_id', deviceId)
-      .order('created_at', { ascending: false }) as {
-        data: DeviceFavorite[] | null;
-        error: { message: string } | null;
-      };
+      .order('created_at', { ascending: false });
 
     if (error) {
       log.error('Failed to fetch device favorites', { error: error.message });
@@ -58,10 +51,10 @@ export async function GET(request: NextRequest) {
 
     // Update last_accessed_at in the background (non-blocking)
     if (data && data.length > 0) {
-      (supabase
+      supabase
         .from('device_favorites')
         .update({ last_accessed_at: new Date().toISOString() })
-        .eq('device_id', deviceId) as Promise<{ error: { message: string } | null }>)
+        .eq('device_id', deviceId)
         .then(({ error: updateError }) => {
           if (updateError) {
             log.error('Failed to update last_accessed_at', { error: updateError.message });
@@ -112,14 +105,13 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-
-    const supabase = createAdminClient() as any;
+    const supabase = createAdminClient();
 
     // Check current count for this device
     const { count, error: countError } = await supabase
       .from('device_favorites')
       .select('id', { count: 'exact', head: true })
-      .eq('device_id', deviceId) as { count: number | null; error: { message: string } | null };
+      .eq('device_id', deviceId);
 
     if (countError) {
       log.error('Failed to count device favorites', { error: countError.message });
@@ -145,7 +137,7 @@ export async function POST(request: NextRequest) {
       .select('id')
       .eq('device_id', deviceId)
       .eq('club_id', clubId)
-      .maybeSingle() as { data: { id: number } | null };
+      .maybeSingle();
 
     if (existing) {
       return NextResponse.json(
@@ -164,7 +156,7 @@ export async function POST(request: NextRequest) {
         last_accessed_at: now,
       })
       .select()
-      .single() as { data: DeviceFavorite | null; error: { message: string } | null };
+      .single();
 
     if (error) {
       log.error('Failed to add device favorite', { error: error.message });
@@ -217,14 +209,13 @@ export async function DELETE(request: NextRequest) {
   }
 
   try {
-
-    const supabase = createAdminClient() as any;
+    const supabase = createAdminClient();
 
     const { error, count } = await supabase
       .from('device_favorites')
       .delete({ count: 'exact' })
       .eq('device_id', deviceId)
-      .eq('club_id', clubId) as { error: { message: string } | null; count: number | null };
+      .eq('club_id', clubId);
 
     if (error) {
       log.error('Failed to delete device favorite', { error: error.message });

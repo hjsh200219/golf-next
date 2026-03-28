@@ -8,8 +8,6 @@ const log = createLogger('weather');
 
 const CACHE_TTL_MINUTES = 30;
 
-type WeatherCache = Database['public']['Tables']['weather_cache']['Row'];
-
 interface OpenWeatherCurrentResponse {
   lat: number;
   lon: number;
@@ -87,7 +85,7 @@ export async function GET(request: NextRequest) {
 
   try {
 
-    const supabase = createAdminClient() as any;
+    const supabase = createAdminClient();
 
     // Check weather cache
     const { data: cached, error: cacheError } = await supabase
@@ -98,7 +96,7 @@ export async function GET(request: NextRequest) {
       .gt('expires_at', now)
       .order('cached_at', { ascending: false })
       .limit(1)
-      .maybeSingle() as { data: WeatherCache | null; error: { message: string } | null };
+      .maybeSingle();
 
     if (cacheError) {
       log.error('Cache lookup error', { error: cacheError.message });
@@ -157,7 +155,7 @@ export async function GET(request: NextRequest) {
       data_type: 'current',
       data: weatherData as unknown as Database['public']['Tables']['weather_cache']['Insert']['data'],
       expires_at: expiresAt,
-    }) as { error: { message: string } | null };
+    });
 
     if (insertError) {
       log.error('Failed to cache weather data', { error: insertError.message });

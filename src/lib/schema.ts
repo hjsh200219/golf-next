@@ -1,7 +1,22 @@
+import { getActiveScraperIds } from '@/lib/scrapers';
+import { REGIONS, REGION_KEYS } from '@/lib/constants/regions';
+
 const SITE_NAME = '골프 예약 조회 | GolfShin';
 const SITE_URL = 'https://golfshin.com';
-const SITE_DESCRIPTION =
-  '실시간 골프장 티타임 예약 조회 — 30개+ 골프장, 매시간 업데이트';
+
+function getScraperCount(): number {
+  return getActiveScraperIds().length;
+}
+
+function getSiteDescription(): string {
+  return `실시간 골프장 티타임 예약 조회 — ${getScraperCount()}개+ 골프장, 매시간 업데이트`;
+}
+
+function getRegionCitySummary(): string {
+  return REGION_KEYS
+    .map((key) => `${REGIONS[key].label}(${REGIONS[key].description})`)
+    .join(', ');
+}
 
 export function getWebSiteSchema() {
   return {
@@ -10,7 +25,7 @@ export function getWebSiteSchema() {
     '@id': `${SITE_URL}/#website`,
     name: SITE_NAME,
     url: SITE_URL,
-    description: SITE_DESCRIPTION,
+    description: getSiteDescription(),
     inLanguage: 'ko',
     potentialAction: {
       '@type': 'SearchAction',
@@ -27,7 +42,7 @@ export function getWebApplicationSchema() {
     '@id': `${SITE_URL}/#app`,
     name: SITE_NAME,
     url: SITE_URL,
-    description: SITE_DESCRIPTION,
+    description: getSiteDescription(),
     applicationCategory: 'SportsApplication',
     operatingSystem: 'Web',
     inLanguage: 'ko',
@@ -36,8 +51,7 @@ export function getWebApplicationSchema() {
       price: '0',
       priceCurrency: 'KRW',
     },
-    featureList:
-      '실시간 티타임 조회 (매시간 업데이트), 날짜·시간대·가격 필터링, 경기북부·경기남부·강원·인천·충청 5개 권역, 골프장별 48시간 날씨 예보, 즐겨찾기 기능',
+    featureList: `실시간 티타임 조회 (매시간 업데이트), 날짜·시간대·가격 필터링, ${REGION_KEYS.join('·')} ${REGION_KEYS.length}개 권역, 골프장별 48시간 날씨 예보, 즐겨찾기 기능`,
   };
 }
 
@@ -52,7 +66,7 @@ export function getFAQPageSchema() {
         name: 'GolfShin은 어떤 서비스인가요?',
         acceptedAnswer: {
           '@type': 'Answer',
-          text: 'GolfShin(골프신)은 한국 수도권 및 강원·충청 지역 30개 이상 골프장의 티타임 예약 가능 현황을 실시간으로 조회할 수 있는 무료 웹 서비스입니다. 매시간 데이터를 업데이트합니다.',
+          text: `GolfShin(골프신)은 한국 수도권 및 강원·충청 지역 ${getScraperCount()}개 이상 골프장의 티타임 예약 가능 현황을 실시간으로 조회할 수 있는 무료 웹 서비스입니다. 매시간 데이터를 업데이트합니다.`,
         },
       },
       {
@@ -60,7 +74,7 @@ export function getFAQPageSchema() {
         name: '어떤 골프장을 조회할 수 있나요?',
         acceptedAnswer: {
           '@type': 'Answer',
-          text: '경기 북부(포천, 양주, 가평 등), 경기 남부(용인, 안성, 이천 등), 강원(춘천, 홍천, 원주 등), 인천(영종, 강화), 충청(당진, 음성) 지역의 30개 이상 골프장을 지원합니다.',
+          text: `${getRegionCitySummary()} 지역의 ${getScraperCount()}개 이상 골프장을 지원합니다.`,
         },
       },
       {

@@ -1,12 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
-import type { Database } from '@/lib/types/database';
 import { createLogger } from '@/lib/logger';
 
 const log = createLogger('scrape/status');
-
-type ScrapeJob = Database['public']['Tables']['scrape_jobs']['Row'];
-type ScrapeClubResult = Database['public']['Tables']['scrape_club_results']['Row'];
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
@@ -28,15 +24,14 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-
-    const supabase = createAdminClient() as any;
+    const supabase = createAdminClient();
 
     // Fetch job record
     const { data: job, error: jobError } = await supabase
       .from('scrape_jobs')
       .select('*')
       .eq('id', jobId)
-      .single() as { data: ScrapeJob | null; error: { message: string; code?: string } | null };
+      .single();
 
     if (jobError) {
       if (jobError.code === 'PGRST116') {
@@ -57,10 +52,7 @@ export async function GET(request: NextRequest) {
       .from('scrape_club_results')
       .select('*')
       .eq('job_id', jobId)
-      .order('scraped_at', { ascending: true }) as {
-        data: ScrapeClubResult[] | null;
-        error: { message: string } | null;
-      };
+      .order('scraped_at', { ascending: true });
 
     if (resultsError) {
       log.error('Failed to fetch club results', { error: resultsError.message });

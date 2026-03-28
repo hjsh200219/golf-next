@@ -1,17 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
-import type { Database } from '@/lib/types/database';
 import { createLogger } from '@/lib/logger';
 
 const log = createLogger('favorites');
 
-type UserFavorite = Database['public']['Tables']['user_favorites']['Row'];
-
 // GET /api/favorites — list the authenticated user's favorite clubs
 export async function GET() {
   try {
-
-    const supabase = createServerSupabaseClient() as any;
+    const supabase = createServerSupabaseClient();
 
     const {
       data: { user },
@@ -26,10 +22,7 @@ export async function GET() {
       .from('user_favorites')
       .select('*')
       .eq('user_id', user.id)
-      .order('created_at', { ascending: false }) as {
-        data: UserFavorite[] | null;
-        error: { message: string } | null;
-      };
+      .order('created_at', { ascending: false });
 
     if (error) {
       log.error('Failed to fetch favorites', { error: error.message });
@@ -52,8 +45,7 @@ export async function GET() {
 // POST /api/favorites — add a club to favorites
 export async function POST(request: NextRequest) {
   try {
-
-    const supabase = createServerSupabaseClient() as any;
+    const supabase = createServerSupabaseClient();
 
     const {
       data: { user },
@@ -86,7 +78,7 @@ export async function POST(request: NextRequest) {
       .select('id')
       .eq('user_id', user.id)
       .eq('club_id', clubId)
-      .maybeSingle() as { data: { id: number } | null };
+      .maybeSingle();
 
     if (existing) {
       return NextResponse.json(
@@ -99,7 +91,7 @@ export async function POST(request: NextRequest) {
       .from('user_favorites')
       .insert({ user_id: user.id, club_id: clubId })
       .select()
-      .single() as { data: UserFavorite | null; error: { message: string } | null };
+      .single();
 
     if (error) {
       log.error('Failed to add favorite', { error: error.message });
@@ -122,8 +114,7 @@ export async function POST(request: NextRequest) {
 // DELETE /api/favorites — remove a club from favorites
 export async function DELETE(request: NextRequest) {
   try {
-
-    const supabase = createServerSupabaseClient() as any;
+    const supabase = createServerSupabaseClient();
 
     const {
       data: { user },
@@ -154,7 +145,7 @@ export async function DELETE(request: NextRequest) {
       .from('user_favorites')
       .delete({ count: 'exact' })
       .eq('user_id', user.id)
-      .eq('club_id', clubId) as { error: { message: string } | null; count: number | null };
+      .eq('club_id', clubId);
 
     if (error) {
       log.error('Failed to delete favorite', { error: error.message });

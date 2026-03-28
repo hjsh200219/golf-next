@@ -1,11 +1,17 @@
 export type RegionKey = '경기북부' | '경기남부' | '강원' | '인천' | '충청';
 
-export const REGIONS: Record<RegionKey, { label: string; description: string }> = {
-  경기북부: { label: '경기 북부', description: '포천, 양주, 가평, 파주' },
-  경기남부: { label: '경기 남부', description: '용인, 안성, 이천, 여주' },
-  강원: { label: '강원', description: '춘천, 홍천, 원주, 고성' },
-  인천: { label: '인천', description: '영종, 강화, 청라' },
-  충청: { label: '충청', description: '당진, 음성' },
+export interface RegionInfo {
+  label: string;
+  cities: string[];
+  description: string;
+}
+
+export const REGIONS: Record<RegionKey, RegionInfo> = {
+  경기북부: { label: '경기 북부', cities: ['포천', '양주', '가평', '남양주', '파주', '양평'], description: '포천, 양주, 가평, 남양주, 파주, 양평' },
+  경기남부: { label: '경기 남부', cities: ['용인', '안성', '이천', '여주'], description: '용인, 안성, 이천, 여주' },
+  강원: { label: '강원', cities: ['춘천', '홍천', '원주', '고성'], description: '춘천, 홍천, 원주, 고성' },
+  인천: { label: '인천', cities: ['영종', '강화', '청라'], description: '영종, 강화, 청라' },
+  충청: { label: '충청', cities: ['당진', '음성'], description: '당진, 음성' },
 };
 
 export const REGION_KEYS = Object.keys(REGIONS) as RegionKey[];
@@ -13,7 +19,6 @@ export const REGION_KEYS = Object.keys(REGIONS) as RegionKey[];
 // Static mapping: club_id → RegionKey
 // Keys match golf_clubs.id and SCRAPER_MAP keys
 export const CLUB_REGION_MAP: Record<string, RegionKey> = {
-  // 경기 북부 (포천, 양주, 가평, 남양주, 파주, 양평)
   bearcreek: '경기북부',
   purunsol: '경기북부',
   lassagc: '경기북부',
@@ -25,7 +30,6 @@ export const CLUB_REGION_MAP: Record<string, RegionKey> = {
   owners: '경기북부',
   tpcgolf: '경기북부',
 
-  // 경기 남부 (용인, 안성, 이천, 여주)
   ga: '경기남부',
   taekwang: '경기남부',
   samsunggolf: '경기남부',
@@ -41,7 +45,6 @@ export const CLUB_REGION_MAP: Record<string, RegionKey> = {
   ferrum: '경기남부',
   cascadia: '경기남부',
 
-  // 강원 (춘천, 홍천, 원주, 고성)
   sonofelice: '강원',
   oakvalley: '강원',
   theplayers: '강원',
@@ -49,12 +52,10 @@ export const CLUB_REGION_MAP: Record<string, RegionKey> = {
   shinedale: '강원',
   hilldeloci: '강원',
 
-  // 인천 (영종, 강화, 청라)
   orangedunesyj: '인천',
   bearsbest: '인천',
-  onetheclub: '인천', // 본사 인천, 코스는 전국 분포이나 대표 지역 인천
+  onetheclub: '인천',
 
-  // 충청 (충남, 충북)
   pinestone: '충청',
   rainbowhills: '충청',
   jungbu: '충청',

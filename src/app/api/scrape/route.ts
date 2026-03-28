@@ -1,12 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
-import type { Database } from '@/lib/types/database';
 import { createLogger } from '@/lib/logger';
 
 const log = createLogger('scrape');
-
-type ScrapeJob = Database['public']['Tables']['scrape_jobs']['Row'];
-type GolfClub = Pick<Database['public']['Tables']['golf_clubs']['Row'], 'id' | 'name' | 'scraper_type'>;
 
 function validateApiKey(request: NextRequest): boolean {
   const headerKey = request.headers.get('x-api-key');
@@ -56,13 +52,13 @@ export async function POST(request: NextRequest) {
 
   try {
 
-    const supabase = createAdminClient() as any;
+    const supabase = createAdminClient();
 
     // Fetch all active clubs
     const { data: clubs, error: clubsError } = await supabase
       .from('golf_clubs')
       .select('id, name, scraper_type')
-      .eq('is_active', true) as { data: GolfClub[] | null; error: { message: string } | null };
+      .eq('is_active', true);
 
     if (clubsError) {
       log.error('Failed to fetch clubs', { error: clubsError.message });
@@ -94,7 +90,7 @@ export async function POST(request: NextRequest) {
           started_at: new Date().toISOString(),
         })
         .select('id')
-        .single() as { data: Pick<ScrapeJob, 'id'> | null; error: { message: string } | null };
+        .single();
 
       if (jobError || !job) {
         log.error(`Failed to create job for date ${date}`, { error: jobError?.message });
@@ -116,7 +112,7 @@ export async function POST(request: NextRequest) {
 
       const { error: resultsError } = await supabase
         .from('scrape_club_results')
-        .insert(clubResults) as { error: { message: string } | null };
+        .insert(clubResults);
 
       if (resultsError) {
         log.error(`Failed to insert club results for job ${job.id}`, { error: resultsError.message });
