@@ -21,7 +21,7 @@
         ▼            ▼                         ▼
 ┌──────────────┐ ┌────────────┐      ┌────────────────────┐
 │   Supabase   │ │OpenWeather │      │  Golf Club Sites   │
-│  (Postgres)  │ │  Map API   │      │   (27 scrapers)    │
+│  (Postgres)  │ │  Map API   │      │   (34 scrapers)    │
 └──────────────┘ └────────────┘      └────────────────────┘
 ```
 
@@ -57,13 +57,13 @@ Types → Constants → Utils → Supabase Client → Hooks → Components → P
 
 ### 1. Tee-Time Search (Core Domain)
 
-The primary feature. Users search for available golf tee times across 26+ clubs.
+The primary feature. Users search for available golf tee times across 34 clubs.
 
 **Data flow**: Cron trigger → `/api/scrape/cron` → `BaseScraper.run()` per club → upsert into `tee_times` table → Client fetches via `/api/tee-times` with filters → `SearchSection` renders results
 
 **Key files**:
 - `src/lib/scrapers/base.ts` — Abstract scraper with login, parsing, cookie management
-- `src/lib/scrapers/index.ts` — Registry of all 27 scrapers
+- `src/lib/scrapers/index.ts` — Registry of all 34 scrapers
 - `src/app/api/tee-times/route.ts` — Query endpoint with date/club/time/price filters
 - `src/components/search/SearchSection.tsx` — Main search UI orchestrator
 
@@ -121,6 +121,6 @@ Supabase Auth with session management via middleware.
 |---------|---------|----------------|
 | Supabase | DB + Auth | App non-functional |
 | OpenWeatherMap | Weather data | Weather page unavailable |
-| Golf club websites (27) | Tee-time data | Individual club data stale |
+| Golf club websites (34) | Tee-time data | Individual club data stale |
 | Google Maps | Map visualization | Map component broken |
 | Vercel | Hosting + Cron | App offline |

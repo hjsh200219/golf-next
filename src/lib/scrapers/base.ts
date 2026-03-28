@@ -1,6 +1,7 @@
 import { CookieJar } from 'tough-cookie';
 import fetchCookie from 'fetch-cookie';
 import * as cheerio from 'cheerio';
+import { Agent } from 'undici';
 import type { ScraperResult } from '@/lib/types/tee-time';
 
 export interface ClubConfig {
@@ -47,9 +48,27 @@ export abstract class BaseScraper {
   protected day: number;
   protected credentials: LoginCredentials;
 
+  /** Override to false in subclass to skip TLS cert verification (e.g. incomplete cert chains) */
+  protected get tlsRejectUnauthorized(): boolean {
+    return true;
+  }
+
   constructor(date: string, credentials: LoginCredentials) {
     this.cookieJar = new CookieJar();
-    this.fetch = fetchCookie(globalThis.fetch, this.cookieJar) as typeof globalThis.fetch;
+
+    // Build a base fetch — optionally bypass TLS verification for sites with bad certs
+    let baseFetch: typeof globalThis.fetch = globalThis.fetch;
+    if (!this.tlsRejectUnauthorized) {
+      const agent = new Agent({ connect: { rejectUnauthorized: false } });
+      baseFetch = ((url: RequestInfo | URL, init?: RequestInit) =>
+        globalThis.fetch(url, {
+          ...init,
+          // @ts-expect-error undici dispatcher accepted by Node's native fetch
+          dispatcher: agent,
+        })) as typeof globalThis.fetch;
+    }
+
+    this.fetch = fetchCookie(baseFetch, this.cookieJar) as typeof globalThis.fetch;
     this.date = date.replace(/-/g, '');
     this.dateDash = `${this.date.slice(0, 4)}-${this.date.slice(4, 6)}-${this.date.slice(6, 8)}`;
     this.year = parseInt(this.date.slice(0, 4));

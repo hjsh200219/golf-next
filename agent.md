@@ -1,7 +1,7 @@
 # GolfShin — Agent Rules
 
 > Golf tee-time reservation aggregator for Korean golf courses.
-> Real-time scraping from 26+ club websites, Supabase backend, Next.js 14 frontend.
+> Real-time scraping from 34 club websites, Supabase backend, Next.js 14 frontend.
 
 ## Tech Stack
 
@@ -39,10 +39,10 @@ src/
 ├── hooks/            # Custom React hooks (useTeeTimes, useClubs, useWeather, etc.)
 ├── lib/
 │   ├── constants/    # Static data (regions, club-mappings)
-│   ├── scrapers/     # 27 club-specific scrapers extending BaseScraper
+│   ├── scrapers/     # 34 club-specific scrapers extending BaseScraper
 │   ├── supabase/     # Supabase client helpers (client, server, middleware)
 │   ├── types/        # TypeScript types (database, tee-time, weather)
-│   └── utils/        # Utility functions (date, price, time, group, event, geohash, weather)
+│   └── utils/        # Utility functions (date, price, time, group, event, geohash, uuid, weather)
 └── middleware.ts      # Supabase session + auth redirect
 ```
 
@@ -82,4 +82,5 @@ src/
 | [docs/QUALITY_SCORE.md](./docs/QUALITY_SCORE.md) | Quality grades by domain |
 | [docs/PLANS.md](./docs/PLANS.md) | Plans index |
 | [docs/RELIABILITY.md](./docs/RELIABILITY.md) | Reliability standards |
+| [docs/UNIMPLEMENTED_CLUBS.md](./docs/UNIMPLEMENTED_CLUBS.md) | Unimplemented club list |
 | [docs/generated/db-schema.md](./docs/generated/db-schema.md) | Database schema reference |

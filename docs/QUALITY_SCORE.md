@@ -9,7 +9,7 @@ Quality assessment by domain. Graded A (excellent) through F (failing).
 | **Type Safety** | A | Full TypeScript, typed Supabase client, typed API responses |
 | **Architecture** | B+ | Clean layer separation, clear domain boundaries, good scraper pattern |
 | **UI/UX** | B+ | Polished design system, responsive, good animations |
-| **Testing** | B | 329 tests / 26 files. Scrapers, hooks, components, utils covered. |
+| **Testing** | B | 343 tests / 27 files. Scrapers, hooks, components, utils covered. |
 | **Error Handling** | C | API routes handle errors, but no structured error boundaries in UI |
 | **Security** | B | RLS policies, auth middleware, API key protection. Missing rate limiting. |
 | **Documentation** | B | Now documented via harness setup (was F before) |
@@ -20,7 +20,7 @@ Quality assessment by domain. Graded A (excellent) through F (failing).
 ## Improvement Priorities
 
 ### High Priority
-1. ~~**Testing coverage** (C → B): Add unit tests for scrapers, hooks, and API routes~~ ✅ Done — 329 tests / 26 files
+1. ~~**Testing coverage** (C → B): Add unit tests for scrapers, hooks, and API routes~~ ✅ Done — 343 tests / 27 files
 2. **Error boundaries** (C → B): Add React error boundaries for graceful UI failure
 3. ~~**Observability** (D → C+): Add structured logging to API routes and scraper runs~~ ✅ Done — `createLogger()` in all API routes
 

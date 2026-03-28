@@ -11,6 +11,10 @@ export default class GaKoreaScraper extends BaseScraper {
     return 'ga';
   }
 
+  protected get tlsRejectUnauthorized(): boolean {
+    return false;
+  }
+
   async scrape(): Promise<TeeTimeRow[]> {
     const origin = 'https://www.gakorea.com';
     const loginReferer = 'https://www.gakorea.com/join/login.asp';
@@ -34,12 +38,12 @@ export default class GaKoreaScraper extends BaseScraper {
           method: 'getTeeList',
           coDiv: code,
           date: this.date,
-          cos: '',
-          msDivision: '',
-          msClass: '',
-          msLevel: '',
+          cos: 'All',
+          msDivision: '21',
+          msClass: '10',
+          msLevel: '00',
         },
-        this.commonHeaders(origin, 'https://www.gakorea.com/reservation/'),
+        this.commonHeaders(origin, 'https://www.gakorea.com/Reservation/ReservationList.asp'),
       );
 
       let data: { rows?: Array<Record<string, string>> };
@@ -54,8 +58,9 @@ export default class GaKoreaScraper extends BaseScraper {
       for (const row of data.rows) {
         const teeoff = this.formatTime(String(row['BK_TIME'] ?? ''));
         const course = String(row['BK_COS_NM'] ?? courseName);
-        const rawPrice = `${row['BK_B_CHARGE_NM'] ?? ''}${row['BK_S_CHARGE_NM'] ?? ''}`;
-        const { price, event } = this.processPrice(rawPrice, '');
+        const rawPrice = String(row['BK_B_CHARGE_NM'] ?? '');
+        const rawEvent = String(row['BK_S_CHARGE_NM'] ?? '');
+        const { price, event } = this.processPrice(rawPrice, rawEvent);
         const ccName = COURSES[String(row['CO_DIV'])] ?? courseName;
 
         rows.push({
