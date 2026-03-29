@@ -21,7 +21,7 @@ export default function LoginButton() {
         </span>
         <button
           onClick={() => signOut()}
-          className="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-red-50 hover:text-red-600"
+          className="rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-red-50 hover:text-red-600 min-h-[44px]"
         >
           로그아웃
         </button>
@@ -32,7 +32,7 @@ export default function LoginButton() {
   return (
     <button
       onClick={() => router.push('/login')}
-      className="rounded-lg bg-golf-primary px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-green-700"
+      className="rounded-lg bg-golf-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700 min-h-[44px]"
     >
       로그인
     </button>

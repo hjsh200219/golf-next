@@ -112,7 +112,7 @@ export default function SearchSection() {
           <button
             type="button"
             onClick={() => setViewMode('club')}
-            className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+            className={`px-4 py-2 text-sm font-medium min-h-[44px] transition-colors ${
               viewMode === 'club'
                 ? 'bg-golf-primary text-white'
                 : 'bg-white text-gray-600 hover:bg-gray-50'
@@ -123,7 +123,7 @@ export default function SearchSection() {
           <button
             type="button"
             onClick={() => setViewMode('time')}
-            className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+            className={`px-4 py-2 text-sm font-medium min-h-[44px] transition-colors ${
               viewMode === 'time'
                 ? 'bg-golf-primary text-white'
                 : 'bg-white text-gray-600 hover:bg-gray-50'

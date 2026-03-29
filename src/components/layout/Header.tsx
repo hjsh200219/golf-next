@@ -44,7 +44,7 @@ export default function Header() {
                   key={item.href}
                   href={item.href}
                   className={[
-                    'relative px-4 py-2 rounded-lg text-sm font-medium spring-hover',
+                    'relative px-4 py-2.5 rounded-lg text-sm font-medium spring-hover min-h-[44px] flex items-center',
                     pathname === item.href
                       ? 'text-golf-primary bg-green-50/80'
                       : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50/60',
