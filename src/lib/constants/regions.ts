@@ -19,7 +19,6 @@ export const REGION_KEYS = Object.keys(REGIONS) as RegionKey[];
 // Static mapping: club_id → RegionKey
 // Keys match golf_clubs.id and SCRAPER_MAP keys
 export const CLUB_REGION_MAP: Record<string, RegionKey> = {
-  bearcreek: '경기북부',
   purunsol: '경기북부',
   lassagc: '경기북부',
   philosgc: '경기북부',
@@ -53,12 +52,10 @@ export const CLUB_REGION_MAP: Record<string, RegionKey> = {
   hilldeloci: '강원',
 
   orangedunesyj: '인천',
-  bearsbest: '인천',
   onetheclub: '인천',
 
   pinestone: '충청',
   rainbowhills: '충청',
-  jungbu: '충청',
 };
 
 export function getClubsByRegion(regions: RegionKey[]): string[] {

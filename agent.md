@@ -50,7 +50,7 @@ src/
 
 > Details: [ARCHITECTURE.md](./ARCHITECTURE.md)
 
-- **Scraper Pattern**: Each golf club has a dedicated scraper class. All extend `BaseScraper` with cookie-jar session management, login flow, and HTML/JSON parsing.
+- **Scraper Pattern**: Each golf club has a dedicated scraper class. All extend `BaseScraper` with cookie-jar session management, login flow, HTML/JSON parsing, and per-scraper `tlsRejectUnauthorized` toggle for SSL bypass.
 - **Region System**: Static `CLUB_REGION_MAP` maps club IDs to 5 Korean regions (경기북부, 경기남부, 강원, 인천, 충청).
 - **Favorites**: Dual system — `user_favorites` (authenticated) + `device_favorites` (anonymous via device UUID).
 - **Weather**: OpenWeatherMap API with Supabase caching via geohash.
@@ -58,6 +58,7 @@ src/
 - **View Mode**: `useUIPreferences` Zustand store (separate from filter store) provides club-grouped vs time-ordered view toggle.
 - **Event Display**: `formatEventDisplay` in `utils/event.ts` classifies tee-time events into discount (할인) vs info categories, filtering garbage data.
 - **Date Tabs**: 내일/모레/글피 (tomorrow-focused, not today). Golf reservations are typically booked 1+ days ahead.
+- **SEO Schema**: `src/lib/schema.ts` dynamically generates JSON-LD (WebSite, WebApplication, FAQPage) using live scraper count and region data.
 - **Scrape Schedule**: Vercel Cron runs hourly (`0 * * * *`) at `/api/scrape/cron`.
 
 ## Design System

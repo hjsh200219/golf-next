@@ -16,3 +16,10 @@
 - [Cron scraping interval](cron-scraping-interval.md) — 1시간 간격 (0 * * * *)
 - [PWA icon iOS transparency](pwa-icon-ios-transparency.md) — iOS 아이콘 흰색 배경 flatten 필수
 - [Env file unified](env-file-unified.md) — .env 단일 파일 사용
+
+## Session 3 (2026-03-29)
+- [WAF/Cloud IP blocking](scraper-waf-cloud-ip-blocking.md) — bearcreek/bearsbest WAF + Railway 해외IP 차단
+- [GA Korea TLS+params](scraper-gakorea-tls-params.md) — SSL 우회 + API 파라미터 필수
+- [OrangeDunesYJ auth](scraper-orangedunesyj-auth.md) — device헤더 + 쿠키세션 + month=현재월
+- [LassaGC Spring Boot](scraper-lassagc-spring-boot.md) — ASP→Spring Boot 재구축, 계정 재등록 필요
+- [Jungbu site rebuilt](scraper-jungbu-site-rebuilt.md) — 사이트 재구축, 로그인 404

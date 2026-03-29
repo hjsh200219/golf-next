@@ -42,7 +42,7 @@ describe('CLUB_REGION_MAP', () => {
   });
 
   it('maps specific clubs correctly', () => {
-    expect(CLUB_REGION_MAP['bearcreek']).toBe('경기북부');
+    expect(CLUB_REGION_MAP['purunsol']).toBe('경기북부');
     expect(CLUB_REGION_MAP['sonofelice']).toBe('강원');
     expect(CLUB_REGION_MAP['orangedunesyj']).toBe('인천');
     expect(CLUB_REGION_MAP['pinestone']).toBe('충청');
