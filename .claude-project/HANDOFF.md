@@ -33,7 +33,7 @@ summary: WAF-blocked 스크래퍼 제거, 고장난 스크래퍼 3개 수리, SS
 1. **`/plan-design-review`** — 디자인 리뷰 실행하여 UI/UX 품질 점검
 2. **미이관 스크래퍼 4개** — fortunehills, namchuncheon, lakeside, namyeoju (Python→TS 마이그레이션)
 3. **lassagc 계정 재등록** — 현재 계정으로 로그인은 되지만 full data 수집 불가, 재등록 필요
-4. **Supabase Auth Site URL** → golfshin.vercel.app 변경
+4. ~~**Supabase Auth Site URL**~~ → golfshin.vercel.app 변경 완료 (2026-03-29)
 5. **골프장 딥링크** — 예약 사이트 연결
 6. **즐겨찾기 필터** — 즐겨찾기 골프장만 보기
 7. **SCRAPE_API_KEY 프로덕션 값** 변경
@@ -41,7 +41,7 @@ summary: WAF-blocked 스크래퍼 제거, 고장난 스크래퍼 3개 수리, SS
 ## Blockers
 
 - **클라우드 IP WAF 차단**: Railway/Render 등 클라우드 환경에서 Playwright 스크래핑 불가 — Vercel Cron + fetch 기반만 가능
-- **Supabase Auth Site URL**: localhost 설정 → 프로덕션 로그인 불가
+- ~~**Supabase Auth Site URL**~~: golfshin.vercel.app 으로 변경 완료 (2026-03-29)
 
 ## Watch Out
 
