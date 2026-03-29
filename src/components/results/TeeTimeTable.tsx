@@ -243,10 +243,13 @@ export default function TeeTimeTable({ data, isLoading = false, scrapedAt, onRef
                 ))}
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {band.rows.map((row, i) => (
+                {band.rows.map((row, i) => {
+                  const staggerDelay = i < 10 ? `${i * 40}ms` : undefined;
+                  return (
                   <tr
                     key={row.id}
-                    className={`transition-colors duration-100 hover:bg-golf-surface-hover ${i % 2 === 1 ? 'bg-gray-50/30' : ''}`}
+                    className={`transition-colors duration-100 hover:bg-golf-surface-hover motion-safe:animate-fade-up ${i % 2 === 1 ? 'bg-gray-50/30' : ''}`}
+                    style={staggerDelay ? { animationDelay: staggerDelay } : undefined}
                   >
                     {row.getVisibleCells().map((cell) => (
                       <td key={cell.id} className="px-4 py-3 text-gray-700">
@@ -254,7 +257,8 @@ export default function TeeTimeTable({ data, isLoading = false, scrapedAt, onRef
                       </td>
                     ))}
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
