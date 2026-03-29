@@ -57,7 +57,7 @@ const columns = [
   columnHelper.accessor('price', {
     header: () => <span className="block text-right">가격</span>,
     cell: (info) => (
-      <span className="block text-right font-semibold text-gray-800 tabular-nums text-[13px]">
+      <span className="block text-right font-bold text-gray-900 tabular-nums text-[13px]">
         {formatPrice(info.getValue())}
       </span>
     ),
@@ -69,7 +69,7 @@ const columns = [
       const display = formatEventDisplay(row.original.event, row.original.price);
       if (!display) return null;
       return display.type === 'discount' ? (
-        <span className="inline-flex items-center gap-1 rounded-md bg-red-50 px-2 py-0.5 text-xs font-medium text-red-600 ring-1 ring-inset ring-red-200/60">
+        <span className="inline-flex items-center gap-1 rounded-md bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700 ring-1 ring-inset ring-red-200/60">
           할인 {display.label}
         </span>
       ) : (
@@ -160,11 +160,16 @@ export default function TeeTimeTable({ data, isLoading = false, scrapedAt, onRef
           <>
           {/* Mobile card view */}
           <div className="md:hidden space-y-2">
-            {band.rows.map((row) => {
+            {band.rows.map((row, idx) => {
               const r = row.original;
               const display = formatEventDisplay(r.event, r.price);
+              const staggerDelay = idx < 10 ? `${idx * 40}ms` : undefined;
               return (
-                <div key={row.id} className="rounded-xl bg-white p-3.5 shadow-card ring-1 ring-gray-100 active:bg-gray-50 transition-colors">
+                <div
+                  key={row.id}
+                  className="rounded-xl bg-white p-3.5 shadow-card ring-1 ring-gray-100 active:bg-gray-50 transition-colors motion-safe:animate-fade-up"
+                  style={staggerDelay ? { animationDelay: staggerDelay } : undefined}
+                >
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2.5 min-w-0">
                       <span className="inline-flex items-center justify-center rounded-lg bg-golf-primary/10 px-2.5 py-1 font-mono text-golf-primary font-bold tabular-nums text-[15px] shrink-0">
@@ -185,7 +190,7 @@ export default function TeeTimeTable({ data, isLoading = false, scrapedAt, onRef
                     <span>{formatDateKorean(r.date)}</span>
                     {display && (
                       display.type === 'discount' ? (
-                        <span className="inline-flex items-center gap-1 rounded-md bg-red-50 px-1.5 py-0.5 font-medium text-red-600 ring-1 ring-inset ring-red-200/60">
+                        <span className="inline-flex items-center gap-1 rounded-md bg-red-100 px-1.5 py-0.5 font-semibold text-red-700 ring-1 ring-inset ring-red-200/60">
                           할인 {display.label}
                         </span>
                       ) : (

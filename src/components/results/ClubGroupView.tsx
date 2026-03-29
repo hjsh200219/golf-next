@@ -75,10 +75,15 @@ function ClubSection({ clubName, items }: { clubName: string; items: TeeTime[] }
         <>
           {/* Mobile cards */}
           <div className="md:hidden divide-y divide-gray-100/80">
-            {items.map((tt) => {
+            {items.map((tt, idx) => {
               const display = formatEventDisplay(tt.event, tt.price);
+              const staggerDelay = idx < 10 ? `${idx * 40}ms` : undefined;
               return (
-                <div key={tt.id} className="px-4 py-3 active:bg-gray-50 transition-colors">
+                <div
+                  key={tt.id}
+                  className="px-4 py-3 active:bg-gray-50 transition-colors motion-safe:animate-fade-up"
+                  style={staggerDelay ? { animationDelay: staggerDelay } : undefined}
+                >
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2.5">
                       <span className="inline-flex items-center justify-center rounded-lg bg-golf-primary/10 px-2.5 py-1 font-mono text-golf-primary font-bold tabular-nums text-[15px]">
@@ -127,10 +132,12 @@ function ClubSection({ clubName, items }: { clubName: string; items: TeeTime[] }
               <tbody className="divide-y divide-gray-50">
                 {items.map((tt, i) => {
                   const display = formatEventDisplay(tt.event, tt.price);
+                  const staggerDelay = i < 10 ? `${i * 40}ms` : undefined;
                   return (
                     <tr
                       key={tt.id}
-                      className={`transition-colors duration-100 hover:bg-golf-surface-hover ${i % 2 === 1 ? 'bg-gray-50/30' : ''}`}
+                      className={`transition-colors duration-100 hover:bg-golf-surface-hover motion-safe:animate-fade-up ${i % 2 === 1 ? 'bg-gray-50/30' : ''}`}
+                      style={staggerDelay ? { animationDelay: staggerDelay } : undefined}
                     >
                       <td className="px-4 py-2.5">
                         <span className="font-mono text-golf-primary font-semibold tabular-nums text-[13px]">
