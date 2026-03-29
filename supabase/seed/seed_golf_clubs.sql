@@ -369,6 +369,16 @@ INSERT INTO golf_clubs (
  '/reservation/ajax/golfTimeList',
  'requests', true),
 
+('sungmoon',
+ '성문안CC',
+ 'https://reservation.oakvalley.co.kr',
+ 'https://reservation.oakvalley.co.kr',
+ 'https://reservation.oakvalley.co.kr/frontMember.pns?loginForm',
+ 'https://reservation.oakvalley.co.kr/golf.course.pns?courseMain',
+ '/frontMember.pns?login',
+ '/golf.course.pns?getCourse_G',
+ 'requests', true),
+
 -- Inactive clubs (playwright_inactive) -------------------------
 
 ('namchuncheon_new',
