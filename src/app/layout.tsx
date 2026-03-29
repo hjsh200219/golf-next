@@ -3,6 +3,7 @@ import { Toaster } from 'sonner';
 import './globals.css';
 import Header from '@/components/layout/Header';
 import MobileNav from '@/components/layout/MobileNav';
+import Footer from '@/components/layout/Footer';
 import JsonLdSchema from '@/components/JsonLdSchema';
 
 export const metadata: Metadata = {
@@ -63,6 +64,7 @@ export default function RootLayout({
         <main className="mx-auto max-w-6xl px-4 pb-20 pt-6 sm:px-6 md:pb-8 lg:px-8">
           {children}
         </main>
+        <Footer />
         <MobileNav />
         <Toaster position="top-center" richColors closeButton duration={3000} />
       </body>

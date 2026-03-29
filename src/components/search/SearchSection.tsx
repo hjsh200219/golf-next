@@ -104,7 +104,7 @@ export default function SearchSection() {
   }, [date, refresh, pollJobStatus]);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-3">
         <SearchBar onSearch={handleRefresh} />
         <ResultSummary count={teeTimes.length} scrapedAt={scrapedAt} isLoading={isLoading} />

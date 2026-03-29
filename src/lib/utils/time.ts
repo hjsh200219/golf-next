@@ -19,3 +19,18 @@ export function isTimeInRange(
 export function formatTime(time: string): string {
   return time.slice(0, 5);
 }
+
+export type TimeBandKey = 'early' | 'morning' | 'afternoon';
+
+export const TIME_BANDS: { key: TimeBandKey; label: string; from: string; to: string }[] = [
+  { key: 'early', label: '새벽', from: '00:00', to: '06:59' },
+  { key: 'morning', label: '오전', from: '07:00', to: '11:59' },
+  { key: 'afternoon', label: '오후', from: '12:00', to: '23:59' },
+];
+
+export function getTimeBand(teeoff: string): TimeBandKey {
+  const t = teeoff.slice(0, 5);
+  if (t < '07:00') return 'early';
+  if (t < '12:00') return 'morning';
+  return 'afternoon';
+}

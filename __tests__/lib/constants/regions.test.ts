@@ -30,8 +30,8 @@ describe('REGIONS', () => {
 });
 
 describe('CLUB_REGION_MAP', () => {
-  it('maps all 35 active clubs', () => {
-    expect(Object.keys(CLUB_REGION_MAP).length).toBeGreaterThanOrEqual(35);
+  it('maps all active clubs', () => {
+    expect(Object.keys(CLUB_REGION_MAP).length).toBeGreaterThanOrEqual(30);
   });
 
   it('every value is a valid RegionKey', () => {

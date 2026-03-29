@@ -118,10 +118,10 @@ export default function FilterPanel({ defaultOpen = false, favoritesOnly = false
 
       {/* Collapsible body */}
       {isOpen && (
-        <div className="border-t border-gray-100 px-4 py-4 space-y-5">
+        <div className="border-t border-gray-100 px-4 py-5 space-y-6 motion-safe:animate-fade-up">
           {/* Region filter */}
           <section>
-            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
               지역
             </h3>
             <RegionFilter
@@ -132,7 +132,7 @@ export default function FilterPanel({ defaultOpen = false, favoritesOnly = false
 
           {/* Club filter */}
           <section>
-            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
               골프장
             </h3>
             <ClubFilter />
@@ -140,7 +140,7 @@ export default function FilterPanel({ defaultOpen = false, favoritesOnly = false
 
           {/* Time filter */}
           <section>
-            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
               시간대
             </h3>
             <TimeFilter />
@@ -148,7 +148,7 @@ export default function FilterPanel({ defaultOpen = false, favoritesOnly = false
 
           {/* Price filter */}
           <section>
-            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
               가격
             </h3>
             <PriceFilter />

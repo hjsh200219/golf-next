@@ -6,6 +6,7 @@ import { groupByClub } from '@/lib/utils/group';
 import { formatPrice } from '@/lib/utils/price';
 import { formatTime } from '@/lib/utils/time';
 import { formatEventDisplay } from '@/lib/utils/event';
+import { getRegionForClub } from '@/lib/constants/regions';
 
 interface ClubGroupViewProps {
   data: TeeTime[];
@@ -23,32 +24,38 @@ function ClubSection({ clubName, items }: { clubName: string; items: TeeTime[] }
     ? `${formatTime(items[0].teeoff)}~${formatTime(items[items.length - 1].teeoff)}`
     : '';
 
+  const region = items.length > 0 ? getRegionForClub(items[0].club_id) : null;
+
   return (
     <div className="rounded-xl bg-white shadow-card ring-1 ring-gray-100 overflow-hidden">
       {/* Header */}
       <button
         type="button"
         onClick={() => setIsOpen((p) => !p)}
-        className="flex w-full items-center justify-between px-4 py-3.5 text-left cursor-pointer hover:bg-gray-50/80 transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-golf-primary/40 focus-visible:ring-inset"
+        className="flex w-full items-center justify-between px-4 py-3.5 text-left cursor-pointer hover:bg-gray-50/80 transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-golf-primary/40 focus-visible:ring-inset min-h-[44px]"
         aria-expanded={isOpen}
         aria-label={`${clubName} ${items.length}건 ${isOpen ? '접기' : '펼치기'}`}
       >
-        <div className="flex items-center gap-2.5 min-w-0">
-          <span className="font-semibold text-gray-900 text-[15px] truncate">{clubName}</span>
+        <div className="flex items-center gap-2 min-w-0 flex-wrap">
+          <h2 className="font-bold text-gray-900 text-base truncate">{clubName}</h2>
+          {region && (
+            <span className="rounded-md bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+              {region}
+            </span>
+          )}
           <span className="shrink-0 rounded-full bg-golf-primary px-2 py-0.5 text-[11px] font-bold text-white tabular-nums">
             {items.length}
           </span>
+          {lowestPrice !== null && (
+            <span className="text-golf-primary font-semibold text-xs tabular-nums">
+              최저 {formatPrice(lowestPrice)}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-3 shrink-0 ml-2">
           {!isOpen && (
             <div className="hidden sm:flex items-center gap-2 text-xs text-gray-400">
               <span className="tabular-nums">{timeRange}</span>
-              {lowestPrice !== null && (
-                <>
-                  <span className="text-gray-300">|</span>
-                  <span className="tabular-nums text-gray-500">{formatPrice(lowestPrice)}~</span>
-                </>
-              )}
             </div>
           )}
           <svg

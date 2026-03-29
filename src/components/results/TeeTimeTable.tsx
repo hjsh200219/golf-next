@@ -11,7 +11,7 @@ import {
 import { useState } from 'react';
 import type { TeeTime } from '@/lib/types/tee-time';
 import { formatPrice } from '@/lib/utils/price';
-import { formatTime } from '@/lib/utils/time';
+import { formatTime, getTimeBand, TIME_BANDS } from '@/lib/utils/time';
 import { formatDateKorean } from '@/lib/utils/date';
 import { formatEventDisplay } from '@/lib/utils/event';
 import LoadingState from '@/components/results/LoadingState';
@@ -136,103 +136,129 @@ export default function TeeTimeTable({ data, isLoading = false, scrapedAt, onRef
   const visibleRows = allRows.slice(0, visibleCount);
   const hasMore = allRows.length > visibleCount;
 
+  // Group visible rows by time band
+  const bandGroups = TIME_BANDS.map((band) => {
+    const rows = visibleRows.filter((row) => getTimeBand(row.original.teeoff) === band.key);
+    // Count total (not just visible) for the band label
+    const totalCount = allRows.filter((row) => getTimeBand(row.original.teeoff) === band.key).length;
+    return { ...band, rows, totalCount };
+  }).filter((g) => g.totalCount > 0);
+
   return (
     <>
-    {/* Mobile card view */}
-    <div className="animate-fade-up md:hidden space-y-2">
-      {visibleRows.map((row) => {
-        const r = row.original;
-        const display = formatEventDisplay(r.event, r.price);
-        return (
-          <div key={row.id} className="rounded-xl bg-white p-3.5 shadow-card ring-1 ring-gray-100 active:bg-gray-50 transition-colors">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <span className="inline-flex items-center justify-center rounded-lg bg-golf-primary/10 px-2.5 py-1 font-mono text-golf-primary font-bold tabular-nums text-[15px] shrink-0">
-                  {formatTime(r.teeoff)}
-                </span>
-                <span className="font-semibold text-gray-900 text-sm leading-tight truncate">{r.cc_name}</span>
-              </div>
-              <span className="font-semibold text-gray-900 tabular-nums text-sm shrink-0">
-                {formatPrice(r.price)}
-              </span>
-            </div>
-            <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs text-gray-500 pl-0.5">
-              {r.course && (
-                <span className="inline-flex items-center rounded-md bg-gray-100 px-1.5 py-0.5 font-medium text-gray-600">
-                  {r.course}
-                </span>
-              )}
-              <span>{formatDateKorean(r.date)}</span>
-              {display && (
-                display.type === 'discount' ? (
-                  <span className="inline-flex items-center gap-1 rounded-md bg-red-50 px-1.5 py-0.5 font-medium text-red-600 ring-1 ring-inset ring-red-200/60">
-                    할인 {display.label}
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center rounded-md bg-blue-50 px-1.5 py-0.5 font-medium text-blue-600 ring-1 ring-inset ring-blue-200/60">
-                    {display.label}
-                  </span>
-                )
-              )}
-            </div>
-          </div>
-        );
-      })}
-    </div>
+    {bandGroups.map((band) => (
+      <div key={band.key} className="animate-fade-up">
+        {/* Band header */}
+        <h2 className="sticky top-14 z-10 flex items-center gap-2 bg-golf-bg/95 backdrop-blur-sm px-1 py-2 text-sm font-semibold uppercase tracking-wide text-gray-500">
+          <span>{band.label}</span>
+          <span className="rounded-full bg-gray-200 px-2 py-0.5 text-[11px] font-bold text-gray-600 tabular-nums">
+            {band.totalCount}건
+          </span>
+        </h2>
 
-    {/* Desktop table view */}
-    <div className="animate-fade-up hidden md:block overflow-x-auto rounded-2xl bg-white shadow-card ring-1 ring-gray-100">
-      <table className="w-full text-sm">
-        <thead>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <tr key={headerGroup.id} className="border-b border-gray-100 bg-gray-50/40">
-              {headerGroup.headers.map((header) => {
-                const canSort = header.column.getCanSort();
-                const sortDir = header.column.getIsSorted();
-                return (
-                  <th
-                    key={header.id}
-                    onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
-                    className={[
-                      'px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-400',
-                      canSort ? 'cursor-pointer select-none hover:text-gray-600 transition-colors duration-150' : '',
-                    ].join(' ')}
-                    aria-sort={
-                      sortDir === 'asc' ? 'ascending'
-                        : sortDir === 'desc' ? 'descending'
-                          : 'none'
-                    }
-                  >
-                    <span className="flex items-center gap-1">
-                      {flexRender(header.column.columnDef.header, header.getContext())}
-                      {canSort && (
-                        <span className={sortDir ? 'text-golf-primary' : 'text-gray-300'}>
-                          {sortDir === 'asc' ? '↑' : sortDir === 'desc' ? '↓' : '↕'}
-                        </span>
-                      )}
+        {band.rows.length > 0 ? (
+          <>
+          {/* Mobile card view */}
+          <div className="md:hidden space-y-2">
+            {band.rows.map((row) => {
+              const r = row.original;
+              const display = formatEventDisplay(r.event, r.price);
+              return (
+                <div key={row.id} className="rounded-xl bg-white p-3.5 shadow-card ring-1 ring-gray-100 active:bg-gray-50 transition-colors">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className="inline-flex items-center justify-center rounded-lg bg-golf-primary/10 px-2.5 py-1 font-mono text-golf-primary font-bold tabular-nums text-[15px] shrink-0">
+                        {formatTime(r.teeoff)}
+                      </span>
+                      <span className="font-semibold text-gray-900 text-sm leading-tight truncate">{r.cc_name}</span>
+                    </div>
+                    <span className="font-bold text-gray-900 tabular-nums text-base shrink-0">
+                      {formatPrice(r.price)}
                     </span>
-                  </th>
-                );
-              })}
-            </tr>
-          ))}
-        </thead>
-        <tbody className="divide-y divide-gray-50">
-          {visibleRows.map((row, i) => (
-            <tr
-              key={row.id}
-              className={`transition-colors duration-100 hover:bg-golf-surface-hover ${i % 2 === 1 ? 'bg-gray-50/30' : ''}`}
-            >
-              {row.getVisibleCells().map((cell) => (
-                <td key={cell.id} className="px-4 py-3 text-gray-700">
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+                  </div>
+                  <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs text-gray-500 pl-0.5">
+                    {r.course && (
+                      <span className="inline-flex items-center rounded-md bg-gray-100 px-1.5 py-0.5 font-medium text-gray-600">
+                        {r.course}
+                      </span>
+                    )}
+                    <span>{formatDateKorean(r.date)}</span>
+                    {display && (
+                      display.type === 'discount' ? (
+                        <span className="inline-flex items-center gap-1 rounded-md bg-red-50 px-1.5 py-0.5 font-medium text-red-600 ring-1 ring-inset ring-red-200/60">
+                          할인 {display.label}
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center rounded-md bg-blue-50 px-1.5 py-0.5 font-medium text-blue-600 ring-1 ring-inset ring-blue-200/60">
+                          {display.label}
+                        </span>
+                      )
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Desktop table view */}
+          <div className="hidden md:block overflow-x-auto rounded-2xl bg-white shadow-card ring-1 ring-gray-100">
+            <table className="w-full text-sm">
+              <thead>
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <tr key={headerGroup.id} className="border-b border-gray-100 bg-gray-50/40">
+                    {headerGroup.headers.map((header) => {
+                      const canSort = header.column.getCanSort();
+                      const sortDir = header.column.getIsSorted();
+                      return (
+                        <th
+                          key={header.id}
+                          onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
+                          className={[
+                            'px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-400',
+                            canSort ? 'cursor-pointer select-none hover:text-gray-600 transition-colors duration-150' : '',
+                          ].join(' ')}
+                          aria-sort={
+                            sortDir === 'asc' ? 'ascending'
+                              : sortDir === 'desc' ? 'descending'
+                                : 'none'
+                          }
+                        >
+                          <span className="flex items-center gap-1">
+                            {flexRender(header.column.columnDef.header, header.getContext())}
+                            {canSort && (
+                              <span className={sortDir ? 'text-golf-primary' : 'text-gray-300'}>
+                                {sortDir === 'asc' ? '↑' : sortDir === 'desc' ? '↓' : '↕'}
+                              </span>
+                            )}
+                          </span>
+                        </th>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {band.rows.map((row, i) => (
+                  <tr
+                    key={row.id}
+                    className={`transition-colors duration-100 hover:bg-golf-surface-hover ${i % 2 === 1 ? 'bg-gray-50/30' : ''}`}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <td key={cell.id} className="px-4 py-3 text-gray-700">
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          </>
+        ) : (
+          <p className="py-4 text-center text-xs text-gray-400">더 보기를 눌러 확인하세요</p>
+        )}
+      </div>
+    ))}
 
     {/* Load more */}
     {hasMore && (
