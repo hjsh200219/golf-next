@@ -81,10 +81,13 @@ const columns = [
   }),
 ];
 
+const PAGE_SIZE = 50;
+
 export default function TeeTimeTable({ data, isLoading = false, scrapedAt, onRefresh, busy = false, viewMode = 'time' }: TeeTimeTableProps) {
   const [sorting, setSorting] = useState<SortingState>([
     { id: 'teeoff', desc: false },
   ]);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   const table = useReactTable({
     data: data ?? [],
@@ -129,11 +132,15 @@ export default function TeeTimeTable({ data, isLoading = false, scrapedAt, onRef
     return <ClubGroupView data={data ?? []} />;
   }
 
+  const allRows = table.getRowModel().rows;
+  const visibleRows = allRows.slice(0, visibleCount);
+  const hasMore = allRows.length > visibleCount;
+
   return (
     <>
     {/* Mobile card view */}
     <div className="animate-fade-up md:hidden space-y-2">
-      {table.getRowModel().rows.map((row) => {
+      {visibleRows.map((row) => {
         const r = row.original;
         const display = formatEventDisplay(r.event, r.price);
         return (
@@ -211,7 +218,7 @@ export default function TeeTimeTable({ data, isLoading = false, scrapedAt, onRef
           ))}
         </thead>
         <tbody className="divide-y divide-gray-50">
-          {table.getRowModel().rows.map((row, i) => (
+          {visibleRows.map((row, i) => (
             <tr
               key={row.id}
               className={`transition-colors duration-100 hover:bg-golf-surface-hover ${i % 2 === 1 ? 'bg-gray-50/30' : ''}`}
@@ -226,6 +233,19 @@ export default function TeeTimeTable({ data, isLoading = false, scrapedAt, onRef
         </tbody>
       </table>
     </div>
+
+    {/* Load more */}
+    {hasMore && (
+      <div className="flex justify-center pt-4">
+        <button
+          type="button"
+          onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+          className="rounded-xl bg-golf-primary/10 px-6 py-3 text-sm font-medium text-golf-primary hover:bg-golf-primary/20 transition-colors min-h-[44px]"
+        >
+          더 보기 ({visibleCount}/{allRows.length}건)
+        </button>
+      </div>
+    )}
     </>
   );
 }
