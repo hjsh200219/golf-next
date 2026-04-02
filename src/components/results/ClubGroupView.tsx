@@ -48,7 +48,7 @@ function ClubSection({ clubName, items }: { clubName: string; items: TeeTime[] }
           </span>
           {lowestPrice !== null && (
             <span className="shrink-0 text-golf-primary font-semibold text-xs tabular-nums">
-              최저 {formatPrice(lowestPrice)}
+              {Math.floor(lowestPrice / 1000)}K
             </span>
           )}
         </div>
