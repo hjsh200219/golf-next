@@ -50,14 +50,14 @@ export default class LavieBellScraper extends BaseScraper {
         if (tds.length < 4) return;
 
         const teeoff = this.formatTime($(tds[2]).text().trim());
-        const course = `${label} ${$(tds[1]).text().trim()}`.trim();
+        const course = $(tds[1]).text().trim();
         const priceRaw = $(tds[3]).text().trim();
 
         if (!teeoff) return;
 
         rows.push({
           date: this.dateDash,
-          cc_name: '라비에벨CC',
+          cc_name: `라비에벨CC ${label}`,
           teeoff,
           course,
           price: priceRaw,
