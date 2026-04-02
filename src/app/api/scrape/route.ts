@@ -77,6 +77,7 @@ export async function POST(request: NextRequest) {
 
     // Create a scrape_job record for each date
     const jobIds: number[] = [];
+    const pendingFetches: Promise<unknown>[] = [];
 
     for (const date of validDates) {
       const { data: job, error: jobError } = await supabase
@@ -119,29 +120,27 @@ export async function POST(request: NextRequest) {
         // Non-fatal — job was created, continue
       }
 
-      // Trigger individual scraper calls in batches to avoid overwhelming serverless limits
+      // Dispatch all club scrapes. Don't await responses — each
+      // /api/scrape/club runs as its own serverless function on Vercel.
+      // We collect the promises so they stay referenced in the event loop.
       const baseUrl = process.env.APP_URL ?? 'http://localhost:3000';
-      const BATCH_SIZE = 5;
 
-      for (let i = 0; i < clubs.length; i += BATCH_SIZE) {
-        const batch = clubs.slice(i, i + BATCH_SIZE);
-        await Promise.allSettled(
-          batch.map((club) =>
-            fetch(`${baseUrl}/api/scrape/club`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': process.env.SCRAPE_API_KEY ?? '',
-              },
-              body: JSON.stringify({
-                jobId: job.id,
-                clubId: club.id,
-                date,
-              }),
-            }).catch((err) => {
-              log.error(`Failed to trigger scraper for club ${club.id}, date ${date}`, { error: err instanceof Error ? err.message : String(err) });
-            })
-          )
+      for (const club of clubs) {
+        pendingFetches.push(
+          fetch(`${baseUrl}/api/scrape/club`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': process.env.SCRAPE_API_KEY ?? '',
+            },
+            body: JSON.stringify({
+              jobId: job.id,
+              clubId: club.id,
+              date,
+            }),
+          }).catch((err) => {
+            log.error(`Failed to trigger scraper for club ${club.id}, date ${date}`, { error: err instanceof Error ? err.message : String(err) });
+          })
         );
       }
 
@@ -151,6 +150,10 @@ export async function POST(request: NextRequest) {
         .update({ status: 'running' })
         .eq('id', job.id);
     }
+
+    // Wait for all fetch requests to be sent (not for responses).
+    // On Vercel each /api/scrape/club runs as its own serverless function.
+    await Promise.allSettled(pendingFetches);
 
     return NextResponse.json(
       {
