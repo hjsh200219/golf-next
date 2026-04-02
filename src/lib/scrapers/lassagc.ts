@@ -30,8 +30,8 @@ export default class LassaGcScraper extends BaseScraper {
     const loginRes = await this.postJson(
       `${origin}/api/open/member/login`,
       {
-        username: this.credentials.id,
-        password: this.credentials.pw,
+        username: this.credentials.mobile,
+        password: this.credentials.pw5,
         rememberMe: false,
         isAdmin: false,
         isMis: false,
