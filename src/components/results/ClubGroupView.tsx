@@ -36,10 +36,10 @@ function ClubSection({ clubName, items }: { clubName: string; items: TeeTime[] }
         aria-expanded={isOpen}
         aria-label={`${clubName} ${items.length}건 ${isOpen ? '접기' : '펼치기'}`}
       >
-        <div className="flex items-center gap-2 min-w-0 flex-wrap">
-          <h2 className="font-bold text-gray-900 text-base truncate">{clubName}</h2>
+        <div className="flex items-center gap-2 min-w-0 flex-nowrap overflow-hidden">
+          <h2 className="font-bold text-gray-900 text-base truncate shrink min-w-0">{clubName}</h2>
           {region && (
-            <span className="rounded-md bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+            <span className="shrink-0 rounded-md bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
               {region}
             </span>
           )}
@@ -47,7 +47,7 @@ function ClubSection({ clubName, items }: { clubName: string; items: TeeTime[] }
             {items.length}
           </span>
           {lowestPrice !== null && (
-            <span className="text-golf-primary font-semibold text-xs tabular-nums">
+            <span className="shrink-0 text-golf-primary font-semibold text-xs tabular-nums">
               최저 {formatPrice(lowestPrice)}
             </span>
           )}
