@@ -75,7 +75,7 @@ src/
 | Document | Purpose |
 |----------|---------|
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | System architecture and layer rules |
-| [AGENTS.md](./AGENTS.md) | Agent-specific work guide |
+| [AGENTS.md](./AGENTS.md) | Agent rules + work guide (CLAUDE.md symlinks here) |
 | [docs/DESIGN.md](./docs/DESIGN.md) | Design tokens and component rules |
 | [docs/FRONTEND.md](./docs/FRONTEND.md) | Frontend patterns and components |
 | [docs/SECURITY.md](./docs/SECURITY.md) | Auth, RLS, API security |
@@ -95,7 +95,7 @@ How to navigate and contribute to this repository as an AI agent.
 
 ## Quick Start
 
-1. Read [AGENTS.md](./AGENTS.md) for project rules and structure
+1. Read this file for project rules and structure
 2. Read [ARCHITECTURE.md](./ARCHITECTURE.md) for system design
 3. Run `tsc --noEmit` to verify TypeScript before completing work
 4. Run `npm run build` to verify production build (ignore `/login` prerender error — missing Supabase env vars at build time is expected)
