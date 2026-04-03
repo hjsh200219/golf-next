@@ -14,6 +14,7 @@
 | Component | Type | Description |
 |-----------|------|-------------|
 | `Header` | Server | Top navigation bar with logo |
+| `Footer` | Server | Bottom footer with copyright |
 | `MobileNav` | Client | Bottom tab navigation (mobile only, hidden on `md:`) |
 
 ### Search (`components/search/`)

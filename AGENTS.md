@@ -31,7 +31,7 @@ src/
 ├── components/       # React components by domain
 │   ├── auth/         # AuthGuard, LoginButton
 │   ├── favorites/    # FavoriteClubList, FavoriteToggle
-│   ├── layout/       # Header, MobileNav
+│   ├── layout/       # Header, Footer, MobileNav
 │   ├── map/          # GolfMap, ClubMarker, MapTooltip
 │   ├── results/      # TeeTimeCard, TeeTimeTable, ClubGroupView, ResultSummary
 │   ├── search/       # SearchSection, FilterPanel, RegionFilter, etc.
@@ -153,6 +153,8 @@ Key environment variable groups (set in `.env` / Vercel env vars):
 - **Maps**: `NEXT_PUBLIC_GOOGLE_MAP_API_KEY`
 - **Weather**: `OPENWEATHERMAP_API_KEY`
 - **Scraping**: `SCRAPE_API_KEY`, `GOLF_LOGIN_*` credentials
+- **Cron**: `CRON_SECRET` (Vercel Cron authorization)
+- **Internal**: `APP_URL` (server-to-server API base URL)
 
 ## Known Limitations
 

@@ -72,7 +72,7 @@ The primary feature. Users search for available golf tee times across 34 clubs.
 Static + dynamic club data. Clubs are stored in `golf_clubs` table with metadata (URL, coordinates, scraper type).
 
 **Key files**:
-- `src/lib/constants/regions.ts` — Region mapping (5 regions, 30+ clubs)
+- `src/lib/constants/regions.ts` — Region mapping (5 regions, 34 clubs)
 - `src/lib/constants/club-mappings.ts` — Display name mappings
 - `src/app/api/clubs/route.ts` — Club list endpoint
 

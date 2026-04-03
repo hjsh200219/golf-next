@@ -17,7 +17,7 @@ Index of active and completed execution plans.
 
 ## How to Add a Plan
 
-1. Create a new file in `docs/exec-plans/active/{plan-name}.md`
+1. Create a new file in `docs/exec-plans/{plan-name}.md`
 2. Include: objective, scope, tasks, acceptance criteria
 3. Add entry to the Active Plans table above
-4. When complete, move file to `docs/exec-plans/completed/` and update this index
+4. When complete, update this index (move to Completed Plans table)

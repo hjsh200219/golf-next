@@ -20,4 +20,4 @@
 | TD-R001 | PWA | Added next-pwa, manifest, offline fallback, icons | 2026-03-27 |
 | TD-R002 | Documentation | Harness setup — full docs structure | 2026-03-27 |
 | TD-R003 | Observability | Structured logger (`createLogger`) in all 9 API routes | 2026-03-28 |
-| TD-R004 | Testing | 329 tests / 26 files — scrapers, hooks, components, utils | 2026-03-28 |
+| TD-R004 | Testing | 343 tests / 27 files — scrapers, hooks, components, utils | 2026-03-28 |

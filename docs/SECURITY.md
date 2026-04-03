@@ -18,9 +18,10 @@
 | `GET /api/weather` | No | Public data |
 | `GET /api/favorites` | Yes | User-specific |
 | `GET /api/favorites/device` | No | Device UUID based |
-| `POST /api/scrape/cron` | API key | `SCRAPE_API_KEY` header |
+| `GET /api/scrape/cron` | Bearer token | `CRON_SECRET` via Authorization header |
 | `POST /api/scrape/club` | API key | `SCRAPE_API_KEY` header |
-| `GET /api/refresh` | No | Cache refresh |
+| `GET /api/scrape/status` | No | Scrape job status |
+| `POST /api/refresh` | No | Manual scrape trigger (rate-limited) |
 
 ### Row-Level Security (RLS)
 
@@ -45,6 +46,8 @@ RLS policies are defined in `supabase/migrations/001_initial_schema.sql`:
 | `GOLF_LOGIN_*` | **Critical** | Server-only (club login credentials) |
 | `OPENWEATHERMAP_API_KEY` | Medium | Server-only |
 | `NEXT_PUBLIC_GOOGLE_MAP_API_KEY` | Low | Client-side (domain-restricted) |
+| `CRON_SECRET` | High | Server-only (Vercel Cron auth) |
+| `APP_URL` | Low | Server-only (internal API base URL) |
 
 ### Rules
 

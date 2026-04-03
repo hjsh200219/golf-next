@@ -13,7 +13,7 @@ Quality assessment by domain. Graded A (excellent) through F (failing).
 | **Error Handling** | C | API routes handle errors, but no structured error boundaries in UI |
 | **Security** | B | RLS policies, auth middleware, API key protection. Missing rate limiting. |
 | **Documentation** | B | Now documented via harness setup (was F before) |
-| **Observability** | C+ | Structured logger (JSON prod / human dev) in all 9 API routes. No external tracking yet. |
+| **Observability** | C+ | Structured logger (JSON prod / human dev) in all 11 API route files. No external tracking yet. |
 | **Accessibility** | C- | Basic HTML semantics, but no explicit ARIA labels or screen reader testing |
 | **Performance** | B | SWR caching, PWA service worker, but no bundle analysis or code splitting |
 
@@ -22,7 +22,7 @@ Quality assessment by domain. Graded A (excellent) through F (failing).
 ### High Priority
 1. ~~**Testing coverage** (C → B): Add unit tests for scrapers, hooks, and API routes~~ ✅ Done — 343 tests / 27 files
 2. **Error boundaries** (C → B): Add React error boundaries for graceful UI failure
-3. ~~**Observability** (D → C+): Add structured logging to API routes and scraper runs~~ ✅ Done — `createLogger()` in all API routes
+3. ~~**Observability** (D → C+): Add structured logging to API routes and scraper runs~~ ✅ Done — `createLogger()` in all 11 API route files
 
 ### Medium Priority
 4. **Accessibility** (C- → B): Add ARIA labels, keyboard navigation, focus management

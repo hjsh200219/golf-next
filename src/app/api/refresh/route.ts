@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createLogger } from '@/lib/logger';
+
+const log = createLogger('refresh');
 
 const RATE_LIMIT_MS = 60_000; // 1 minute between refresh requests
 let lastRefresh = 0;
@@ -7,6 +10,7 @@ export async function POST(request: NextRequest) {
   const now = Date.now();
   if (now - lastRefresh < RATE_LIMIT_MS) {
     const waitSec = Math.ceil((RATE_LIMIT_MS - (now - lastRefresh)) / 1000);
+    log.warn('Rate limited', { waitSec });
     return NextResponse.json(
       { error: `너무 자주 요청했습니다. ${waitSec}초 후 다시 시도해 주세요.` },
       { status: 429 },
@@ -39,8 +43,10 @@ export async function POST(request: NextRequest) {
     });
 
     const data = await res.json();
+    log.info('Refresh triggered', { date });
     return NextResponse.json({ ok: true, ...data });
   } catch (err) {
+    log.error('Scrape trigger failed', { date, error: String(err) });
     return NextResponse.json(
       { error: 'Scrape trigger failed' },
       { status: 500 },

@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createLogger } from '@/lib/logger';
+
+const log = createLogger('scrape/cron');
 
 export const maxDuration = 60;
 
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    log.warn('Unauthorized cron request');
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -26,6 +30,8 @@ export async function GET(request: NextRequest) {
     dates.push(`${y}-${m}-${day}`);
   }
 
+  log.info('Cron triggered', { range: `D+${startDay}~D+${endDay}`, dateCount: dates.length });
+
   const baseUrl = process.env.APP_URL ?? 'http://localhost:3000';
 
   const res = await fetch(`${baseUrl}/api/scrape`, {
@@ -38,6 +44,8 @@ export async function GET(request: NextRequest) {
   });
 
   const body = await res.json();
+
+  log.info('Cron completed', { range: `D+${startDay}~D+${endDay}` });
 
   return NextResponse.json({
     triggered: true,
