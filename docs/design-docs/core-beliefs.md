@@ -6,13 +6,13 @@ All knowledge needed to work on this project lives in the repository. External d
 
 ## 2. Instructions are Maps, Not Encyclopedias
 
-`agent.md` and `AGENTS.md` stay under 100 lines. They point to detailed docs in `docs/`. Agents start at the map level and drill into detail as needed.
+`AGENTS.md` stays concise. It points to detailed docs in `docs/`. Agents start at the map level and drill into detail as needed.
 
 ## 3. Progressive Disclosure
 
 Agents don't need to read everything upfront. The structure is:
 ```
-agent.md (rules) → ARCHITECTURE.md (system) → docs/ (details)
+AGENTS.md (rules) → ARCHITECTURE.md (system) → docs/ (details)
 ```
 
 ## 4. Architecture is Mechanically Enforced

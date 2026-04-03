@@ -2,7 +2,7 @@
 
 ## Product Vision
 
-GolfShin aggregates real-time tee-time availability across 30+ Korean golf courses into a single searchable interface. The core value proposition: **save golfers hours of checking individual club websites**.
+GolfShin aggregates real-time tee-time availability across 34 Korean golf courses into a single searchable interface. The core value proposition: **save golfers hours of checking individual club websites**.
 
 ## Target Users
 
@@ -22,7 +22,7 @@ GolfShin aggregates real-time tee-time availability across 30+ Korean golf cours
 
 ### 1. Quick Search (80% of usage)
 ```
-Open app → Select date tab (today/tomorrow/+2/+3) → Scan results → Tap club to book
+Open app → Select date tab (tomorrow/+2/+3) → Scan results → Tap club to book
 ```
 - Must complete in <10 seconds
 - Date tabs are the primary navigation (not calendar picker)
@@ -54,7 +54,7 @@ Star favorite clubs → Next visit: filter by favorites only → Quick access to
 1. **Speed over features** — Fast load, fast results. No unnecessary UI chrome.
 2. **Korean-first** — All UI in Korean. Korean typography rules (`keep-all`). Korean date/time formats.
 3. **Mobile-first** — Bottom navigation, touch-friendly targets, responsive tables.
-4. **Data freshness** — 5-minute scrape intervals. Show `scraped_at` timestamp. Never serve stale data silently.
+4. **Data freshness** — Hourly scrape intervals (`0 * * * *`). Show `scraped_at` timestamp. Never serve stale data silently.
 5. **Zero-friction start** — No login required for core search. Favorites work anonymously via device ID.
 
 ## Success Metrics

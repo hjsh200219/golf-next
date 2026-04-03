@@ -95,7 +95,7 @@ How to navigate and contribute to this repository as an AI agent.
 
 ## Quick Start
 
-1. Read [agent.md](./agent.md) for project rules and structure
+1. Read [AGENTS.md](./AGENTS.md) for project rules and structure
 2. Read [ARCHITECTURE.md](./ARCHITECTURE.md) for system design
 3. Run `tsc --noEmit` to verify TypeScript before completing work
 4. Run `npm run build` to verify production build (ignore `/login` prerender error — missing Supabase env vars at build time is expected)
@@ -148,7 +148,7 @@ How to navigate and contribute to this repository as an AI agent.
 
 ## Environment Variables
 
-See `.env.example` for required variables. Key groups:
+Key environment variable groups (set in `.env` / Vercel env vars):
 - **Supabase**: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
 - **Maps**: `NEXT_PUBLIC_GOOGLE_MAP_API_KEY`
 - **Weather**: `OPENWEATHERMAP_API_KEY`

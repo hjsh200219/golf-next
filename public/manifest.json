@@ -1,7 +1,7 @@
 {
   "name": "골프 예약 조회 | GolfShin",
   "short_name": "GolfShin",
-  "description": "실시간 골프장 티타임 예약 조회 — 30개+ 골프장, 5분 간격 업데이트",
+  "description": "실시간 골프장 티타임 예약 조회 — 34개 골프장, 매시간 업데이트",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#f8faf5",

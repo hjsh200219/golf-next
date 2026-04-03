@@ -22,7 +22,7 @@
 
 | Data | Cache Location | TTL | Refresh |
 |------|---------------|-----|---------|
-| Tee-times | Supabase `tee_times` | Until next scrape | Cron every 5 min |
+| Tee-times | Supabase `tee_times` | Until next scrape | Cron every 1 hour |
 | Weather | Supabase `weather_cache` | `expires_at` field | On-demand via API |
 | Club list | Supabase `golf_clubs` | Rarely changes | Manual update |
 | Static assets | Service worker | Build-time | On new deploy |

@@ -74,7 +74,7 @@ summary: WAF-blocked 스크래퍼 제거, 고장난 스크래퍼 3개 수리, SS
 - `src/app/api/**/*.ts` (6 route files) — as any 제거
 
 ### Modified (docs)
-- `ARCHITECTURE.md`, `agent.md` — 수치 갱신
+- `ARCHITECTURE.md`, `AGENTS.md` — 수치 갱신
 - `docs/DESIGN.md` — 루트 DESIGN.md 흡수 통합
 - `docs/QUALITY_SCORE.md` — 점수 갱신
 - `docs/UNIMPLEMENTED_CLUBS.md` (NEW) — 미구현 클럽 목록
