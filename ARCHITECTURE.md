@@ -59,7 +59,7 @@ Types → Constants → Utils → Supabase Client → Hooks → Components → P
 
 The primary feature. Users search for available golf tee times across 34 clubs.
 
-**Data flow**: Cron trigger → `/api/scrape/cron` → `BaseScraper.run()` per club → upsert into `tee_times` table → Client fetches via `/api/tee-times` with filters → `SearchSection` renders results
+**Data flow**: Cron trigger → `/api/scrape/cron` → `/api/scrape` (creates jobs) → `/api/scrape/club` per club → `BaseScraper.run()` → upsert into `tee_times` table → Client fetches via `/api/tee-times` with filters → `SearchSection` renders results
 
 **Key files**:
 - `src/lib/scrapers/base.ts` — Abstract scraper with login, parsing, cookie management
