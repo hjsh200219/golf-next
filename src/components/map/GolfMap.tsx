@@ -6,6 +6,8 @@ import MapTooltip from '@/components/map/MapTooltip';
 
 type GolfClub = Database['public']['Tables']['golf_clubs']['Row'];
 
+type MarkerWithInfo = google.maps.Marker & { _infoWindow?: google.maps.InfoWindow };
+
 interface GolfMapProps {
   clubs?: GolfClub[];
   selectedClubId?: string | null;
@@ -17,8 +19,7 @@ interface GolfMapProps {
 
 declare global {
   interface Window {
-
-    google: any;
+    google: typeof google;
     _golfMapInitialized?: boolean;
   }
 }
@@ -39,9 +40,9 @@ export default function GolfMap({
 }: GolfMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
 
-  const mapInstanceRef = useRef<any>(null);
+  const mapInstanceRef = useRef<google.maps.Map | null>(null);
 
-  const markersRef = useRef<any[]>([]);
+  const markersRef = useRef<MarkerWithInfo[]>([]);
 
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
@@ -180,8 +181,8 @@ export default function GolfMap({
         onClubSelect?.(club.id);
       });
 
-      marker._infoWindow = infoWindow;
-      markersRef.current.push(marker);
+      (marker as MarkerWithInfo)._infoWindow = infoWindow;
+      markersRef.current.push(marker as MarkerWithInfo);
     });
   }, [mapLoaded, clubs, selectedClubId, teeTimeCounts, onClubSelect]);
 
