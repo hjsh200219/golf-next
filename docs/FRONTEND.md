@@ -33,6 +33,7 @@
 |-----------|------|-------------|
 | `TeeTimeTable` | Client | Main results table (uses @tanstack/react-table) |
 | `TeeTimeCard` | Client | Mobile card view for tee-time result |
+| `ClubGroupView` | Client | Club-grouped tee-time view |
 | `ResultSummary` | Client | Count + filter summary bar |
 | `LoadingState` | Server | Shimmer loading skeleton |
 
@@ -57,6 +58,11 @@
 |-----------|------|-------------|
 | `AuthGuard` | Client | Protected route wrapper |
 | `LoginButton` | Client | Supabase OAuth trigger |
+
+### SEO (`components/`)
+| Component | Type | Description |
+|-----------|------|-------------|
+| `JsonLdSchema` | Server | JSON-LD structured data (WebSite, WebApplication, FAQPage) |
 
 ### Favorites (`components/favorites/`)
 | Component | Type | Description |

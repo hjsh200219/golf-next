@@ -5,7 +5,6 @@
 | Document | Status | Description |
 |----------|--------|-------------|
 | [core-beliefs.md](./core-beliefs.md) | Active | Agent-first operating principles |
-| [layer-rules.md](./layer-rules.md) | Active | Architecture layer dependency rules |
 
 ## How to Add a Design Doc
 

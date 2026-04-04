@@ -45,3 +45,4 @@ public/swe-worker-*.js
 next-env.d.ts
 .gstack/
 .omc/
+_workspace/
