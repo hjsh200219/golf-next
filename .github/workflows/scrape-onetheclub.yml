@@ -1,0 +1,52 @@
+name: Scrape OneTheClub Home (Hourly)
+
+# Vercel production lambda 환경에서는 fetchCookie/세션 처리 차이로 원더클럽
+# 본진 CC(파주/신라/듄스) 호출이 빈 응답을 받는 문제가 있어, GitHub Actions
+# runner에서 직접 스크래퍼를 실행해 Supabase에 upsert한다. 본진 + 제휴 모두
+# 한 번에 처리하며, 제휴 부분은 production cron의 결과와 idempotent하게 합쳐진다.
+#
+# 필수 repo secrets:
+#   - GOLF_LOGIN_ID, GOLF_LOGIN_PW (필수)
+#   - GOLF_LOGIN_ID2, GOLF_LOGIN_EMAIL, GOLF_LOGIN_PW1~5, GOLF_LOGIN_NAME, GOLF_LOGIN_MOBILE
+#   - ONETHECLUB_MEMBER_ID
+#   - NEXT_PUBLIC_SUPABASE_URL
+#   - SUPABASE_SERVICE_ROLE_KEY
+
+on:
+  schedule:
+    # 정시 30분에 실행 (기존 scrape-cron 워크플로의 정각과 분산)
+    - cron: '30 * * * *'
+  workflow_dispatch:
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --no-audit --prefer-offline
+
+      - name: Run onetheclub scraper (D+1 ~ D+7)
+        env:
+          GOLF_LOGIN_ID: ${{ secrets.GOLF_LOGIN_ID }}
+          GOLF_LOGIN_ID2: ${{ secrets.GOLF_LOGIN_ID2 }}
+          GOLF_LOGIN_EMAIL: ${{ secrets.GOLF_LOGIN_EMAIL }}
+          GOLF_LOGIN_PW: ${{ secrets.GOLF_LOGIN_PW }}
+          GOLF_LOGIN_PW1: ${{ secrets.GOLF_LOGIN_PW1 }}
+          GOLF_LOGIN_PW2: ${{ secrets.GOLF_LOGIN_PW2 }}
+          GOLF_LOGIN_PW3: ${{ secrets.GOLF_LOGIN_PW3 }}
+          GOLF_LOGIN_PW4: ${{ secrets.GOLF_LOGIN_PW4 }}
+          GOLF_LOGIN_PW5: ${{ secrets.GOLF_LOGIN_PW5 }}
+          GOLF_LOGIN_NAME: ${{ secrets.GOLF_LOGIN_NAME }}
+          GOLF_LOGIN_MOBILE: ${{ secrets.GOLF_LOGIN_MOBILE }}
+          ONETHECLUB_MEMBER_ID: ${{ secrets.ONETHECLUB_MEMBER_ID }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: npx tsx scripts/scrape-onetheclub.ts --days 7 --start 1
