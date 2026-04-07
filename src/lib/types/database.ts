@@ -53,6 +53,13 @@ export interface Database {
           lon: number | null;
           address: string | null;
           is_active: boolean;
+          cc_name: string | null;
+          display_name: string | null;
+          region: string | null;
+          is_partner: boolean;
+          sort_order: number;
+          created_at: string;
+          updated_at: string;
         };
         Insert: {
           id?: number;
@@ -63,6 +70,13 @@ export interface Database {
           lon?: number | null;
           address?: string | null;
           is_active?: boolean;
+          cc_name?: string | null;
+          display_name?: string | null;
+          region?: string | null;
+          is_partner?: boolean;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
         };
         Update: Partial<Database['public']['Tables']['golf_club_courses']['Insert']>;
         Relationships: [];
