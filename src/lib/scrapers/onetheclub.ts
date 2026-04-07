@@ -58,6 +58,10 @@ const HOME_COURSES: HomeCourse[] = [
   { code: 'J53', name: '신라CC' },
   { code: 'J54', name: '파주CC' },
   { code: 'J5A', name: '듄스코스' },
+  // D01은 사용자 입력 alias이고 실제 응답의 companyCd는 J57이며 4개 코스 섹션
+  // (바다 레이크/클래식/오션, 하늘+연습장)이 한 응답에 들어 있다.
+  // golfConfirm 시그니처는 본진(J##)과 동일하게 처리된다.
+  { code: 'D01', name: '클럽72CC' },
 ];
 
 export default class OneTheClubScraper extends BaseScraper {
