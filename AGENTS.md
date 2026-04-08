@@ -45,7 +45,7 @@ src/
 > Details: [ARCHITECTURE.md](./ARCHITECTURE.md)
 
 - **Scraper Pattern**: Each club has a dedicated scraper class extending `BaseScraper` with cookie-jar session, login flow, per-scraper SSL toggle.
-- **Region System**: Static `CLUB_REGION_MAP` maps club IDs to 5 Korean regions.
+- **Region System**: Static `CLUB_REGION_MAP` maps club IDs to 7 Korean regions.
 - **Favorites**: Dual system -- `user_favorites` (authenticated) + `device_favorites` (anonymous via device UUID).
 - **Weather**: OpenWeatherMap API with Supabase caching via geohash.
 - **PWA**: next-pwa with offline fallback, service worker auto-registration.

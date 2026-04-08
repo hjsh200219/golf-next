@@ -22,7 +22,7 @@
 |-----------|------|-------------|
 | `SearchSection` | Client | Main search orchestrator — date tabs, filters, results |
 | `FilterPanel` | Client | Collapsible filter container |
-| `RegionFilter` | Client | Region-based club filtering (5 regions) |
+| `RegionFilter` | Client | Region-based club filtering (7 regions) |
 | `ClubFilter` | Client | Individual club selection |
 | `TimeFilter` | Client | Time range slider |
 | `PriceFilter` | Client | Price range slider |

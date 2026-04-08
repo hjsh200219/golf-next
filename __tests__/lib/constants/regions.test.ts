@@ -5,12 +5,11 @@ import {
   getClubsByRegion,
   getRegionForClub,
   warnUnmappedClubs,
-  type RegionKey,
 } from '@/lib/constants/regions';
 
 describe('REGIONS', () => {
-  it('has 5 regions', () => {
-    expect(Object.keys(REGIONS)).toHaveLength(5);
+  it('has 7 regions', () => {
+    expect(Object.keys(REGIONS)).toHaveLength(7);
   });
 
   it('includes all expected regions', () => {
@@ -19,6 +18,8 @@ describe('REGIONS', () => {
     expect(REGIONS).toHaveProperty('강원');
     expect(REGIONS).toHaveProperty('인천');
     expect(REGIONS).toHaveProperty('충청');
+    expect(REGIONS).toHaveProperty('호남');
+    expect(REGIONS).toHaveProperty('제주');
   });
 
   it('each region has label and description', () => {
