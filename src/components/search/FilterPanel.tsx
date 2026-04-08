@@ -5,8 +5,9 @@ import RegionFilter from '@/components/search/RegionFilter';
 import ClubFilter from '@/components/search/ClubFilter';
 import TimeFilter from '@/components/search/TimeFilter';
 import PriceFilter from '@/components/search/PriceFilter';
+import { useClubs } from '@/hooks/useClubs';
 import { useFilters, useFilterStore } from '@/hooks/useFilters';
-import { getClubsByRegion, type RegionKey } from '@/lib/constants/regions';
+import { getCoursesByRegionFromCourses, type RegionKey } from '@/lib/constants/regions';
 
 interface FilterPanelProps {
   /** Whether to show the panel initially expanded (default: true on desktop, false on mobile) */
@@ -20,22 +21,48 @@ export default function FilterPanel({ defaultOpen = false, favoritesOnly = false
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const { resetFilters, selectedClubs, timeRange, priceMin, priceMax } = useFilters();
   const store = useFilterStore();
+  const { data: clubs } = useClubs();
 
   const handleToggleRegion = useCallback((region: RegionKey) => {
-    const regionClubs = getClubsByRegion([region]);
+    const { clubIds: regionClubs, ccByClub } = getCoursesByRegionFromCourses([region], clubs ?? []);
+    if (regionClubs.length === 0) return;
     const currentSet = new Set(store.selectedClubs);
     const allSelected = regionClubs.every((id) => currentSet.has(id));
 
     if (allSelected) {
-      // Deselect all clubs in this region
+      // Deselect all clubs in this region + cc 제한 해제
       const next = store.selectedClubs.filter((id) => !regionClubs.includes(id));
+      const nextRestrictions = { ...store.ccRestrictions };
+      for (const id of regionClubs) {
+        delete nextRestrictions[id];
+      }
       store.setSelectedClubs(next);
+      store.setCcRestrictions(nextRestrictions);
     } else {
-      // Select all clubs in this region (union with current)
+      // Select all clubs in this region (union) + cc-level 제한 머지
       const next = [...new Set([...store.selectedClubs, ...regionClubs])];
+      const nextRestrictions: Record<string, string[]> = { ...store.ccRestrictions };
+      for (const clubId of regionClubs) {
+        const newCcs = ccByClub[clubId];
+        if (!newCcs) {
+          // fallback 매칭(=전체 cc) → 제한 없음 의미로 키 제거
+          delete nextRestrictions[clubId];
+          continue;
+        }
+        const existing = nextRestrictions[clubId];
+        if (existing === undefined) {
+          // 클럽이 이미 직접 선택되어 제한이 없는 상태였다면 제한 없음 유지
+          if (currentSet.has(clubId)) continue;
+          nextRestrictions[clubId] = [...newCcs];
+        } else {
+          // 기존 cc 제한과 union (이전 region에서 추가된 cc + 이번 region cc)
+          nextRestrictions[clubId] = Array.from(new Set([...existing, ...newCcs]));
+        }
+      }
       store.setSelectedClubs(next);
+      store.setCcRestrictions(nextRestrictions);
     }
-  }, [store]);
+  }, [store, clubs]);
 
   const activeFilterCount =
     selectedClubs.length +

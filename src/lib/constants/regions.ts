@@ -44,7 +44,6 @@ export const CLUB_REGION_MAP: Record<string, RegionKey> = {
   cc360: '경기남부',
   skyvalley: '경기남부',
   ferrum: '경기남부',
-  cascadia: '경기남부',
 
   sonofelice: '강원',
   oakvalley: '강원',
@@ -53,6 +52,7 @@ export const CLUB_REGION_MAP: Record<string, RegionKey> = {
   shinedale: '강원',
   hilldeloci: '강원',
   sungmoon: '강원',
+  cascadia: '강원',
 
   orangedunesyj: '인천',
   onetheclub: '인천',
@@ -67,6 +67,113 @@ export function getClubsByRegion(regions: RegionKey[]): string[] {
   return Object.entries(CLUB_REGION_MAP)
     .filter(([, region]) => regionSet.has(region))
     .map(([clubId]) => clubId);
+}
+
+/**
+ * cc(course) 단위 region을 기준으로 매칭되는 club_id 목록을 반환한다.
+ * 클럽 1개가 여러 region에 걸친 경우(예: onetheclub의 인천/강원/호남/제주 cc)
+ * 해당 region에 속한 cc가 하나라도 있으면 그 클럽 전체가 포함된다.
+ *
+ * cc-level region 정보가 없는 클럽은 정적 CLUB_REGION_MAP으로 fallback.
+ *
+ * 주의: club_id 단위 결과만 반환하므로, cc 부분집합 정보가 필요하면
+ * `getCoursesByRegionFromCourses`를 사용한다.
+ */
+export function getClubsByRegionFromCourses(
+  regions: RegionKey[],
+  clubs: Array<{
+    id: string;
+    courses?: Array<{ region: string | null; is_active: boolean }>;
+  }>,
+): string[] {
+  if (regions.length === 0) return [];
+  const regionSet = new Set<string>(regions);
+  const matched = new Set<string>();
+
+  for (const club of clubs) {
+    const courses = club.courses ?? [];
+    let hit = false;
+    for (const c of courses) {
+      if (!c.is_active) continue;
+      if (c.region && regionSet.has(c.region)) {
+        hit = true;
+        break;
+      }
+    }
+    if (hit) {
+      matched.add(club.id);
+      continue;
+    }
+    // Fallback: cc-level region이 없으면 정적 매핑 사용
+    const fallback = CLUB_REGION_MAP[club.id];
+    if (fallback && regionSet.has(fallback)) {
+      matched.add(club.id);
+    }
+  }
+
+  return Array.from(matched);
+}
+
+export interface RegionMatch {
+  /** region에 매칭된 club_id 목록 (서버 쿼리용) */
+  clubIds: string[];
+  /**
+   * club_id 별 매칭된 cc_name 목록 (클라이언트 cc-level 필터링용).
+   * 어떤 클럽이 cc-level region 정보 없이 fallback 매칭되면 그 클럽은
+   * 이 맵에 포함되지 않아 "전체 cc 매칭" 의미가 된다.
+   */
+  ccByClub: Record<string, string[]>;
+}
+
+/**
+ * cc 단위 region 매칭을 수행하고 정확한 cc 부분집합도 반환한다.
+ * - cc-level region 정보로 매칭된 클럽 → ccByClub에 매칭된 cc_name만 포함
+ * - 정적 CLUB_REGION_MAP fallback으로 매칭된 클럽 → ccByClub에 미포함 (=전체 cc)
+ *
+ * 호출자는 ccByClub을 사용해 tee_times를 추가 필터링한다.
+ */
+export function getCoursesByRegionFromCourses(
+  regions: RegionKey[],
+  clubs: Array<{
+    id: string;
+    courses?: Array<{
+      region: string | null;
+      cc_name: string | null;
+      is_active: boolean;
+    }>;
+  }>,
+): RegionMatch {
+  if (regions.length === 0) return { clubIds: [], ccByClub: {} };
+  const regionSet = new Set<string>(regions);
+  const ccByClub: Record<string, string[]> = {};
+  const clubIdSet = new Set<string>();
+
+  for (const club of clubs) {
+    const courses = club.courses ?? [];
+    const matchedCcs: string[] = [];
+
+    for (const c of courses) {
+      if (!c.is_active) continue;
+      if (c.region && regionSet.has(c.region) && c.cc_name) {
+        matchedCcs.push(c.cc_name);
+      }
+    }
+
+    if (matchedCcs.length > 0) {
+      ccByClub[club.id] = matchedCcs;
+      clubIdSet.add(club.id);
+      continue;
+    }
+
+    // cc-level region이 없는 클럽은 정적 매핑으로 fallback (전체 cc 매칭)
+    const fallback = CLUB_REGION_MAP[club.id];
+    if (fallback && regionSet.has(fallback)) {
+      clubIdSet.add(club.id);
+      // ccByClub에 키를 두지 않아 "제한 없음" 의미
+    }
+  }
+
+  return { clubIds: Array.from(clubIdSet), ccByClub };
 }
 
 export function getRegionForClub(clubId: string): RegionKey | null {

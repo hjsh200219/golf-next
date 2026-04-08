@@ -24,6 +24,10 @@ describe('useFilterStore — initial state', () => {
     expect(useFilterStore.getState().selectedClubs).toEqual([]);
   });
 
+  it('starts with empty ccRestrictions', () => {
+    expect(useFilterStore.getState().ccRestrictions).toEqual({});
+  });
+
   it('starts with a null timeRange', () => {
     expect(useFilterStore.getState().timeRange).toBeNull();
   });
@@ -77,6 +81,41 @@ describe('useFilterStore — toggleClub', () => {
     useFilterStore.getState().toggleClub('club-x');
     useFilterStore.getState().toggleClub('club-x');
     expect(useFilterStore.getState().selectedClubs).toEqual([]);
+  });
+
+  it('clears existing ccRestrictions for the toggled club (전체 cc 매칭으로 복귀)', () => {
+    useFilterStore.getState().setSelectedClubs(['onetheclub']);
+    useFilterStore.getState().setCcRestrictions({ onetheclub: ['파주CC'] });
+    // 직접 토글로 cc 제한 해제
+    useFilterStore.getState().toggleClub('onetheclub');
+    // 토글로 클럽이 빠졌고, cc 제한도 제거
+    expect(useFilterStore.getState().selectedClubs).not.toContain('onetheclub');
+    expect(useFilterStore.getState().ccRestrictions['onetheclub']).toBeUndefined();
+  });
+
+  it('preserves ccRestrictions for other clubs when toggling', () => {
+    useFilterStore.getState().setCcRestrictions({
+      onetheclub: ['파주CC'],
+      pinestone: ['레인보우힐스CC'],
+    });
+    useFilterStore.getState().toggleClub('onetheclub');
+    expect(useFilterStore.getState().ccRestrictions['pinestone']).toEqual(['레인보우힐스CC']);
+  });
+});
+
+describe('useFilterStore — ccRestrictions', () => {
+  beforeEach(resetStore);
+
+  it('setCcRestrictions replaces the entire map', () => {
+    useFilterStore.getState().setCcRestrictions({ a: ['x'] });
+    useFilterStore.getState().setCcRestrictions({ b: ['y'] });
+    expect(useFilterStore.getState().ccRestrictions).toEqual({ b: ['y'] });
+  });
+
+  it('resetFilters clears ccRestrictions', () => {
+    useFilterStore.getState().setCcRestrictions({ a: ['x', 'y'] });
+    useFilterStore.getState().resetFilters();
+    expect(useFilterStore.getState().ccRestrictions).toEqual({});
   });
 });
 

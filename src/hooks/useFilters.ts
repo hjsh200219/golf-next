@@ -6,13 +6,26 @@ import { useCallback, useEffect } from 'react';
 
 export type TimeRangeKey = 'early' | 'morning' | 'afternoon' | 'evening';
 
+/**
+ * cc-level 필터 제한.
+ * - 키가 없는 club_id: 클럽 단위 매칭 (해당 클럽 모든 cc 표시)
+ * - 키가 있고 값 배열이 비어있지 않은 club_id: 그 cc_name만 표시 (region 필터 등)
+ *
+ * tee-times 서버 쿼리는 club_id 단위로만 수행하고, 클라이언트에서 이 제한을
+ * 추가로 적용한다(부분집합). 이렇게 하면 onetheclub처럼 region이 cc별로
+ * 다른 클럽도 region 필터링 시 정확히 부분집합만 보여줄 수 있다.
+ */
+export type CcRestrictions = Record<string, string[]>;
+
 export interface FilterState {
   selectedClubs: string[];
+  ccRestrictions: CcRestrictions;
   timeRange: TimeRangeKey | null;
   priceMin: number | null;
   priceMax: number | null;
   setSelectedClubs: (clubs: string[]) => void;
   toggleClub: (clubId: string) => void;
+  setCcRestrictions: (restrictions: CcRestrictions) => void;
   setTimeRange: (range: TimeRangeKey | null) => void;
   setPriceMin: (min: number | null) => void;
   setPriceMax: (max: number | null) => void;
@@ -21,6 +34,7 @@ export interface FilterState {
 
 export const useFilterStore = create<FilterState>((set) => ({
   selectedClubs: [],
+  ccRestrictions: {},
   timeRange: null,
   priceMin: null,
   priceMax: null,
@@ -28,11 +42,19 @@ export const useFilterStore = create<FilterState>((set) => ({
   setSelectedClubs: (clubs) => set({ selectedClubs: clubs }),
 
   toggleClub: (clubId) =>
-    set((state) => ({
-      selectedClubs: state.selectedClubs.includes(clubId)
-        ? state.selectedClubs.filter((id) => id !== clubId)
-        : [...state.selectedClubs, clubId],
-    })),
+    set((state) => {
+      // 클럽 직접 토글은 cc 제한을 해제(전체 cc 매칭으로 복귀)
+      const nextRestrictions = { ...state.ccRestrictions };
+      delete nextRestrictions[clubId];
+      return {
+        selectedClubs: state.selectedClubs.includes(clubId)
+          ? state.selectedClubs.filter((id) => id !== clubId)
+          : [...state.selectedClubs, clubId],
+        ccRestrictions: nextRestrictions,
+      };
+    }),
+
+  setCcRestrictions: (restrictions) => set({ ccRestrictions: restrictions }),
 
   setTimeRange: (range) => set({ timeRange: range }),
   setPriceMin: (min) => set({ priceMin: min }),
@@ -41,6 +63,7 @@ export const useFilterStore = create<FilterState>((set) => ({
   resetFilters: () =>
     set({
       selectedClubs: [],
+      ccRestrictions: {},
       timeRange: null,
       priceMin: null,
       priceMax: null,
@@ -114,12 +137,14 @@ export function useFilters() {
 
   const toggleClub = useCallback(
     (clubId: string) => {
+      // store.toggleClub을 위임 호출해 ccRestrictions 정리 로직과 일관성 유지
+      store.toggleClub(clubId);
       const next = store.selectedClubs.includes(clubId)
         ? store.selectedClubs.filter((id) => id !== clubId)
         : [...store.selectedClubs, clubId];
-      setSelectedClubs(next);
+      pushParams({ clubs: next.length > 0 ? next.join(',') : null });
     },
-    [store.selectedClubs, setSelectedClubs],
+    [store, pushParams],
   );
 
   const setTimeRange = useCallback(

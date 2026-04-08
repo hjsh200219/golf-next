@@ -1,15 +1,24 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
-import type { Database } from '@/lib/types/database';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import type { ClubWithCourses } from '@/hooks/useClubs';
 import MapTooltip from '@/components/map/MapTooltip';
-
-type GolfClub = Database['public']['Tables']['golf_clubs']['Row'];
 
 type MarkerWithInfo = google.maps.Marker & { _infoWindow?: google.maps.InfoWindow };
 
+/** cc 단위 마커 entry — 클럽이 1:N이면 cc별로 각각 생성 */
+interface CourseMarker {
+  clubId: string;
+  clubName: string;
+  /** cc 표시명 (cc_name → display_name → club name 순) */
+  ccLabel: string;
+  lat: number;
+  lon: number;
+  address: string | null;
+}
+
 interface GolfMapProps {
-  clubs?: GolfClub[];
+  clubs?: ClubWithCourses[];
   selectedClubId?: string | null;
   onClubSelect?: (clubId: string) => void;
   className?: string;
@@ -47,14 +56,58 @@ export default function GolfMap({
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
 
-  /** 클럽 중심 좌표 계산 */
-  const computeCenter = useCallback(() => {
-    const withCoords = clubs.filter((c) => c.lat !== null && c.lon !== null);
-    if (withCoords.length === 0) return KOREA_CENTER;
-    const avgLat = withCoords.reduce((s, c) => s + (c.lat as number), 0) / withCoords.length;
-    const avgLng = withCoords.reduce((s, c) => s + (c.lon as number), 0) / withCoords.length;
-    return { lat: avgLat, lng: avgLng };
+  /**
+   * cc 단위 마커 목록 — 클럽의 courses 배열을 펼쳐 각 cc에 대해 마커 entry 생성.
+   * 같은 클럽 내에서 (lat,lon)이 동일한 cc는 하나로 묶어 중복 마커를 방지한다.
+   * cc-level 좌표가 없으면 클럽-level 좌표로 fallback.
+   */
+  const courseMarkers = useMemo<CourseMarker[]>(() => {
+    const out: CourseMarker[] = [];
+    for (const club of clubs) {
+      const seen = new Set<string>();
+      const courses = club.courses ?? [];
+
+      // cc-level 좌표가 있는 entries 추가
+      for (const c of courses) {
+        if (!c.is_active) continue;
+        const lat = c.lat ?? club.lat;
+        const lon = c.lon ?? club.lon;
+        if (lat == null || lon == null) continue;
+        const key = `${lat.toFixed(5)},${lon.toFixed(5)}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push({
+          clubId: club.id,
+          clubName: club.display_name ?? club.name,
+          ccLabel: c.display_name ?? c.cc_name ?? c.course_name,
+          lat,
+          lon,
+          address: c.address ?? club.address,
+        });
+      }
+
+      // courses가 비어있거나 모두 좌표 없는 클럽 → 클럽 단위 fallback
+      if (seen.size === 0 && club.lat != null && club.lon != null) {
+        out.push({
+          clubId: club.id,
+          clubName: club.display_name ?? club.name,
+          ccLabel: club.display_name ?? club.name,
+          lat: club.lat,
+          lon: club.lon,
+          address: club.address,
+        });
+      }
+    }
+    return out;
   }, [clubs]);
+
+  /** 마커 중심 좌표 계산 */
+  const computeCenter = useCallback(() => {
+    if (courseMarkers.length === 0) return KOREA_CENTER;
+    const avgLat = courseMarkers.reduce((s, m) => s + m.lat, 0) / courseMarkers.length;
+    const avgLng = courseMarkers.reduce((s, m) => s + m.lon, 0) / courseMarkers.length;
+    return { lat: avgLat, lng: avgLng };
+  }, [courseMarkers]);
 
   /** Google Maps API 스크립트 동적 로드 */
   useEffect(() => {
@@ -131,17 +184,13 @@ export default function GolfMap({
     markersRef.current.forEach((m) => m.setMap(null));
     markersRef.current = [];
 
-    const clubsWithCoords = clubs.filter((c) => c.lat !== null && c.lon !== null);
-
-    clubsWithCoords.forEach((club) => {
-      const lat = club.lat as number;
-      const lng = club.lon as number;
-      const isSelected = club.id === selectedClubId;
+    courseMarkers.forEach((cm) => {
+      const isSelected = cm.clubId === selectedClubId;
 
       const marker = new google.maps.Marker({
-        position: { lat, lng },
+        position: { lat: cm.lat, lng: cm.lon },
         map,
-        title: club.display_name ?? club.name,
+        title: cm.ccLabel,
         icon: {
           path: google.maps.SymbolPath.CIRCLE,
           scale: isSelected ? 12 : 8,
@@ -153,14 +202,16 @@ export default function GolfMap({
         zIndex: isSelected ? 100 : 1,
       });
 
-      const teeTimeCount = teeTimeCounts[club.id];
-      const address = club.address ?? undefined;
+      const teeTimeCount = teeTimeCounts[cm.clubId];
+      const address = cm.address ?? undefined;
+      const showsCcLabel = cm.ccLabel !== cm.clubName;
 
       const infoContent = `
         <div style="min-width:180px;padding:4px 0;font-family:sans-serif;">
           <div style="font-size:13px;font-weight:600;color:#111827;margin-bottom:4px;">
-            ${club.display_name ?? club.name}
+            ${cm.clubName}
           </div>
+          ${showsCcLabel ? `<div style="font-size:12px;color:#374151;margin-bottom:4px;">${cm.ccLabel}</div>` : ''}
           ${address ? `<div style="font-size:12px;color:#6b7280;margin-bottom:4px;">${address}</div>` : ''}
           ${
             teeTimeCount !== undefined
@@ -178,24 +229,23 @@ export default function GolfMap({
           if (m._infoWindow) m._infoWindow.close();
         });
         infoWindow.open({ anchor: marker, map });
-        onClubSelect?.(club.id);
+        onClubSelect?.(cm.clubId);
       });
 
       (marker as MarkerWithInfo)._infoWindow = infoWindow;
       markersRef.current.push(marker as MarkerWithInfo);
     });
-  }, [mapLoaded, clubs, selectedClubId, teeTimeCounts, onClubSelect]);
+  }, [mapLoaded, courseMarkers, selectedClubId, teeTimeCounts, onClubSelect]);
 
   /** 선택된 클럽이 변경되면 지도 중심 이동 */
   useEffect(() => {
     if (!mapLoaded || !mapInstanceRef.current || !selectedClubId) return;
-    const club = clubs.find((c) => c.id === selectedClubId);
-    if (!club?.lat || !club?.lon) return;
-    mapInstanceRef.current.panTo({ lat: club.lat, lng: club.lon });
+    // 선택된 클럽의 첫 번째 cc 마커로 이동 (좌표가 cc별로 다를 수 있어 첫 entry 사용)
+    const target = courseMarkers.find((m) => m.clubId === selectedClubId);
+    if (!target) return;
+    mapInstanceRef.current.panTo({ lat: target.lat, lng: target.lon });
     mapInstanceRef.current.setZoom(12);
-  }, [mapLoaded, selectedClubId, clubs]);
-
-  const clubsWithCoords = clubs.filter((c) => c.lat !== null && c.lon !== null);
+  }, [mapLoaded, selectedClubId, courseMarkers]);
 
   // API 키 없음 or 로드 에러
   if (mapError) {
@@ -219,9 +269,9 @@ export default function GolfMap({
           />
         </svg>
         <p className="text-sm font-medium text-red-500">{mapError}</p>
-        {clubsWithCoords.length > 0 && (
+        {courseMarkers.length > 0 && (
           <p className="mt-1 text-xs text-gray-400">
-            위치 정보 보유 골프장: {clubsWithCoords.length}개
+            위치 정보 보유 코스: {courseMarkers.length}개
           </p>
         )}
         {/* Club list fallback */}
@@ -259,9 +309,9 @@ export default function GolfMap({
         <div className="absolute inset-0 flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 bg-gray-50">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-green-500 border-t-transparent" />
           <p className="mt-3 text-sm text-gray-500">지도를 불러오는 중...</p>
-          {clubsWithCoords.length > 0 && (
+          {courseMarkers.length > 0 && (
             <p className="mt-1 text-xs text-gray-400">
-              위치 정보 보유 골프장: {clubsWithCoords.length}개
+              위치 정보 보유 코스: {courseMarkers.length}개
             </p>
           )}
         </div>

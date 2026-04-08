@@ -1,6 +1,12 @@
 'use client';
 
-import { REGIONS, REGION_KEYS, getClubsByRegion, type RegionKey } from '@/lib/constants/regions';
+import { useClubs } from '@/hooks/useClubs';
+import {
+  REGIONS,
+  REGION_KEYS,
+  getClubsByRegionFromCourses,
+  type RegionKey,
+} from '@/lib/constants/regions';
 
 interface RegionFilterProps {
   selectedClubs: string[];
@@ -8,12 +14,13 @@ interface RegionFilterProps {
 }
 
 export default function RegionFilter({ selectedClubs, onToggleRegion }: RegionFilterProps) {
+  const { data: clubs } = useClubs();
   const selectedSet = new Set(selectedClubs);
 
   return (
     <div className="flex flex-wrap gap-2">
       {REGION_KEYS.map((key) => {
-        const regionClubs = getClubsByRegion([key]);
+        const regionClubs = getClubsByRegionFromCourses([key], clubs ?? []);
         const allSelected = regionClubs.length > 0 && regionClubs.every((id) => selectedSet.has(id));
         const someSelected = !allSelected && regionClubs.some((id) => selectedSet.has(id));
 

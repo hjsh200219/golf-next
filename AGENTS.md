@@ -90,7 +90,7 @@ src/
 
 ## Testing & Verification
 
-- Run: `npm test` (Vitest, 343 tests / 27 files)
+- Run: `npm test` (Vitest, 359 tests / 27 files)
 - Build: `npm run build` (ignore `/login` prerender error -- expected without Supabase env vars)
 - Lint: `npm run lint` (layer rules enforced via `import/no-restricted-paths`)
 

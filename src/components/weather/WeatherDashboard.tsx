@@ -1,17 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useClubs } from '@/hooks/useClubs';
+import { useClubs, type ClubWithCourses } from '@/hooks/useClubs';
 import { useWeather } from '@/hooks/useWeather';
 import HourlyChart from '@/components/weather/HourlyChart';
 import DailyChart from '@/components/weather/DailyChart';
 import MinutelyChart from '@/components/weather/MinutelyChart';
 import HourlyTable from '@/components/weather/HourlyTable';
-import type { Database } from '@/lib/types/database';
-
-type GolfClub = Database['public']['Tables']['golf_clubs']['Row'] & {
-  courses?: Array<{ lat: number | null; lon: number | null; course_name: string }>;
-};
 
 type TabKey = 'hourly' | 'daily' | 'minutely' | 'table';
 
@@ -34,7 +29,7 @@ export default function WeatherDashboard() {
     }
   }, [clubs, selectedClubId]);
 
-  const selectedClub: GolfClub | undefined = clubs?.find(
+  const selectedClub: ClubWithCourses | undefined = clubs?.find(
     (c) => c.id === selectedClubId,
   );
 

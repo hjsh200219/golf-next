@@ -4,15 +4,18 @@ import useSWR, { KeyedMutator } from 'swr';
 import type { Database } from '@/lib/types/database';
 
 type GolfClub = Database['public']['Tables']['golf_clubs']['Row'];
+type GolfCourse = Database['public']['Tables']['golf_club_courses']['Row'];
+
+export type ClubWithCourses = GolfClub & { courses: GolfCourse[] };
 
 interface UseClubsResult {
-  data: GolfClub[] | undefined;
+  data: ClubWithCourses[] | undefined;
   isLoading: boolean;
   error: Error | undefined;
-  mutate: KeyedMutator<GolfClub[]>;
+  mutate: KeyedMutator<ClubWithCourses[]>;
 }
 
-async function fetcher(url: string): Promise<GolfClub[]> {
+async function fetcher(url: string): Promise<ClubWithCourses[]> {
   const res = await fetch(url);
   if (!res.ok) {
     throw new Error(`Failed to fetch clubs: ${res.status} ${res.statusText}`);
@@ -21,7 +24,7 @@ async function fetcher(url: string): Promise<GolfClub[]> {
 }
 
 export function useClubs(): UseClubsResult {
-  const { data, error, isLoading, mutate } = useSWR<GolfClub[]>(
+  const { data, error, isLoading, mutate } = useSWR<ClubWithCourses[]>(
     '/api/clubs',
     fetcher,
     {

@@ -7,7 +7,7 @@ import ResultSummary from '@/components/results/ResultSummary';
 import { useTeeTimes } from '@/hooks/useTeeTimes';
 import { useSearchParams } from 'next/navigation';
 import { toDateString } from '@/lib/utils/date';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useFilterStore, useUIPreferences } from '@/hooks/useFilters';
 import { useFavorites } from '@/hooks/useFavorites';
 import { toast } from 'sonner';
@@ -21,6 +21,7 @@ export default function SearchSection() {
   tomorrow.setDate(tomorrow.getDate() + 1);
   const date = searchParams.get('date') || toDateString(tomorrow);
   const selectedClubs = useFilterStore((s) => s.selectedClubs);
+  const ccRestrictions = useFilterStore((s) => s.ccRestrictions);
   const { favoriteIds } = useFavorites();
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const { viewMode, setViewMode } = useUIPreferences();
@@ -33,7 +34,18 @@ export default function SearchSection() {
   const [isScraping, setIsScraping] = useState(false);
   const [scrapeProgress, setScrapeProgress] = useState('');
 
-  const teeTimes = data ?? [];
+  // cc-level 추가 필터링: ccRestrictions에 키가 있는 클럽만 부분집합으로 제한
+  // 즐겨찾기 모드일 때는 region 기반 cc 제한을 적용하지 않는다.
+  const teeTimes = useMemo(() => {
+    const all = data ?? [];
+    if (favoritesOnly) return all;
+    if (Object.keys(ccRestrictions).length === 0) return all;
+    return all.filter((t) => {
+      const allowed = ccRestrictions[t.club_id];
+      if (!allowed) return true; // 제한 없는 클럽 → 통과
+      return allowed.includes(t.cc_name);
+    });
+  }, [data, ccRestrictions, favoritesOnly]);
   const scrapedAt = teeTimes.length > 0 ? teeTimes[0].scraped_at : null;
   const busy = isLoading || isValidating || isScraping;
 
