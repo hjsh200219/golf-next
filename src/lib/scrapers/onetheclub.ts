@@ -280,7 +280,7 @@ export default class OneTheClubScraper extends BaseScraper {
     const html = await res.text();
     const $ = this.parseHtml(html);
 
-    const fallbackName = `[제휴]${partner.name}`;
+    const fallbackName = partner.name;
     const rows: TeeTimeRow[] = [];
 
     $('ul.list > li').each((_, li) => {

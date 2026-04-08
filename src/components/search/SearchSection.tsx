@@ -46,7 +46,17 @@ export default function SearchSection() {
       return allowed.includes(t.cc_name);
     });
   }, [data, ccRestrictions, favoritesOnly]);
-  const scrapedAt = teeTimes.length > 0 ? teeTimes[0].scraped_at : null;
+  // 화면에 표시하는 "수집 시각"은 행 하나의 값(teeTimes[0])이 아닌 전체 중 최신 시각.
+  // 특정 클럽 스크레이퍼가 오래전에 멈춰 있어도 다른 클럽의 최근 수집 기록이 반영된다.
+  const scrapedAt = useMemo(() => {
+    let latest: string | null = null;
+    for (const t of teeTimes) {
+      const s = t.scraped_at;
+      if (!s) continue;
+      if (latest === null || s > latest) latest = s;
+    }
+    return latest;
+  }, [teeTimes]);
   const busy = isLoading || isValidating || isScraping;
 
   const pollJobStatus = useCallback(async (jobId: number) => {

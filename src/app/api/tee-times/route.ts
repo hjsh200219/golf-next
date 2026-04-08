@@ -113,7 +113,14 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    return NextResponse.json(data ?? []);
+    // Legacy scrapes stored partner CCs with a "[제휴]" prefix; strip it on the wire
+    // so both display and grouping use the clean club name.
+    const cleaned = (data ?? []).map((row) => ({
+      ...row,
+      cc_name: typeof row.cc_name === 'string' ? row.cc_name.replace(/^\[제휴\]\s*/, '') : row.cc_name,
+    }));
+
+    return NextResponse.json(cleaned);
   } catch (err) {
     log.error('Unexpected error', { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json(

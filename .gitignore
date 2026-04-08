@@ -40,6 +40,9 @@ public/swe-worker-*.js
 # vercel
 .vercel
 
+# supabase cli state
+supabase/.temp/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

@@ -7,6 +7,7 @@ import Footer from '@/components/layout/Footer';
 import JsonLdSchema from '@/components/JsonLdSchema';
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://golfshin.com'),
   title: '골프 예약 조회 | GolfShin',
   description: '실시간 골프장 티타임 예약 조회 — 30개+ 골프장, 5분 간격 업데이트',
   manifest: '/manifest.json',
