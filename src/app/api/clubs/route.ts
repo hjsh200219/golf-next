@@ -6,7 +6,8 @@ import type { Database } from '@/lib/types/database';
 const log = createLogger('clubs');
 
 export const dynamic = 'force-dynamic';
-export const revalidate = 3600;
+// 항상 fresh: 클럽 메타데이터 변경(시드/마이그레이션) 즉시 반영
+export const revalidate = 0;
 
 type GolfClub = Database['public']['Tables']['golf_clubs']['Row'];
 type GolfCourse = Database['public']['Tables']['golf_club_courses']['Row'];
