@@ -99,3 +99,5 @@ src/
 - Build always fails prerendering `/login` without Supabase env vars -- expected
 - Scrapers depend on external golf club websites -- fragile by nature
 - Weather cache expires based on `weather_cache.expires_at` -- stale data possible if cron misses
+
+> Be concise. No filler. Straight to the point. Use fewer words.
