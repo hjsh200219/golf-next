@@ -51,7 +51,7 @@ src/
 - **PWA**: next-pwa with offline fallback, service worker auto-registration.
 - **Date Tabs**: Tomorrow-focused (not today). Golf reservations are booked 1+ days ahead.
 - **SEO**: `src/lib/schema.ts` generates JSON-LD dynamically; `public/llms.txt` for LLM discovery.
-- **Scrape Schedule**: GitHub Actions cron 4시간마다 (`0 */4 * * *`, 하루 6회) → `/api/scrape/cron`. Vercel Hobby는 cron 하루 1회 제한이라 Actions로 대체.
+- **Scrape Schedule**: Vercel Cron runs hourly (`0 * * * *`) at `/api/scrape/cron`.
 
 ## Design System
 

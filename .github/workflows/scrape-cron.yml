@@ -1,8 +1,7 @@
-name: Scrape Tee Times (Every 4h)
+name: Scrape Tee Times (Hourly)
 
 # Vercel Hobby plan은 cron을 하루 1회로 제한해서 기존 vercel.json의 시간당 cron이
-# 실제로는 거의 동작하지 않는다. GitHub Actions cron으로 대체해 하루 6회(4시간 간격) 실행한다.
-# Hobby 한도·Actions 빌링 부담을 낮추기 위해 시간당 → 4시간 간격으로 조정 (2026-04-19).
+# 실제로는 거의 동작하지 않는다. GitHub Actions cron으로 대체해 매시간 실행한다.
 #
 # 필수 repo secrets:
 #   - APP_URL      : 배포 URL (예: https://golf-next.vercel.app)
@@ -10,7 +9,7 @@ name: Scrape Tee Times (Every 4h)
 
 on:
   schedule:
-    - cron: '0 */4 * * *' # 4시간마다 정각 (UTC): 00, 04, 08, 12, 16, 20 = KST 09, 13, 17, 21, 01, 05
+    - cron: '0 * * * *' # 매시간 정각 (UTC)
   workflow_dispatch:
     # 필요 시 Actions 탭에서 수동 실행
 
