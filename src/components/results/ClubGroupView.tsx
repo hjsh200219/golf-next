@@ -1,19 +1,46 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { TeeTime } from '@/lib/types/tee-time';
 import { groupByClub } from '@/lib/utils/group';
 import { formatPrice } from '@/lib/utils/price';
 import { formatTime } from '@/lib/utils/time';
 import { formatEventDisplay } from '@/lib/utils/event';
 import { getRegionForClub } from '@/lib/constants/regions';
+import { getClubReservationUrl } from '@/lib/utils/clubLink';
+import { useClubs } from '@/hooks/useClubs';
+import type { Database } from '@/lib/types/database';
+
+type GolfClub = Database['public']['Tables']['golf_clubs']['Row'];
 
 interface ClubGroupViewProps {
   data: TeeTime[];
 }
 
-function ClubSection({ clubName, items }: { clubName: string; items: TeeTime[] }) {
+function pickDominantClubId(items: TeeTime[]): string | undefined {
+  const counts = new Map<string, number>();
+  for (const t of items) counts.set(t.club_id, (counts.get(t.club_id) ?? 0) + 1);
+  let best: string | undefined;
+  let max = -1;
+  for (const [id, n] of counts) {
+    if (n > max) { max = n; best = id; }
+  }
+  return best;
+}
+
+function ClubSection({
+  clubName,
+  items,
+  club,
+  dominantClubId,
+}: {
+  clubName: string;
+  items: TeeTime[];
+  club: GolfClub | undefined;
+  dominantClubId: string | undefined;
+}) {
   const [isOpen, setIsOpen] = useState(false);
+  const reservationUrl = getClubReservationUrl(club);
 
   const lowestPrice = items.reduce((min, tt) => {
     if (tt.price === null) return min;
@@ -24,52 +51,69 @@ function ClubSection({ clubName, items }: { clubName: string; items: TeeTime[] }
     ? `${formatTime(items[0].teeoff)}~${formatTime(items[items.length - 1].teeoff)}`
     : '';
 
-  const region = items.length > 0 ? getRegionForClub(items[0].club_id) : null;
+  const region = dominantClubId ? getRegionForClub(dominantClubId) : null;
 
   return (
     <div className="rounded-xl bg-white shadow-card ring-1 ring-gray-100 overflow-hidden">
       {/* Header */}
-      <button
-        type="button"
-        onClick={() => setIsOpen((p) => !p)}
-        className="flex w-full items-center justify-between px-4 py-3.5 text-left cursor-pointer hover:bg-gray-50/80 transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-golf-primary/40 focus-visible:ring-inset min-h-[44px]"
-        aria-expanded={isOpen}
-        aria-label={`${clubName} ${items.length}건 ${isOpen ? '접기' : '펼치기'}`}
-      >
-        <div className="flex items-center gap-2 min-w-0 flex-nowrap overflow-hidden">
-          <h2 className="font-bold text-gray-900 text-base truncate shrink min-w-0">{clubName}</h2>
-          {region && (
-            <span className="shrink-0 rounded-md bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
-              {region}
+      <div className="flex w-full items-center gap-1 pr-2 hover:bg-gray-50/80 transition-colors duration-150">
+        <button
+          type="button"
+          onClick={() => setIsOpen((p) => !p)}
+          className="flex flex-1 items-center justify-between px-4 py-3.5 text-left cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-golf-primary/40 focus-visible:ring-inset min-h-[44px]"
+          aria-expanded={isOpen}
+          aria-label={`${clubName} ${items.length}건 ${isOpen ? '접기' : '펼치기'}`}
+        >
+          <div className="flex items-center gap-2 min-w-0 flex-nowrap overflow-hidden">
+            <h2 className="font-bold text-gray-900 text-base truncate shrink min-w-0">{clubName}</h2>
+            {region && (
+              <span className="shrink-0 rounded-md bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+                {region}
+              </span>
+            )}
+            <span className="shrink-0 rounded-full bg-golf-primary px-2 py-0.5 text-[11px] font-bold text-white tabular-nums">
+              {items.length}
             </span>
-          )}
-          <span className="shrink-0 rounded-full bg-golf-primary px-2 py-0.5 text-[11px] font-bold text-white tabular-nums">
-            {items.length}
-          </span>
-          {lowestPrice !== null && (
-            <span className="shrink-0 text-golf-primary font-semibold text-xs tabular-nums">
-              {Math.floor(lowestPrice / 1000)}K
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-3 shrink-0 ml-2">
-          {!isOpen && (
-            <div className="hidden sm:flex items-center gap-2 text-xs text-gray-400">
-              <span className="tabular-nums">{timeRange}</span>
-            </div>
-          )}
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
+            {lowestPrice !== null && (
+              <span className="shrink-0 text-golf-primary font-semibold text-xs tabular-nums">
+                {Math.floor(lowestPrice / 1000)}K
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-3 shrink-0 ml-2">
+            {!isOpen && (
+              <div className="hidden sm:flex items-center gap-2 text-xs text-gray-400">
+                <span className="tabular-nums">{timeRange}</span>
+              </div>
+            )}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+        </button>
+        {reservationUrl && (
+          <a
+            href={reservationUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="shrink-0 inline-flex items-center gap-1 rounded-lg bg-golf-primary/10 px-2.5 py-1.5 text-xs font-semibold text-golf-primary hover:bg-golf-primary/20 transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-golf-primary/40 min-h-[36px]"
+            aria-label={`${clubName} 예약 페이지 새 탭에서 열기`}
           >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-          </svg>
-        </div>
-      </button>
+            <span>바로가기</span>
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+            </svg>
+          </a>
+        )}
+      </div>
 
       {isOpen && (
         <>
@@ -183,14 +227,30 @@ function ClubSection({ clubName, items }: { clubName: string; items: TeeTime[] }
 
 export default function ClubGroupView({ data }: ClubGroupViewProps) {
   const groups = groupByClub(data);
+  const { data: clubs } = useClubs();
+
+  const clubsById = useMemo(() => {
+    const map = new Map<string, GolfClub>();
+    for (const c of clubs ?? []) map.set(c.id, c);
+    return map;
+  }, [clubs]);
 
   if (groups.size === 0) return null;
 
   return (
     <div className="animate-fade-up space-y-3">
-      {[...groups.entries()].map(([clubName, items]) => (
-        <ClubSection key={clubName} clubName={clubName} items={items} />
-      ))}
+      {[...groups.entries()].map(([clubName, items]) => {
+        const dominantClubId = pickDominantClubId(items);
+        return (
+          <ClubSection
+            key={clubName}
+            clubName={clubName}
+            items={items}
+            club={dominantClubId ? clubsById.get(dominantClubId) : undefined}
+            dominantClubId={dominantClubId}
+          />
+        );
+      })}
     </div>
   );
 }
