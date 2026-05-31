@@ -1,7 +1,7 @@
 ---
-created: 2026-06-01T02:45:00+09:00
+created: 2026-06-01T06:40:00+09:00
 project: golf-next
-summary: Telegram 티타임 워치 봇 + Vercel cron 마이그레이션 구현·커밋·push 완료 (feat/vercel-cron-telegram-bot)
+summary: Telegram 티타임 워치 봇 + Vercel cron 마이그레이션 — 구현·PR#1·push 완료. onetheclub GitHub 유지 확정, PRD exec-plans/active로 이동
 ---
 
 ## Session Digest
@@ -17,10 +17,13 @@ Telegram 인라인키보드 기반 티타임 알림 봇(`/watch → 클럽 → �
 - **API 라우트**: `webhook/route.ts`(secret 검증, /watch·/list·/stop, answerCallbackQuery 항상), `check/route.ts`(CRON_SECRET, 과거 날짜 만료, S 2-step, S-null 쇼트서킷, 구조적 로그).
 - **인프라**: `vercel.json` cron 2개, `scripts/set-telegram-webhook.ts`, `docs/DEPLOY_CRON_TELEGRAM.md`.
 - **검증**: 465 통과 +1 skip, tsc+lint 클린, Architect APPROVED. push 완료.
+- **PR #1 생성**: https://github.com/hjsh200219/golf-next/pull/1 (`feat/vercel-cron-telegram-bot` → `main`)
+- **onetheclub 결정**: GitHub Actions 유지 확정 (Vercel 이전 안 함 — 본진 데이터는 runner가 이미 같은 tee_times에 upsert, 봇은 출처 무관 읽기). `f8d75f9`
+- **PRD 이동**: `.omc/prd.json` → `docs/exec-plans/active/telegram-cron-prd.json` (git 추적). `87b9b66`
 
 ## Next Steps
 
-1. **PR 생성**: `feat/vercel-cron-telegram-bot` → `main` (`gh pr create` 또는 GitHub UI). 미생성 상태.
+1. **PR #1 머지**: https://github.com/hjsh200219/golf-next/pull/1 (이미 생성됨 — 리뷰 후 머지).
 2. **Vercel env + Supabase 마이그레이션**: `TELEGRAM_WEBHOOK_SECRET` Vercel env 추가(랜덤 ≥16자, 커밋 금지); `011_telegram_watches.sql` Supabase 적용.
 3. **Vercel Pro 확인 + cron 관찰 후 `scrape-cron.yml`만 삭제**: Pro 여부 확인 → 대시보드에서 두 cron 등록 확인 → `/api/scrape/cron` 연속 2시간 시간당 실행 확인 후에만 `.github/workflows/scrape-cron.yml` 삭제.
 4. **onetheclub = GitHub Actions 유지 확정 (작업 없음)**: 본진 데이터는 runner가 같은 `tee_times`에 이미 upsert 중(파주 252/신라 166/클럽72 320+ 검증됨). 봇은 출처 무관하게 읽기만 하므로 정상 작동. `scrape-onetheclub.yml` 삭제 금지, Vercel 이전 금지(잘 되는 본진 깨질 리스크만). 스파이크 불필요.
