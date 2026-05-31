@@ -10,6 +10,8 @@ import { toDateString } from '@/lib/utils/date';
 import { useCallback, useMemo, useState } from 'react';
 import { useFilterStore, useUIPreferences } from '@/hooks/useFilters';
 import { useFavorites } from '@/hooks/useFavorites';
+import { useClubs } from '@/hooks/useClubs';
+import { getEmptyClubs } from '@/lib/utils/group';
 import { toast } from 'sonner';
 
 const POLL_INTERVAL = 2000;
@@ -31,6 +33,7 @@ export default function SearchSection() {
     : selectedClubs.length > 0 ? selectedClubs : undefined;
 
   const { data, isLoading, isValidating, error, refresh } = useTeeTimes(date, effectiveClubs);
+  const { data: allClubs } = useClubs();
   const [isScraping, setIsScraping] = useState(false);
   const [scrapeProgress, setScrapeProgress] = useState('');
 
@@ -57,6 +60,20 @@ export default function SearchSection() {
     }
     return latest;
   }, [teeTimes]);
+
+  // tee-off 없는 클럽도 "예약 가능 시간 없음"으로 표시하기 위해, 현재 필터가
+  // 기대하는 클럽 집합(effectiveClubs, 없으면 활성 클럽 전체)에서 결과에
+  // 한 건도 없는 클럽을 골라낸다. 골프장별 뷰에서만 사용된다.
+  const emptyClubs = useMemo(() => {
+    const activeClubs = (allClubs ?? []).filter((c) => c.is_active);
+    const nameById: Record<string, string> = {};
+    for (const c of activeClubs) nameById[c.id] = c.name;
+    const activeIds = activeClubs.map((c) => c.id);
+    const expected = effectiveClubs
+      ? effectiveClubs.filter((id) => nameById[id] !== undefined)
+      : activeIds;
+    return getEmptyClubs(teeTimes, expected, nameById);
+  }, [allClubs, effectiveClubs, teeTimes]);
   const busy = isLoading || isValidating || isScraping;
 
   const pollJobStatus = useCallback(async (jobId: number) => {
@@ -188,6 +205,7 @@ export default function SearchSection() {
       ) : (
         <TeeTimeTable
           data={teeTimes}
+          emptyClubs={viewMode === 'club' ? emptyClubs : []}
           isLoading={isLoading}
           scrapedAt={scrapedAt}
           onRefresh={handleRefresh}

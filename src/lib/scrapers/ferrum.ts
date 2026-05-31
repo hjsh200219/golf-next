@@ -14,7 +14,7 @@ export default class FerrumScraper extends BaseScraper {
       'https://www.ferrumclub.com/lounge/login_ok.asp',
       {
         mem_id: this.credentials.id,
-        usr_pwd: this.credentials.pw,
+        usr_pwd: this.credentials.pw6,
       },
       this.commonHeaders(origin, loginReferer),
     );
@@ -35,7 +35,7 @@ export default class FerrumScraper extends BaseScraper {
       this.commonHeaders(origin, 'https://www.ferrumclub.com/reservation/real_timelist.asp'),
     );
 
-    const html = await res.text();
+    const html = await this.textWithEncoding(res, 'euc-kr');
     const $ = this.parseHtml(html);
     const rows: TeeTimeRow[] = [];
 

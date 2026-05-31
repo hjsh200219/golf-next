@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import type { TeeTime } from '@/lib/types/tee-time';
-import { groupByClub } from '@/lib/utils/group';
+import { groupByClub, type EmptyClub } from '@/lib/utils/group';
 import { formatPrice } from '@/lib/utils/price';
 import { formatTime } from '@/lib/utils/time';
 import { formatEventDisplay } from '@/lib/utils/event';
@@ -15,6 +15,7 @@ type GolfClub = Database['public']['Tables']['golf_clubs']['Row'];
 
 interface ClubGroupViewProps {
   data: TeeTime[];
+  emptyClubs?: EmptyClub[];
 }
 
 function pickDominantClubId(items: TeeTime[]): string | undefined {
@@ -52,6 +53,7 @@ function ClubSection({
     : '';
 
   const region = dominantClubId ? getRegionForClub(dominantClubId) : null;
+  const isEmpty = items.length === 0;
 
   return (
     <div className="rounded-xl bg-white shadow-card ring-1 ring-gray-100 overflow-hidden">
@@ -60,42 +62,53 @@ function ClubSection({
         <button
           type="button"
           onClick={() => setIsOpen((p) => !p)}
-          className="flex flex-1 items-center justify-between px-4 py-3.5 text-left cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-golf-primary/40 focus-visible:ring-inset min-h-[44px]"
-          aria-expanded={isOpen}
-          aria-label={`${clubName} ${items.length}건 ${isOpen ? '접기' : '펼치기'}`}
+          disabled={isEmpty}
+          className={`flex flex-1 items-center justify-between px-4 py-3.5 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-golf-primary/40 focus-visible:ring-inset min-h-[44px] ${isEmpty ? 'cursor-default' : 'cursor-pointer'}`}
+          aria-expanded={isEmpty ? undefined : isOpen}
+          aria-label={isEmpty ? `${clubName} 예약 가능 시간 없음` : `${clubName} ${items.length}건 ${isOpen ? '접기' : '펼치기'}`}
         >
           <div className="flex items-center gap-2 min-w-0 flex-nowrap overflow-hidden">
-            <h2 className="font-bold text-gray-900 text-base truncate shrink min-w-0">{clubName}</h2>
+            <h2 className={`font-bold text-base truncate shrink min-w-0 ${isEmpty ? 'text-gray-400' : 'text-gray-900'}`}>{clubName}</h2>
             {region && (
               <span className="shrink-0 rounded-md bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
                 {region}
               </span>
             )}
-            <span className="shrink-0 rounded-full bg-golf-primary px-2 py-0.5 text-[11px] font-bold text-white tabular-nums">
-              {items.length}
-            </span>
-            {lowestPrice !== null && (
-              <span className="shrink-0 text-golf-primary font-semibold text-xs tabular-nums">
-                {Math.floor(lowestPrice / 1000)}K
+            {isEmpty ? (
+              <span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-400">
+                예약 가능 시간 없음
               </span>
+            ) : (
+              <>
+                <span className="shrink-0 rounded-full bg-golf-primary px-2 py-0.5 text-[11px] font-bold text-white tabular-nums">
+                  {items.length}
+                </span>
+                {lowestPrice !== null && (
+                  <span className="shrink-0 text-golf-primary font-semibold text-xs tabular-nums">
+                    {Math.floor(lowestPrice / 1000)}K
+                  </span>
+                )}
+              </>
             )}
           </div>
           <div className="flex items-center gap-3 shrink-0 ml-2">
-            {!isOpen && (
+            {!isOpen && !isEmpty && (
               <div className="hidden sm:flex items-center gap-2 text-xs text-gray-400">
                 <span className="tabular-nums">{timeRange}</span>
               </div>
             )}
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-            </svg>
+            {!isEmpty && (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            )}
           </div>
         </button>
         {reservationUrl && (
@@ -225,7 +238,7 @@ function ClubSection({
   );
 }
 
-export default function ClubGroupView({ data }: ClubGroupViewProps) {
+export default function ClubGroupView({ data, emptyClubs = [] }: ClubGroupViewProps) {
   const groups = groupByClub(data);
   const { data: clubs } = useClubs();
 
@@ -235,7 +248,7 @@ export default function ClubGroupView({ data }: ClubGroupViewProps) {
     return map;
   }, [clubs]);
 
-  if (groups.size === 0) return null;
+  if (groups.size === 0 && emptyClubs.length === 0) return null;
 
   return (
     <div className="animate-fade-up space-y-3">
@@ -251,6 +264,15 @@ export default function ClubGroupView({ data }: ClubGroupViewProps) {
           />
         );
       })}
+      {emptyClubs.map((c) => (
+        <ClubSection
+          key={`empty-${c.clubId}`}
+          clubName={c.clubName}
+          items={[]}
+          club={clubsById.get(c.clubId)}
+          dominantClubId={c.clubId}
+        />
+      ))}
     </div>
   );
 }

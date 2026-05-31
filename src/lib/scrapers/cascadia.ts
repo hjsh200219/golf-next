@@ -44,9 +44,11 @@ export default class CascadiaScraper extends BaseScraper {
       if (tds.length < 3) return;
 
       const course = $(tds[1]).text().trim();
-      const teeoff = this.formatTime($(tds[2]).text().trim());
+      // Site added a 부 column; time moved from tds[2] to tds[4].
+      const teeoff = this.formatTime($(tds[4]).text().trim());
 
-      if (!teeoff) return;
+      // Guard: only accept HH:MM so non-time cells (주중/주말 등) never parse.
+      if (!/^\d{1,2}:\d{2}$/.test(teeoff)) return;
 
       rows.push({
         date: this.dateDash,

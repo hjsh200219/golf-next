@@ -13,7 +13,7 @@ export default class YangjuScraper extends BaseScraper {
       `${origin}/login/login_ok.asp`,
       {
         mem_id: this.credentials.id,
-        usr_pwd: this.credentials.pw,
+        usr_pwd: this.credentials.pw6,
       },
       this.commonHeaders(origin, `${origin}/login/login.asp`),
     );
@@ -27,7 +27,7 @@ export default class YangjuScraper extends BaseScraper {
         usrmemcd: '80',
         pointdate: this.date,
         openyn: '1',
-        dategbn: '5',
+        dategbn: '2',
         choice_time: '00',
         cssncourseum: '',
         inputtype: 'I',

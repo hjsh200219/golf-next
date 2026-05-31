@@ -16,10 +16,12 @@ import { formatDateKorean } from '@/lib/utils/date';
 import { formatEventDisplay } from '@/lib/utils/event';
 import LoadingState from '@/components/results/LoadingState';
 import ClubGroupView from '@/components/results/ClubGroupView';
+import type { EmptyClub } from '@/lib/utils/group';
 import type { ViewMode } from '@/hooks/useFilters';
 
 interface TeeTimeTableProps {
   data?: TeeTime[];
+  emptyClubs?: EmptyClub[];
   isLoading?: boolean;
   scrapedAt?: string | null;
   onRefresh?: () => void;
@@ -83,7 +85,7 @@ const columns = [
 
 const PAGE_SIZE = 50;
 
-export default function TeeTimeTable({ data, isLoading = false, scrapedAt, onRefresh, busy = false, viewMode = 'time' }: TeeTimeTableProps) {
+export default function TeeTimeTable({ data, emptyClubs = [], isLoading = false, scrapedAt, onRefresh, busy = false, viewMode = 'time' }: TeeTimeTableProps) {
   const [sorting, setSorting] = useState<SortingState>([
     { id: 'teeoff', desc: false },
   ]);
@@ -100,6 +102,12 @@ export default function TeeTimeTable({ data, isLoading = false, scrapedAt, onRef
 
   if (isLoading) {
     return <LoadingState />;
+  }
+
+  // Club view: render even when there are no tee-times, as long as the active
+  // filter expects clubs to show (they appear as "예약 가능 시간 없음").
+  if (viewMode === 'club' && ((data && data.length > 0) || emptyClubs.length > 0)) {
+    return <ClubGroupView data={data ?? []} emptyClubs={emptyClubs} />;
   }
 
   if (!data || data.length === 0) {
@@ -128,9 +136,6 @@ export default function TeeTimeTable({ data, isLoading = false, scrapedAt, onRef
     );
   }
 
-  if (viewMode === 'club') {
-    return <ClubGroupView data={data ?? []} />;
-  }
 
   const allRows = table.getRowModel().rows;
   const visibleRows = allRows.slice(0, visibleCount);

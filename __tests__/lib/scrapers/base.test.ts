@@ -3,7 +3,7 @@ import { BaseScraper, type TeeTimeRow, type LoginCredentials } from '@/lib/scrap
 
 const MOCK_CREDENTIALS: LoginCredentials = {
   id: 'test', id2: 'test2', email: 'test@test.com',
-  pw: 'pw', pw1: 'pw1', pw2: 'pw2', pw3: 'pw3', pw4: 'pw4', pw5: 'pw5',
+  pw: 'pw', pw1: 'pw1', pw2: 'pw2', pw3: 'pw3', pw4: 'pw4', pw5: 'pw5', pw6: 'pw6',
   name: 'Test', mobile: '01012345678',
 };
 

@@ -17,6 +17,7 @@ function getCredentials(): LoginCredentials {
     pw3: process.env.GOLF_LOGIN_PW3 ?? '',
     pw4: process.env.GOLF_LOGIN_PW4 ?? '',
     pw5: process.env.GOLF_LOGIN_PW5 ?? '',
+    pw6: process.env.GOLF_LOGIN_PW6 ?? '',
     name: process.env.GOLF_LOGIN_NAME ?? '',
     mobile: process.env.GOLF_LOGIN_MOBILE ?? '',
   };

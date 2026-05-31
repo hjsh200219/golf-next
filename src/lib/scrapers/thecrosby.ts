@@ -15,12 +15,15 @@ export default class TheCrosbyScraper extends BaseScraper {
     await this.postForm(
       `${origin}/Member/Login.aspx`,
       {
+        __EVENTTARGET: 'ctl00$ContentPlaceHolder1$SendLoginButton',
+        __EVENTARGUMENT: '',
         __VIEWSTATE: tokens.viewState,
         __VIEWSTATEGENERATOR: tokens.viewStateGenerator,
         __EVENTVALIDATION: tokens.eventValidation,
-        txtLoginID: this.credentials.id,
-        txtLoginPW: this.credentials.pw,
-        btnLogin: '',
+        rdoDiviceType: 'pc',
+        'ctl00$ContentPlaceHolder1$userID': this.credentials.id,
+        'ctl00$ContentPlaceHolder1$userPass': this.credentials.pw,
+        'ctl00$ContentPlaceHolder1$ReturnURL': '',
       },
       this.commonHeaders(origin, `${origin}/Member/Login.aspx`),
     );
@@ -43,13 +46,15 @@ export default class TheCrosbyScraper extends BaseScraper {
 
     $('table.timeTbl tr').each((_, tr) => {
       const tds = $(tr).find('td');
-      if (tds.length < 5) return;
+      if (tds.length < 6) return;
 
-      const teeoff = this.formatTime($(tds[0]).text().trim());
-      const course = $(tds[1]).text().trim();
-      const price = $(tds[4]).text().trim();
+      // Table has a leading row-index column:
+      // [0]index [1]time [2]course [3]hole [4]인원 [5]price
+      const teeoff = this.formatTime($(tds[1]).text().trim());
+      const course = $(tds[2]).text().trim();
+      const price = $(tds[5]).text().trim();
 
-      if (!teeoff) return;
+      if (!/^\d{1,2}:\d{2}$/.test(teeoff)) return;
 
       rows.push({
         date: this.dateDash,

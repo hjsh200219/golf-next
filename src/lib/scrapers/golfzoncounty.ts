@@ -13,7 +13,7 @@ export default class GolfzonCountyScraper extends BaseScraper {
       `${origin}/member/ajax/loginChk`,
       {
         usrId: this.credentials.id,
-        usrPwd: this.credentials.pw,
+        usrPwd: this.credentials.pw1,
       },
       {
         ...this.commonHeaders(origin, `${origin}/member/login`),

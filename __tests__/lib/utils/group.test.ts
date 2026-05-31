@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { groupByClub } from '@/lib/utils/group';
+import { groupByClub, getEmptyClubs } from '@/lib/utils/group';
 import type { TeeTime } from '@/lib/types/tee-time';
 
 function makeTeeTime(overrides: Partial<TeeTime> = {}): TeeTime {
@@ -66,5 +66,62 @@ describe('groupByClub', () => {
     const result = groupByClub(items);
     expect(result.size).toBe(1);
     expect(result.get('Solo CC')?.length).toBe(1);
+  });
+});
+
+describe('getEmptyClubs', () => {
+  const NAMES: Record<string, string> = {
+    a: 'A골프장',
+    b: 'B골프장',
+    yangju: '양주CC',
+    pinestone: '파인스톤',
+  };
+
+  it('returns clubs in the expected set that have no tee-times', () => {
+    const teeTimes: TeeTime[] = [
+      makeTeeTime({ id: 1, club_id: 'a', cc_name: 'A골프장' }),
+    ];
+    const result = getEmptyClubs(teeTimes, ['a', 'b', 'yangju'], NAMES);
+    expect(result.map((c) => c.clubId)).toEqual(['b', 'yangju']);
+  });
+
+  it('returns empty array when every expected club has tee-times', () => {
+    const teeTimes: TeeTime[] = [
+      makeTeeTime({ id: 1, club_id: 'a', cc_name: 'A골프장' }),
+      makeTeeTime({ id: 2, club_id: 'b', cc_name: 'B골프장' }),
+    ];
+    expect(getEmptyClubs(teeTimes, ['a', 'b'], NAMES)).toEqual([]);
+  });
+
+  it('returns all expected clubs when there are no tee-times at all', () => {
+    const result = getEmptyClubs([], ['yangju', 'a'], NAMES);
+    expect(result.map((c) => c.clubId).sort()).toEqual(['a', 'yangju']);
+  });
+
+  it('resolves clubName from the name map', () => {
+    const result = getEmptyClubs([], ['yangju'], NAMES);
+    expect(result[0]).toEqual({ clubId: 'yangju', clubName: '양주CC' });
+  });
+
+  it('falls back to clubId when name is unknown', () => {
+    const result = getEmptyClubs([], ['mystery'], NAMES);
+    expect(result[0]).toEqual({ clubId: 'mystery', clubName: 'mystery' });
+  });
+
+  it('sorts empty clubs by clubName', () => {
+    const result = getEmptyClubs([], ['pinestone', 'a', 'yangju'], NAMES);
+    expect(result.map((c) => c.clubName)).toEqual(['A골프장', '양주CC', '파인스톤']);
+  });
+
+  it('counts a club as present if it has at least one tee-time', () => {
+    const teeTimes: TeeTime[] = [
+      makeTeeTime({ id: 1, club_id: 'yangju', cc_name: '양주CC' }),
+    ];
+    expect(getEmptyClubs(teeTimes, ['yangju'], NAMES)).toEqual([]);
+  });
+
+  it('does not list a club outside the expected set even if it has no times', () => {
+    const result = getEmptyClubs([], ['a'], NAMES);
+    expect(result.find((c) => c.clubId === 'b')).toBeUndefined();
   });
 });

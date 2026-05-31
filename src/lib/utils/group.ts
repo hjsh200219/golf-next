@@ -73,3 +73,29 @@ export function groupByClub(teeTimes: TeeTime[]): Map<string, TeeTime[]> {
 
   return new Map(entries);
 }
+
+export interface EmptyClub {
+  clubId: string;
+  clubName: string;
+}
+
+/**
+ * Given the tee-times currently in view and the set of club IDs the active
+ * filter expects to show, return the expected clubs that have NO tee-time row.
+ * These are surfaced in the UI with a "예약 가능 시간 없음" placeholder so a
+ * club never silently disappears just because its scrape returned nothing.
+ *
+ * Name is resolved from clubNameById, falling back to the raw id. Result is
+ * sorted by display name to match groupByClub's ordering.
+ */
+export function getEmptyClubs(
+  teeTimes: TeeTime[],
+  expectedClubIds: string[],
+  clubNameById: Record<string, string>,
+): EmptyClub[] {
+  const present = new Set(teeTimes.map((t) => t.club_id));
+  return expectedClubIds
+    .filter((id) => !present.has(id))
+    .map((id) => ({ clubId: id, clubName: clubNameById[id] ?? id }))
+    .sort((a, b) => a.clubName.localeCompare(b.clubName));
+}

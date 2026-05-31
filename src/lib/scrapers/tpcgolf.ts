@@ -6,7 +6,7 @@ export default class TpcGolfScraper extends BaseScraper {
   }
 
   async scrape(): Promise<TeeTimeRow[]> {
-    const origin = 'http://www.tpcgolf.co.kr';
+    const origin = 'https://www.tpcgolf.co.kr';
     const loginUrl = `${origin}/Member/login_ok.asp`;
     const dataUrl = `${origin}/Reservation/Inc/TimeTable_Amt.asp`;
 

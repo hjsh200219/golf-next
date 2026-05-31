@@ -34,6 +34,7 @@ export interface LoginCredentials {
   pw3: string;
   pw4: string;
   pw5: string;
+  pw6: string;
   name: string;
   mobile: string;
 }
