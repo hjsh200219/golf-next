@@ -1,0 +1,127 @@
+{
+  "task": "GolfShin: Vercel cron migration + Telegram watch bot — implement APPROVED plan at ~/.claude/plans/golfshin-cron-telegram-plan.md (TDD mandatory)",
+  "createdAt": "2026-06-01",
+  "stories": [
+    {
+      "id": "US-000",
+      "title": "Task 0 (BLOCKING): shared-timestamp fix in scrape/club/route.ts",
+      "priority": 1,
+      "passes": true,
+      "acceptanceCriteria": [
+        "src/app/api/scrape/club/route.ts: a single `const now = new Date().toISOString()` is hoisted above the `if (result.success && result.teeTimes.length > 0)` block and reused for tee_times rows",
+        "the scrape_club_results.update({...}) call uses `scraped_at: now` (the SAME `now`), not a second `new Date().toISOString()`",
+        "__tests__/api/scrape-club-timestamp.test.ts (Red first) asserts: after a successful club scrape with >=1 tee time, the tee_times.scraped_at written equals the scrape_club_results.scraped_at written for the same run; test passes",
+        "src/lib/types/database.ts scrape_club_results.scraped_at typed `string | null`",
+        "npm test green; npx tsc --noEmit 0 errors"
+      ]
+    },
+    {
+      "id": "US-001",
+      "title": "DB migration: telegram_watches (USER APPROVED) + DB type",
+      "priority": 2,
+      "passes": true,
+      "acceptanceCriteria": [
+        "supabase/migrations/<ts>_telegram_watches.sql created exactly per plan section 4: table (id BIGINT identity PK, chat_id BIGINT, club_id TEXT FK golf_clubs, date DATE, time_from TIME, time_to TIME, status active/stopped CHECK, created_at, updated_at)",
+        "index idx_telegram_watches_active (status,date) + partial unique uq_telegram_watches_active (chat_id,club_id,date,time_from,time_to) WHERE status='active'",
+        "RLS enabled, no anon/authenticated policies (service_role only)",
+        "src/lib/types/database.ts has telegram_watches Row/Insert/Update types mirroring the schema",
+        "npx tsc --noEmit 0 errors"
+      ]
+    },
+    {
+      "id": "US-002",
+      "title": "Telegram lib: client, time(kstToday), keyboards(callback_data codec)",
+      "priority": 3,
+      "passes": true,
+      "acceptanceCriteria": [
+        "__tests__/helpers/msw-server.ts: MSW setupServer + lifecycle, handlers for api.telegram.org sendMessage/answerCallbackQuery/setWebhook",
+        "src/lib/telegram/client.ts: sendMessage/answerCallbackQuery/setWebhook using TELEGRAM_BOT_TOKEN; tested via MSW (client.test.ts) incl. secret_token on setWebhook + non-ok throws",
+        "src/lib/telegram/time.ts kstToday(now?) = UTC+9 YYYY-MM-DD; time.test.ts covers boundary",
+        "src/lib/telegram/keyboards.ts: club kb (active clubs, [제휴] stripped), date kb (D+1..D+14 vs kstToday), time-range kb (fixed buckets), encode/decode callback_data round-trip, every callback_data <=64 bytes (asserted for longest club_id)",
+        "npm test green; npx tsc --noEmit 0 errors"
+      ]
+    },
+    {
+      "id": "US-003",
+      "title": "Match rule: computeS + matchWatch (THE #1 correctness item, DT-1..9)",
+      "priority": 4,
+      "passes": true,
+      "acceptanceCriteria": [
+        "src/lib/telegram/match.ts exports BACKSTOP_MS=180*60*1000, computeS(results)=max scraped_at null-skip empty->null, matchWatch(watch,rows,S,now)",
+        "matchWatch: if S==null || S<now-BACKSTOP_MS -> []; else rows where scraped_at>=S AND club_id match AND time_from<=teeoff<=time_to",
+        "match.test.ts DT-1 (stale 07:00 no fresh -> no fire), DT-2 (fresh 08:00 == S -> fire), DT-3 (S itself fresh ~110min -> fire), DT-4 (out-of-range/other-club excluded)",
+        "DT-5 (stale open rows + fresh empty-success S -> no fire), DT-6 (fresh non-empty == S -> fire), DT-7 (S fresh + in-range row scraped_at<S booked -> NO fire), DT-8 (S null -> no fire), DT-9 (latest attempt failed, earlier success -> S=that success, fresh rows fire)",
+        "computeS unit test: empty->null, multiple->max, ignores null/undefined",
+        "npm test green; npx tsc --noEmit 0 errors"
+      ]
+    },
+    {
+      "id": "US-004",
+      "title": "Watch CRUD: watches.ts (INSERT+catch 23505, 20-cap, range reject)",
+      "priority": 5,
+      "passes": true,
+      "acceptanceCriteria": [
+        "src/lib/telegram/watches.ts: createWatch = plain INSERT (NOT .upsert); on 23505 return existing/idempotent success; listActiveWatches(chatId) status=active only; stopWatch(id)/stopAllWatches(chatId) set stopped",
+        "createWatch rejects when chat has >=20 active; rejects out-of-range date (<D+1 or >D+14 vs kstToday) / inactive club",
+        "watches.test.ts covers create/list/stop/cap/range with mock-supabase",
+        "idempotency assertion documented to require real Postgres (incl. stopped->reactivate-success); if real PG unavailable in CI, mark that one assertion .skip with a TODO note (do NOT fake it with the always-success stub)",
+        "npm test green; npx tsc --noEmit 0 errors"
+      ]
+    },
+    {
+      "id": "US-005",
+      "title": "Webhook route: /watch inline flow, /list, /stop, secret, idempotent",
+      "priority": 6,
+      "passes": true,
+      "acceptanceCriteria": [
+        "src/app/api/telegram/webhook/route.ts POST: validates X-Telegram-Bot-Api-Secret-Token (wrong/missing -> 401, no DB write)",
+        "/watch -> club inline kb; callback club->date kb, date->range kb, range->createWatch; every callback_query calls answerCallbackQuery",
+        "/list lists active watches for chat; /stop lists active with stop-one/stop-all inline actions",
+        "out-of-range date / inactive club -> graceful Korean message, no watch; over-cap -> friendly message; onetheclub button notes club-level (v1)",
+        "club_id validated against a FRESH golf_clubs select per request; handler synchronous",
+        "telegram-webhook.test.ts covers: 401, inline flow, answerCallbackQuery always, /list, /stop, out-of-range, idempotent duplicate update -> no dup active watch",
+        "npm test green; npx tsc --noEmit 0 errors"
+      ]
+    },
+    {
+      "id": "US-006",
+      "title": "Check cron route: S-null short-circuit, auto-expire, notify, observability log",
+      "priority": 7,
+      "passes": true,
+      "acceptanceCriteria": [
+        "src/app/api/telegram/check/route.ts GET: missing/wrong Bearer CRON_SECRET -> 401",
+        "auto-expires active watches where date<kstToday() (sets stopped) before matching",
+        "per watch: S-compute via PINNED two-step (scrape_jobs.select id by date -> scrape_club_results .in(job_id).eq(club_id).eq(status,success) -> computeS); if S null/stale CONTINUE before any .gte('scraped_at',S) query",
+        "on match -> sendMessage (every run a match exists; no slot-level dedup); no match -> no send",
+        "emits log.info('telegram check',{watches,expired,sNullSkips,matches,sent}) once per run; asserted in test",
+        "telegram-check.test.ts covers 401, expire, S-null no-query+no-send, match->send, no-match->silent, log shape",
+        "npm test green; npx tsc --noEmit 0 errors"
+      ]
+    },
+    {
+      "id": "US-007",
+      "title": "Task 1a: vercel.json crons + set-webhook script (no workflow deletion)",
+      "priority": 8,
+      "passes": true,
+      "acceptanceCriteria": [
+        "vercel.json: crons array = [{path:/api/scrape/cron, schedule:'0 * * * *'},{path:/api/telegram/check, schedule:'50 * * * *'}], regions preserved",
+        "scripts/set-telegram-webhook.ts (tsx): calls setWebhook(url=APP_URL/api/telegram/webhook, secret_token=TELEGRAM_WEBHOOK_SECRET)",
+        ".github/workflows/scrape-cron.yml and scrape-onetheclub.yml LEFT UNTOUCHED (deletion is a manual post-prod-verify step)",
+        "a POST-DEPLOY checklist (Vercel Pro confirm + observe hourly cron + 1b onetheclub spike: env-check ONETHECLUB_MEMBER_ID first, per-code {J53,J54,J5A,D01} parsed-row-count gate, delete workflows only after) written into the PR description / a notes file",
+        "npx tsc --noEmit 0 errors"
+      ]
+    },
+    {
+      "id": "US-008",
+      "title": "Full regression",
+      "priority": 9,
+      "passes": true,
+      "acceptanceCriteria": [
+        "npm test full suite green (existing + all new telegram/task0 tests)",
+        "npx tsc --noEmit 0 errors",
+        "npm run lint 0 errors on changed files",
+        "no .env committed; TELEGRAM_WEBHOOK_SECRET documented in setup notes only"
+      ]
+    }
+  ]
+}
