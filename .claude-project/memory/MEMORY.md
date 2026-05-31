@@ -23,3 +23,9 @@
 - [OrangeDunesYJ auth](scraper-orangedunesyj-auth.md) — device헤더 + 쿠키세션 + month=현재월
 - [LassaGC Spring Boot](scraper-lassagc-spring-boot.md) — ASP→Spring Boot 재구축, 계정 재등록 필요
 - [Jungbu site rebuilt](scraper-jungbu-site-rebuilt.md) — 사이트 재구축, 로그인 404
+
+## Session 4 (2026-06-01)
+- [Scraper credential env map](scraper-credential-env-map.md) — 클럽마다 다른 GOLF_LOGIN_PW* 슬롯, 소스가 authoritative
+- [dategbn per club](scraper-dategbn-per-club.md) — ASP ajax_list dategbn 값 클럽별 상이 (yangju=2)
+- [ASP.NET UpdatePanel postback](scraper-aspnet-updatepanel-postback.md) — postback 필요, GET은 빈 테이블, redirect:follow
+- [golfzoncounty JSON API](scraper-golfzoncounty-json-api.md) — /login/userLogin + getList JSON, 구 endpoint 404
