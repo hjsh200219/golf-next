@@ -29,3 +29,4 @@
 - [dategbn per club](scraper-dategbn-per-club.md) — ASP ajax_list dategbn 값 클럽별 상이 (yangju=2)
 - [ASP.NET UpdatePanel postback](scraper-aspnet-updatepanel-postback.md) — postback 필요, GET은 빈 테이블, redirect:follow
 - [golfzoncounty JSON API](scraper-golfzoncounty-json-api.md) — /login/userLogin + getList JSON, 구 endpoint 404
+- [Upsert dedup + encoding trap](scraper-upsert-dedup-encoding-trap.md) — scrape success인데 DB 0행 = conflict 키 중복(테이블 2배 or 인코딩 깨짐)

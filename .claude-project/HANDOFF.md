@@ -21,7 +21,15 @@ prod에서 "예약 가능 시간 없음"으로 뜨던 13개 골프장 스크래�
 - UI: getEmptyClubs() + ClubGroupView/TeeTimeTable/SearchSection 연동
 - base.ts LoginCredentials에 pw6 추가, scrape/club route에서 GOLF_LOGIN_PW6 주입
 
-**미완료 (재작성 필요 — 사이트 마이그레이션)**
+**prod 검증 완료 (job 6113, date=2026-06-07 DB row)**
+- yangju=14, philosgc=93, cascadia=25, thecrosby=53, ferrum=29, golfzoncounty=342 → 6개 정상
+- 근본 수정: yangju euc-kr 인코딩(가짜 conflict 키 중복 해소) + dedupeTeeTimeRows(philosgc 186→93 테이블 중복) + upsert 에러 표면화. 커밋 e936c17.
+
+**prod 미해결**
+- tpcgolf: 코드 정상(로컬 38 rows). Vercel 서버 IP에서 tpcgolf.co.kr `fetch failed` = 해외 IP 차단 추정. 인프라 이슈, 코드 외. [[scraper-waf-cloud-ip-blocking]] 동일 패턴.
+- taekwang: terminated. Next.js SPA 마이그레이션 → 재작성 필요.
+
+**재작성 필요 (사이트 마이그레이션)**
 - pinestone: utf-8 SPA로 전환, 모든 .asp 404/500
 - taekwang: Next.js SPA로 전환, /Member/Login.aspx 301→오류
 - hilldeloci: /hilldeloci/ 네임스페이스가 skyvalley로 통합, 신규 계정 필요
