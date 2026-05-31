@@ -35,9 +35,17 @@ interface TelegramUpdate {
   callback_query?: TelegramCallbackQuery;
 }
 
-const HELP = ['사용 가능한 명령어:', '/watch - 알림 등록', '/list - 알림 목록', '/stop - 알림 중지'].join(
-  '\n',
-);
+const HELP = [
+  '⛳️ GolfShin 알림 봇 사용 안내',
+  '',
+  '/watch - 빈자리 알림 등록 (골프장 → 날짜 → 시간대 선택)',
+  '/list - 등록한 알림 목록 보기 / 삭제',
+  '/stop - 알림 삭제하기',
+  '/cancel - 진행 중인 알림 설정 취소',
+  '/help - 이 도움말 보기',
+  '',
+  '등록하면 매시간 빈자리를 확인해 자리가 나면 알려드려요.',
+].join('\n');
 
 /** `YYYYMMDD` -> `YYYY-MM-DD` */
 function formatDate(yyyymmdd: string): string {
@@ -49,17 +57,17 @@ function formatTime(hhmm: string): string {
   return `${hhmm.slice(0, 2)}:${hhmm.slice(2, 4)}`;
 }
 
-/** Inline keyboard to stop each active watch plus a stop-all button. */
-function stopKeyboard(
+/** Inline keyboard to delete each active watch plus a delete-all button. */
+function deleteKeyboard(
   watches: { id: number; club_id: string; date: string; time_from: string; time_to: string }[],
 ): InlineKeyboardMarkup {
   const rows = watches.map((w) => [
     {
-      text: `중지 - ${w.club_id} ${w.date} ${w.time_from}~${w.time_to}`,
+      text: `🗑 삭제 - ${w.club_id} ${w.date} ${w.time_from}~${w.time_to}`,
       callback_data: `x|stop|${w.id}`,
     },
   ]);
-  rows.push([{ text: '전체 중지', callback_data: 'x|stopall' }]);
+  rows.push([{ text: '🗑 전체 삭제', callback_data: 'x|stopall' }]);
   return { inline_keyboard: rows };
 }
 
@@ -77,6 +85,19 @@ async function handleMessage(message: TelegramMessage): Promise<void> {
   const chatId = message.chat.id;
   const text = (message.text ?? '').trim();
 
+  if (text === '/help') {
+    await sendMessage(chatId, HELP);
+    return;
+  }
+
+  if (text === '/cancel') {
+    // The watch-setup flow is stateless (selections live in callback_data), so
+    // there is nothing to roll back server-side — acknowledge and drop the
+    // pending inline keyboard from the user's mind.
+    await sendMessage(chatId, '진행 중인 알림 설정을 취소했습니다. /watch 로 다시 시작할 수 있어요.');
+    return;
+  }
+
   if (text === '/watch' || text === '/start') {
     const supabase = createAdminClient();
     const { data: clubs } = await supabase
@@ -84,28 +105,20 @@ async function handleMessage(message: TelegramMessage): Promise<void> {
       .select('id,name,display_name')
       .eq('is_active', true)
       .order('name');
-    await sendMessage(chatId, '골프장을 선택하세요', clubKeyboard(clubs ?? []));
+    await sendMessage(chatId, '골프장을 선택하세요 (취소하려면 /cancel)', clubKeyboard(clubs ?? []));
     return;
   }
 
-  if (text === '/list') {
+  if (text === '/list' || text === '/stop') {
     const watches = await listActiveWatches(chatId);
     if (watches.length === 0) {
-      await sendMessage(chatId, '등록된 알림이 없습니다.');
+      await sendMessage(chatId, '등록된 알림이 없습니다. /watch 로 등록해 보세요.');
       return;
     }
-    const summary = ['등록된 알림:', ...watches.map((w) => `• ${watchSummary(w)}`)].join('\n');
-    await sendMessage(chatId, summary, stopKeyboard(watches));
-    return;
-  }
-
-  if (text === '/stop') {
-    const watches = await listActiveWatches(chatId);
-    if (watches.length === 0) {
-      await sendMessage(chatId, '등록된 알림이 없습니다.');
-      return;
-    }
-    await sendMessage(chatId, '중지할 알림을 선택하세요', stopKeyboard(watches));
+    const summary = ['등록된 알림 (삭제하려면 아래 버튼):', ...watches.map((w) => `• ${watchSummary(w)}`)].join(
+      '\n',
+    );
+    await sendMessage(chatId, summary, deleteKeyboard(watches));
     return;
   }
 
@@ -116,26 +129,31 @@ async function handleCallback(cb: TelegramCallbackQuery): Promise<void> {
   const chatId = cb.message?.chat.id;
   const data = cb.data ?? '';
 
-  // Always answer the callback query so the button stops spinning, even on
-  // error paths below.
-  await answerCallbackQuery(cb.id);
+  // Answer the callback query so the button stops spinning. Must NOT abort the
+  // handler if it fails (e.g. expired/invalid query id) — the watch action
+  // below is what matters, so swallow any error here.
+  try {
+    await answerCallbackQuery(cb.id);
+  } catch (err) {
+    log.warn('answerCallbackQuery failed (non-fatal)', { error: String(err) });
+  }
 
   if (chatId === undefined) {
     return;
   }
 
-  // Stop scheme: `x|stop|<id>` or `x|stopall`. Not a `w|s=...` watch-flow cb,
+  // Delete scheme: `x|stop|<id>` or `x|stopall`. Not a `w|s=...` watch-flow cb,
   // so do NOT route through decodeCb.
   if (data.startsWith('x|')) {
     const parts = data.split('|');
     if (parts[1] === 'stopall') {
       const count = await stopAllWatches(chatId);
-      await sendMessage(chatId, `${count}개의 알림을 모두 중지했습니다.`);
+      await sendMessage(chatId, `${count}개의 알림을 모두 삭제했습니다.`);
       return;
     }
     if (parts[1] === 'stop') {
       await stopWatch(Number(parts[2]));
-      await sendMessage(chatId, '알림을 중지했습니다.');
+      await sendMessage(chatId, '알림을 삭제했습니다.');
       return;
     }
     return;
