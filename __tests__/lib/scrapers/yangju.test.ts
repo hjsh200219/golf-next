@@ -54,6 +54,31 @@ describe('YangjuScraper login', () => {
     expect(listParams.get('pointdate')).toBe('20260601');
   });
 
+  it('decodes euc-kr Korean course names (서/동), not mojibake', async () => {
+    // euc-kr bytes: 서 = BC AD, 동 = B5 BF
+    const seo = Buffer.from([0xbc, 0xad]);
+    const dong = Buffer.from([0xb5, 0xbf]);
+    const lit = (s: string) => Buffer.from(s, 'latin1');
+    const body = Buffer.concat([
+      lit('<table><tr><td>1</td><td>'), seo, lit('</td><td>06:40</td><td>18홀</td><td>x</td></tr>'),
+      lit('<tr><td>2</td><td>'), dong, lit('</td><td>06:40</td><td>18홀</td><td>x</td></tr></table>'),
+    ]);
+    const scraper = new YangjuScraper('20260607', MOCK_CREDENTIALS);
+    vi.spyOn(
+      scraper as unknown as { fetch: typeof globalThis.fetch },
+      'fetch',
+    ).mockImplementation(async (url: RequestInfo | URL) => {
+      if (String(url).includes('real_timelist_ajax_list')) return new Response(body, { status: 200 });
+      return new Response('<html></html>', { status: 200 });
+    });
+
+    const rows = await scraper.scrape();
+    const courses = rows.map((r) => r.course);
+    expect(courses).toContain('서');
+    expect(courses).toContain('동');
+    expect(courses.join('')).not.toContain('�');
+  });
+
   it('parses tee-time rows from the live response format (번호/코스/시간)', async () => {
     const liveHtml = `<table>
       <tr><td>번호</td><td>코스</td><td>시간</td><td>홀</td><td>예약</td></tr>

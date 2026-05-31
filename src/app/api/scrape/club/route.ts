@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { createScraper } from '@/lib/scrapers';
 import type { LoginCredentials } from '@/lib/scrapers/base';
+import { dedupeTeeTimeRows } from '@/lib/utils/tee-time';
 import { createLogger } from '@/lib/logger';
 
 const log = createLogger('scrape/club');
@@ -63,6 +64,7 @@ export async function POST(request: NextRequest) {
     const durationMs = Date.now() - start;
 
     // Upsert tee times
+    let upsertFailed: string | null = null;
     if (result.success && result.teeTimes.length > 0) {
       const now = new Date().toISOString();
       const rows = result.teeTimes.map((t) => ({
@@ -76,25 +78,34 @@ export async function POST(request: NextRequest) {
         scraped_at: now,
       }));
 
+      // Collapse duplicate (club_id,date,teeoff,course) keys: a single upsert
+      // batch with the same conflict key twice fails the WHOLE batch.
+      const deduped = dedupeTeeTimeRows(rows);
+
       const { error: upsertError } = await supabase
         .from('tee_times')
-        .upsert(rows, {
+        .upsert(deduped, {
           onConflict: 'club_id,date,teeoff,course',
           ignoreDuplicates: false,
         });
 
       if (upsertError) {
+        // Surface the failure — otherwise the job reports success with 0 rows in DB.
+        upsertFailed = upsertError.message;
         log.error(`Upsert error for ${clubId}`, { error: upsertError.message });
       }
     }
+
+    // A scrape that parsed rows but failed to persist them is NOT a success.
+    const persisted = result.success && !upsertFailed;
 
     // Update scrape_club_results
     await supabase
       .from('scrape_club_results')
       .update({
-        status: result.success ? 'success' : 'failed',
-        error_message: result.error ?? null,
-        tee_time_count: result.teeTimes.length,
+        status: persisted ? 'success' : 'failed',
+        error_message: upsertFailed ?? result.error ?? null,
+        tee_time_count: persisted ? result.teeTimes.length : 0,
         duration_ms: durationMs,
         scraped_at: new Date().toISOString(),
       })
@@ -136,10 +147,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       clubId,
-      success: result.success,
-      teeTimeCount: result.teeTimes.length,
+      success: persisted,
+      teeTimeCount: persisted ? result.teeTimes.length : 0,
       durationMs,
-      error: result.error,
+      error: upsertFailed ?? result.error,
     });
   } catch (error) {
     const durationMs = Date.now() - start;
