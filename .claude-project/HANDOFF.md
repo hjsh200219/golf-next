@@ -22,8 +22,8 @@ Telegram 인라인키보드 기반 티타임 알림 봇(`/watch → 클럽 → �
 
 1. **PR 생성**: `feat/vercel-cron-telegram-bot` → `main` (`gh pr create` 또는 GitHub UI). 미생성 상태.
 2. **Vercel env + Supabase 마이그레이션**: `TELEGRAM_WEBHOOK_SECRET` Vercel env 추가(랜덤 ≥16자, 커밋 금지); `011_telegram_watches.sql` Supabase 적용.
-3. **Vercel Pro 확인 + cron 관찰 후 GitHub 워크플로 삭제**: Pro 여부 확인 → 대시보드에서 두 cron 등록 확인 → `/api/scrape/cron` 연속 2시간 시간당 실행 확인 후에만 `.github/workflows/scrape-cron.yml` 삭제.
-4. **onetheclub 스파이크 (순서 엄수)**: Vercel prod `ONETHECLUB_MEMBER_ID` 설정 여부 먼저 확인(없으면 무음 본진 스킵의 원인) → env 있는데도 본진 비면 J53/J54/J5A/D01 raw 응답 캡처·분류 → Vercel 스크레이프에서 4개 코드 각각 ≥1 행 확인 후에만 `scrape-onetheclub.yml` 삭제(cc_name 문자열 게이팅 금지).
+3. **Vercel Pro 확인 + cron 관찰 후 `scrape-cron.yml`만 삭제**: Pro 여부 확인 → 대시보드에서 두 cron 등록 확인 → `/api/scrape/cron` 연속 2시간 시간당 실행 확인 후에만 `.github/workflows/scrape-cron.yml` 삭제.
+4. **onetheclub = GitHub Actions 유지 확정 (작업 없음)**: 본진 데이터는 runner가 같은 `tee_times`에 이미 upsert 중(파주 252/신라 166/클럽72 320+ 검증됨). 봇은 출처 무관하게 읽기만 하므로 정상 작동. `scrape-onetheclub.yml` 삭제 금지, Vercel 이전 금지(잘 되는 본진 깨질 리스크만). 스파이크 불필요.
 5. **Telegram 웹훅 등록**: 배포+secret 설정 후 `APP_URL=... TELEGRAM_BOT_TOKEN=... TELEGRAM_WEBHOOK_SECRET=... npx tsx scripts/set-telegram-webhook.ts` → 봇에서 `/watch` 흐름 수동 검증.
 
 ## Blockers

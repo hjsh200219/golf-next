@@ -6,7 +6,7 @@ Implements `~/.claude/plans/golfshin-cron-telegram-plan.md`. Code is merged; the
 - `CRON_SECRET` — already set (Vercel auto-injects as `Authorization: Bearer <CRON_SECRET>` to both crons).
 - `TELEGRAM_BOT_TOKEN` — already set.
 - `TELEGRAM_WEBHOOK_SECRET` — **NEW. Add to Vercel env (and local `.env`).** Random ≥16 chars. Never commit `.env`.
-- `ONETHECLUB_MEMBER_ID` — **verify it exists in Vercel prod env** (see step 4).
+- `ONETHECLUB_MEMBER_ID` — used only by the GitHub Actions onetheclub scraper (see §4). Not needed in Vercel env.
 
 ## 2. Migration (USER APPROVED)
 Apply `supabase/migrations/011_telegram_watches.sql` to the Supabase project (table + active partial unique index + RLS service-role-only). Standard migration apply flow.
@@ -18,12 +18,14 @@ Apply `supabase/migrations/011_telegram_watches.sql` to the Supabase project (ta
 3. **Observe `/api/scrape/cron` firing hourly** across ≥2 consecutive hours (function logs show `Cron triggered` / `Cron completed`). Do NOT rely on a single 200.
 4. **Only after** hourly firing is confirmed: delete `.github/workflows/scrape-cron.yml`. (Sequenced → no coverage gap. The build did NOT delete it.)
 
-## 4. onetheclub spike (Task 1b) — env-check FIRST, then decide
-`scrape-onetheclub.yml` runs onetheclub on the GitHub runner because 본진 CCs returned empty on Vercel lambda. **Do NOT delete that workflow until the gate below passes.**
-1. **Step 0 — env check:** confirm `ONETHECLUB_MEMBER_ID` is set in Vercel prod. `src/lib/scrapers/onetheclub.ts` SILENTLY SKIPS home courses when it's unset — the "empty 본진" may simply be a missing env var, not a session bug. If missing → set it, redeploy, re-test.
-2. **Step 1 — diagnose (only if env present and 본진 still empty):** run the onetheclub home path in Vercel prod and capture raw response bodies + cookie state for the 4 home request codes. Classify: code-fixable (fetchCookie/undici cookie-jar on lambda, or the per-scraper undici Agent TLS dispatcher in `base.ts`) vs not-code-fixable (Vercel egress IP treated differently → needs proxy; surface to user, keep workflow).
-3. **Deletion gate (per-request-code parsed-row count — NOT cc_name literals):** the gate must assert that EACH of the 4 home request codes `{J53 신라CC, J54 파주CC, J5A 듄스코스, D01 클럽72CC/J57}` yields ≥1 parsed row in a Vercel-run scrape. Key on the request codes (a fixed source invariant in `onetheclub.ts` HOME_COURSES), NOT on observed `cc_name` strings — `tee_times` rows carry only `cc_name` (no code), and gating on observed cc_names is circular (vacuously passes when home courses return 0 rows) and non-computable. Partners always populate and would mask a home-course failure, so assert each home code individually.
-4. **Only after** all 4 home codes verified non-empty from a **Vercel** run: delete `.github/workflows/scrape-onetheclub.yml`. Otherwise keep it and report the spike outcome.
+## 4. onetheclub — keep on GitHub Actions (DECIDED: do NOT migrate)
+`scrape-onetheclub.yml` scrapes onetheclub 본진 CCs (파주/신라/듄스/클럽72) directly on the GitHub runner and upserts to the SAME `tee_times` table. The Vercel lambda gets empty 본진 responses, so this stays on the runner.
+
+**This is fine and requires no further work:** the Telegram bot and the watch-check cron only READ `tee_times` — they don't care which job produced a row. The runner keeps 본진 data fresh (verified: a recent run upserted 파주CC 252 / 신라CC 166 / 클럽72 320+ rows), so 본진 watches work normally.
+
+- **KEEP `.github/workflows/scrape-onetheclub.yml`.** Do not delete it, do not migrate onetheclub to Vercel. Migrating would risk breaking working 본진 coverage for no benefit (the data already lands in `tee_times`).
+- `ONETHECLUB_MEMBER_ID` lives only as a GitHub Actions secret (the runner injects it). No Vercel env entry needed.
+- "Vercel cron 통합" therefore means migrating ONLY `scrape-cron.yml` (the endpoint-trigger cron, §3). onetheclub is the one intentional exception.
 
 ## 5. Telegram webhook (one-time)
 After deploy + `TELEGRAM_WEBHOOK_SECRET` set:
