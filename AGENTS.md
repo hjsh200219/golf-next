@@ -14,7 +14,7 @@
 
 ## Critical Rules
 
-1. **Never commit `.env*` files** -- secrets include Supabase keys, scraper credentials, API keys
+1. **Never commit `.env*` files** -- secrets include Supabase keys, scraper credentials, API keys, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`
 2. **Never modify `supabase/migrations/` without explicit approval** -- production DB schema
 3. **All Supabase queries must use typed client** -- `createClient()` from `@/lib/supabase/client` (browser) or `@/lib/supabase/server` (server)
 4. **Scrapers extend `BaseScraper`** -- see `src/lib/scrapers/base.ts` for interface contract
@@ -34,6 +34,7 @@ src/
     supabase/       # client, server, middleware helpers
     types/          # database, tee-time, weather
     utils/          # date, price, time, group, event, geohash, uuid, weather
+    telegram/       # Telegram bot: watches, match, keyboards, client, time helpers
     logger.ts       # Structured logger (JSON prod / human dev)
     schema.ts       # JSON-LD schema generation
   middleware.ts     # Supabase session + auth redirect
@@ -51,7 +52,7 @@ src/
 - **PWA**: next-pwa with offline fallback, service worker auto-registration.
 - **Date Tabs**: Tomorrow-focused (not today). Golf reservations are booked 1+ days ahead.
 - **SEO**: `src/lib/schema.ts` generates JSON-LD dynamically; `public/llms.txt` for LLM discovery.
-- **Scrape Schedule**: Vercel Cron runs hourly (`0 * * * *`) at `/api/scrape/cron`.
+- **Scrape Schedule**: Vercel Cron — scrape hourly (`0 * * * *`) at `/api/scrape/cron`; Telegram watch check (`50 * * * *`) at `/api/telegram/check`.
 
 ## Design System
 
@@ -73,6 +74,7 @@ src/
 | [docs/PLANS.md](./docs/PLANS.md) | Plans index |
 | [docs/RELIABILITY.md](./docs/RELIABILITY.md) | Reliability standards |
 | [docs/UNIMPLEMENTED_CLUBS.md](./docs/UNIMPLEMENTED_CLUBS.md) | Unimplemented club list |
+| [docs/DEPLOY_CRON_TELEGRAM.md](./docs/DEPLOY_CRON_TELEGRAM.md) | Telegram bot + Vercel cron setup; GitHub Actions deletion checklist |
 | [docs/generated/db-schema.md](./docs/generated/db-schema.md) | Database schema reference |
 
 ## Common Tasks
@@ -81,6 +83,7 @@ src/
 - **Add page**: Create `src/app/{route}/page.tsx`, add nav link in `MobileNav.tsx` + `Header.tsx`
 - **Add API route**: Create `src/app/api/{endpoint}/route.ts`, use `createServerClient()` for DB
 - **Modify DB schema**: Requires explicit approval. Create migration, update `src/lib/types/database.ts`
+- **Telegram bot**: Logic in `src/lib/telegram/`; webhook at `/api/telegram/webhook`; watch check at `/api/telegram/check`; DB table `telegram_watches` (migration 011)
 
 ## File Conventions
 
@@ -90,7 +93,7 @@ src/
 
 ## Testing & Verification
 
-- Run: `npm test` (Vitest, 359 tests / 27 files)
+- Run: `npm test` (Vitest, ~465 tests / 44 files)
 - Build: `npm run build` (ignore `/login` prerender error -- expected without Supabase env vars)
 - Lint: `npm run lint` (layer rules enforced via `import/no-restricted-paths`)
 

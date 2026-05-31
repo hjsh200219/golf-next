@@ -189,7 +189,7 @@ export interface Database {
           error_message: string | null;
           tee_time_count: number;
           duration_ms: number | null;
-          scraped_at: string;
+          scraped_at: string | null;
         };
         Insert: {
           id?: number;
@@ -224,6 +224,32 @@ export interface Database {
           expires_at: string;
         };
         Update: Partial<Database['public']['Tables']['weather_cache']['Insert']>;
+        Relationships: [];
+      };
+      telegram_watches: {
+        Row: {
+          id: number;
+          chat_id: number;
+          club_id: string;
+          date: string;
+          time_from: string;
+          time_to: string;
+          status: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: number;
+          chat_id: number;
+          club_id: string;
+          date: string;
+          time_from: string;
+          time_to: string;
+          status?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database['public']['Tables']['telegram_watches']['Insert']>;
         Relationships: [];
       };
     };

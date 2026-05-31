@@ -64,9 +64,12 @@ export async function POST(request: NextRequest) {
     const durationMs = Date.now() - start;
 
     // Upsert tee times
+    // Single clock read shared between tee_times rows and the
+    // scrape_club_results update below, so the downstream "currently open"
+    // comparison (tee_times.scraped_at >= scrape_club_results.scraped_at) holds.
+    const now = new Date().toISOString();
     let upsertFailed: string | null = null;
     if (result.success && result.teeTimes.length > 0) {
-      const now = new Date().toISOString();
       const rows = result.teeTimes.map((t) => ({
         club_id: clubId,
         cc_name: t.cc_name,
@@ -107,7 +110,7 @@ export async function POST(request: NextRequest) {
         error_message: upsertFailed ?? result.error ?? null,
         tee_time_count: persisted ? result.teeTimes.length : 0,
         duration_ms: durationMs,
-        scraped_at: new Date().toISOString(),
+        scraped_at: now,
       })
       .eq('job_id', jobId)
       .eq('club_id', clubId);

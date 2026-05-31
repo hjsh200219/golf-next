@@ -30,3 +30,6 @@
 - [ASP.NET UpdatePanel postback](scraper-aspnet-updatepanel-postback.md) — postback 필요, GET은 빈 테이블, redirect:follow
 - [golfzoncounty JSON API](scraper-golfzoncounty-json-api.md) — /login/userLogin + getList JSON, 구 endpoint 404
 - [Upsert dedup + encoding trap](scraper-upsert-dedup-encoding-trap.md) — scrape success인데 DB 0행 = conflict 키 중복(테이블 2배 or 인코딩 깨짐)
+
+## Session 5 (2026-06-01)
+- [PostgREST partial-index upsert trap](postgrest-partial-index-upsert-trap.md) — 부분 유니크 인덱스에 .upsert는 42P10, INSERT+catch 23505 써야 함 (mock은 green/prod dead)
