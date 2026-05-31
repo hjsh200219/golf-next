@@ -1,3 +1,7 @@
 {
-  "regions": ["icn1"]
+  "regions": ["icn1"],
+  "crons": [
+    { "path": "/api/scrape/cron", "schedule": "0 * * * *" },
+    { "path": "/api/telegram/check", "schedule": "50 * * * *" }
+  ]
 }
