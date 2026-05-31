@@ -308,7 +308,7 @@ describe('POST /api/telegram/webhook', () => {
   });
 
   // --- /stop ---------------------------------------------------------------
-  it('/stop lists watches with stop buttons and a "전체 중지" button', async () => {
+  it('/stop lists watches with delete buttons and a "전체 삭제" button', async () => {
     vi.mocked(listActiveWatches).mockResolvedValue([makeWatch({ id: 7 })]);
 
     const res = await POST(makeRequest(messageUpdate('/stop')));
@@ -321,7 +321,32 @@ describe('POST /api/telegram/webhook', () => {
     const buttons = markup.inline_keyboard.flat();
     expect(buttons.some((b) => b.callback_data === 'x|stop|7')).toBe(true);
     expect(buttons.some((b) => b.callback_data === 'x|stopall')).toBe(true);
-    expect(buttons.some((b) => b.text.includes('전체 중지'))).toBe(true);
+    expect(buttons.some((b) => b.text.includes('전체 삭제'))).toBe(true);
+  });
+
+  // --- /help ---------------------------------------------------------------
+  it('/help → sends the command guide listing every command', async () => {
+    const res = await POST(makeRequest(messageUpdate('/help')));
+
+    expect(res.status).toBe(200);
+    expect(sendMessage).toHaveBeenCalledTimes(1);
+    const text = vi.mocked(sendMessage).mock.calls[0][1];
+    for (const cmd of ['/watch', '/list', '/stop', '/cancel', '/help']) {
+      expect(text).toContain(cmd);
+    }
+    // no DB / watch side effects for a help command
+    expect(listActiveWatches).not.toHaveBeenCalled();
+  });
+
+  // --- /cancel -------------------------------------------------------------
+  it('/cancel → acknowledges with no watch side effects', async () => {
+    const res = await POST(makeRequest(messageUpdate('/cancel')));
+
+    expect(res.status).toBe(200);
+    expect(sendMessage).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(sendMessage).mock.calls[0][1]).toContain('취소');
+    expect(createWatch).not.toHaveBeenCalled();
+    expect(listActiveWatches).not.toHaveBeenCalled();
   });
 
   it('stop callback → stopWatch called and confirmation sent', async () => {
@@ -376,5 +401,34 @@ describe('POST /api/telegram/webhook', () => {
     expect(res2.status).toBe(200);
     expect(createWatch).toHaveBeenCalledTimes(2);
     expect(answerCallbackQuery).toHaveBeenCalledTimes(2);
+  });
+
+  // --- robustness: answerCallbackQuery must not block the watch action -------
+  it('done callback still creates the watch when answerCallbackQuery throws', async () => {
+    vi.mocked(answerCallbackQuery).mockRejectedValueOnce(
+      new Error('Bad Request: query is too old'),
+    );
+
+    const res = await POST(makeRequest(callbackUpdate('w|s=done|ga|20260602|0700-0800')));
+
+    expect(res.status).toBe(200);
+    // the ack failed, but the watch must still have been created
+    expect(createWatch).toHaveBeenCalledTimes(1);
+    expect(createWatch).toHaveBeenCalledWith({
+      chatId: 555,
+      clubId: 'ga',
+      date: '2026-06-02',
+      timeFrom: '07:00',
+      timeTo: '08:00',
+    });
+  });
+
+  it('delete callback still stops the watch when answerCallbackQuery throws', async () => {
+    vi.mocked(answerCallbackQuery).mockRejectedValueOnce(new Error('invalid query id'));
+
+    const res = await POST(makeRequest(callbackUpdate('x|stop|7')));
+
+    expect(res.status).toBe(200);
+    expect(stopWatch).toHaveBeenCalledWith(7);
   });
 });
