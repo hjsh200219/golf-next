@@ -102,4 +102,23 @@ describe('YangjuScraper login', () => {
     expect(times).toContain('13:01');
     expect(rows.every((r) => r.cc_name === '양주CC')).toBe(true);
   });
+
+  it('throws on a login-redirect response instead of silently returning 0 rows', async () => {
+    // Yangju enforces single-session-per-account: a re-login while a session is
+    // active 500s server-side, so the data endpoint bounces back to login.asp.
+    // That must surface as a failed scrape (prod status=failed), never success:0 —
+    // success:0 would violate the tee_times liveness invariant and mislead the bot.
+    const redirect =
+      `<script language='javascript'>location.href="/login/login.asp?returnurl=%2Fgolfres%2Fonepage%2Freal%5Fmembercheck%2Easp";</script>`;
+    const scraper = new YangjuScraper('20260602', MOCK_CREDENTIALS);
+    vi.spyOn(
+      scraper as unknown as { fetch: typeof globalThis.fetch },
+      'fetch',
+    ).mockImplementation(async (url: RequestInfo | URL) => {
+      const body = String(url).includes('real_timelist_ajax_list') ? redirect : '<html></html>';
+      return new Response(body, { status: 200 });
+    });
+
+    await expect(scraper.scrape()).rejects.toThrow(/login/i);
+  });
 });

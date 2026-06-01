@@ -40,6 +40,15 @@ export default class YangjuScraper extends BaseScraper {
     );
 
     const html = await this.textWithEncoding(res, 'euc-kr');
+
+    // Yangju enforces single-session-per-account: when login fails (a re-login
+    // while a session is active 500s server-side), the data endpoint bounces back
+    // to login.asp. Surface that as a failed scrape rather than returning 0 rows,
+    // which would look like "no open slots" and violate the liveness invariant.
+    if (/login\.asp|location\.href/.test(html)) {
+      throw new Error('yangju: not authenticated (login redirect) — likely session conflict, retry next run');
+    }
+
     const $ = this.parseHtml(html);
 
     const rows: TeeTimeRow[] = [];
