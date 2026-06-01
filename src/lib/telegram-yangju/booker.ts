@@ -1,13 +1,13 @@
 /**
- * Fixed booker identity + yangju credentials, sourced from env.
+ * Fixed booker phone + yangju credentials, sourced from env.
  *
- * The reservation books under a single fixed person (the yangju account owner);
- * there is no per-user booker input. All values are required — a missing one throws
- * loudly rather than assembling a half-empty reservation body.
+ * The reservation books under a single fixed person (the yangju account owner).
+ * The captured wire body sends `golfuser_name` EMPTY (the server fills the name
+ * from the logged-in session), so no booker NAME is needed — only the phone, which
+ * is split into hand_tel1/2/3.
  */
 
 export interface Booker {
-  name: string;
   hand_tel1: string;
   hand_tel2: string;
   hand_tel3: string;
@@ -18,14 +18,10 @@ export interface YangjuCreds {
   pw: string;
 }
 
-/** Fixed booker from `YANGJU_BOOKER_NAME` + `YANGJU_BOOKER_TEL` (11 digits -> 3/4/4). */
+/** Fixed booker phone from `YANGJU_BOOKER_TEL` (11 digits -> 3/4/4). */
 export function getBooker(): Booker {
-  const name = process.env.YANGJU_BOOKER_NAME;
   const telRaw = process.env.YANGJU_BOOKER_TEL;
 
-  if (!name) {
-    throw new Error('getBooker: YANGJU_BOOKER_NAME is not set');
-  }
   if (!telRaw) {
     throw new Error('getBooker: YANGJU_BOOKER_TEL is not set');
   }
@@ -36,7 +32,6 @@ export function getBooker(): Booker {
   }
 
   return {
-    name,
     hand_tel1: digits.slice(0, 3),
     hand_tel2: digits.slice(3, 7),
     hand_tel3: digits.slice(7),

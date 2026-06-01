@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { getBooker, getYangjuCreds } from '@/lib/telegram-yangju/booker';
 
-const ENV_KEYS = ['YANGJU_BOOKER_NAME', 'YANGJU_BOOKER_TEL', 'YANGJU_ID', 'YANGJU_PW'] as const;
+const ENV_KEYS = ['YANGJU_BOOKER_TEL', 'YANGJU_ID', 'YANGJU_PW'] as const;
 
 const saved: Record<string, string | undefined> = {};
 beforeEach(() => {
@@ -15,18 +15,13 @@ afterEach(() => {
 });
 
 describe('getBooker', () => {
-  it('splits an 11-digit tel into 010 / 4 / 4', () => {
-    process.env.YANGJU_BOOKER_NAME = '홍길동';
+  it('splits an 11-digit tel into 010 / 4 / 4 (no name — golfuser_name sent empty)', () => {
     process.env.YANGJU_BOOKER_TEL = '01012345678';
     const b = getBooker();
-    expect(b.name).toBe('홍길동');
-    expect(b.hand_tel1).toBe('010');
-    expect(b.hand_tel2).toBe('1234');
-    expect(b.hand_tel3).toBe('5678');
+    expect(b).toEqual({ hand_tel1: '010', hand_tel2: '1234', hand_tel3: '5678' });
   });
 
   it('strips non-digits (hyphens) from the tel before splitting', () => {
-    process.env.YANGJU_BOOKER_NAME = '홍길동';
     process.env.YANGJU_BOOKER_TEL = '010-8002-8080';
     const b = getBooker();
     expect(b.hand_tel1).toBe('010');
@@ -34,14 +29,12 @@ describe('getBooker', () => {
     expect(b.hand_tel3).toBe('8080');
   });
 
-  it('throws when name is missing', () => {
-    delete process.env.YANGJU_BOOKER_NAME;
-    process.env.YANGJU_BOOKER_TEL = '01012345678';
+  it('throws when tel is missing', () => {
+    delete process.env.YANGJU_BOOKER_TEL;
     expect(() => getBooker()).toThrow();
   });
 
   it('throws when tel is not 11 digits', () => {
-    process.env.YANGJU_BOOKER_NAME = '홍길동';
     process.env.YANGJU_BOOKER_TEL = '0101234';
     expect(() => getBooker()).toThrow();
   });
