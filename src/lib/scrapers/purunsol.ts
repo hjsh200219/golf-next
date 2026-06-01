@@ -1,5 +1,7 @@
 import { BaseScraper, TeeTimeRow } from './base';
 
+const GOLF_GBN = '160';
+
 export default class PurunsolScraper extends BaseScraper {
   get clubId(): string {
     return 'purunsol';
@@ -8,54 +10,42 @@ export default class PurunsolScraper extends BaseScraper {
   async scrape(): Promise<TeeTimeRow[]> {
     const origin = 'https://www.purunsol.co.kr';
 
-    // Step 1: Login via JSON (uses pw1!)
-    await this.postJson(
-      `${origin}/AJAX/member/services.asmx/Login`,
-      {
-        userID: this.credentials.id,
-        userPW: this.credentials.pw1,
-      },
-      {
-        ...this.commonHeaders(origin, `${origin}/Login.aspx`),
-        Accept: 'application/json, text/javascript, */*; q=0.01',
-        'X-Requested-With': 'XMLHttpRequest',
-      },
-    );
+    // The tee-time list is public (no login needed; 예약 buttons just link to login).
+    // Visit the calendar page first to seed the ASP.NET session cookie.
+    await this.fetch(`${origin}/Booking/GolfCalendar.aspx`, {
+      headers: { ...this.commonHeaders(origin, origin), Accept: 'text/html' },
+    });
 
-    // Step 2: Fetch tee time list via JSON
     const res = await this.postJson(
       `${origin}/_AJAX/reservation/services.asmx/GetGolfTimeList`,
       {
-        reservationDate: this.date,
-        courseType: '',
+        p_golfgbn: GOLF_GBN,
+        p_date: this.dateDash, // server wants YYYY-MM-DD
+        p_cos: '',
+        p_rtype: '',
+        p_rmode: 'h',
       },
       {
-        ...this.commonHeaders(origin, `${origin}/Reservation/GolfReservation.aspx`),
+        ...this.commonHeaders(origin, `${origin}/Booking/GolfCalendar.aspx`),
         Accept: 'application/json, text/javascript, */*; q=0.01',
         'X-Requested-With': 'XMLHttpRequest',
       },
     );
 
-    // Step 3: Response is JSON with .d containing a JSON string which is HTML
-    const json = await res.json() as { d?: string };
-    if (!json.d) return [];
+    // Response is { d: "<json string>" }; the inner .html is a BARE <tr> fragment.
+    const outer = (await res.json()) as { d?: string };
+    if (!outer.d) return [];
 
-    let htmlContent: string;
+    let html = '';
     try {
-      const parsed = JSON.parse(json.d) as unknown;
-      if (typeof parsed === 'string') {
-        htmlContent = parsed;
-      } else if (Array.isArray(parsed)) {
-        htmlContent = (parsed as string[]).join('');
-      } else {
-        htmlContent = json.d;
-      }
+      const inner = JSON.parse(outer.d) as { html?: string };
+      html = inner.html ?? '';
     } catch {
-      htmlContent = json.d;
+      return [];
     }
 
-    const $ = this.parseHtml(htmlContent);
-
+    // cheerio drops orphan <tr>; wrap in <table> so the rows parse.
+    const $ = this.parseHtml(`<table>${html}</table>`);
     const rows: TeeTimeRow[] = [];
 
     $('tr').each((_, tr) => {
@@ -63,17 +53,17 @@ export default class PurunsolScraper extends BaseScraper {
       if (tds.length < 5) return;
 
       const teeoff = this.formatTime($(tds[1]).text().trim());
-      const course = $(tds[2]).text().trim();
-      const rawPrice = $(tds[4]).text().trim().replace(/,/g, '');
+      if (!/^\d{1,2}:\d{2}$/.test(teeoff)) return;
 
-      if (!teeoff) return;
+      const course = $(tds[2]).text().replace(/\s+/g, ' ').trim();
+      const price = $(tds[4]).text().replace(/[원,]/g, '').trim();
 
       rows.push({
         date: this.dateDash,
         cc_name: '푸른솔GC 포천',
         teeoff,
         course,
-        price: rawPrice,
+        price,
         event: '',
       });
     });

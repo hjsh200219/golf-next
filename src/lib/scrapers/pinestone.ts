@@ -1,62 +1,74 @@
 import { BaseScraper, TeeTimeRow } from './base';
 
+interface PsTimeInfo {
+  bookingTime?: string;
+  courseName?: string;
+  greenFeeDiscountAmt?: number;
+  availablePerson?: number;
+}
+interface PsBookingResponse {
+  contents?: { reservationTimeInfoList?: PsTimeInfo[] };
+}
+interface PsLoginResponse {
+  contents?: { accessToken?: string };
+}
+
+const GOLF_CLUB_ID = '40';
+
 export default class PineStoneScraper extends BaseScraper {
   get clubId(): string {
     return 'pinestone';
   }
 
   async scrape(): Promise<TeeTimeRow[]> {
+    // Site rebuilt as a Next.js SPA backed by a JSON API; the old ASP endpoint is gone.
+    // Login returns a JWT in the body, which the booking API wants as a Bearer token
+    // (the Set-Cookie alone is not accepted). Date is dotted (YYYY.MM.DD).
     const origin = 'https://www.pinestonecc.com';
-    const loginUrl = `${origin}/login/login_ok.asp`;
-    const dataUrl = `${origin}/GolfRes/onepage/real_timelist_ajax_list.asp`;
 
-    await this.postForm(
-      loginUrl,
+    const loginRes = await this.postJson(
+      `${origin}/api/v1/auth/login`,
+      { userId: this.credentials.id, password: this.credentials.pw },
+      { golfclubid: GOLF_CLUB_ID, Origin: origin, Referer: `${origin}/member/login` },
+    );
+    const login = (await loginRes.json()) as PsLoginResponse;
+    const token = login.contents?.accessToken;
+    if (!token) {
+      throw new Error('pinestone: login returned no accessToken');
+    }
+
+    const dateDotted = `${this.date.slice(0, 4)}.${this.date.slice(4, 6)}.${this.date.slice(6, 8)}`;
+    const res = await this.fetch(
+      `${origin}/api/v1/booking/list/token?bookingDate=${dateDotted}&bookingQueryType=ALL`,
       {
-        mem_id: this.credentials.id,
-        usr_pwd: this.credentials.pw,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          golfclubid: GOLF_CLUB_ID,
+          Origin: origin,
+          Referer: `${origin}/booking`,
+          Accept: 'application/json',
+        },
       },
-      this.commonHeaders(origin, `${origin}/login/login.asp`),
     );
 
-    const res = await this.postForm(
-      dataUrl,
-      {
-        golfrestype: 'real',
-        courseid: '0',
-        usrmemcd: '10',
-        pointdate: this.date,
-        openyn: '1',
-        dategbn: '4',
-        choice_time: '00',
-        inputtype: 'I',
-      },
-      this.commonHeaders(origin, `${origin}/GolfRes/onepage/real_timelist.asp`),
-    );
+    const json = (await res.json()) as PsBookingResponse;
+    const list = json.contents?.reservationTimeInfoList ?? [];
 
-    const html = await this.textWithEncoding(res, 'euc-kr');
-    const $ = this.parseHtml(html);
     const rows: TeeTimeRow[] = [];
-
-    $('tbody tr').each((_i, tr) => {
-      const tds = $(tr).find('td');
-      if (tds.length < 5) return;
-
-      const teeoff = this.formatTime($(tds[2]).text().trim());
-      const course = $(tds[1]).text().trim();
-      const priceRaw = $(tds[4]).text().trim();
-
-      if (!teeoff) return;
+    for (const t of list) {
+      if ((t.availablePerson ?? 0) <= 0) continue;
+      const teeoff = this.formatTime(t.bookingTime ?? '');
+      if (!/^\d{1,2}:\d{2}$/.test(teeoff)) continue;
 
       rows.push({
         date: this.dateDash,
         cc_name: '파인스톤CC',
         teeoff,
-        course,
-        price: priceRaw,
+        course: t.courseName ?? '',
+        price: t.greenFeeDiscountAmt ?? '',
         event: '',
       });
-    });
+    }
 
     return rows;
   }
