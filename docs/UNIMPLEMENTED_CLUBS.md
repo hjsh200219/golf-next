@@ -29,5 +29,6 @@ golf(Python) 프로젝트에 ID/PW가 등록되어 있으나, golf-next에서 �
 ## 요약
 
 - 전체 등록(Python): 41개
-- golf-next 활성: 34개
+- golf-next 활성: 33개
 - 미구현: **7개** (WAF 2 + 사이트 개편 1 + 미마이그레이션 4)
+- 제거: `sungmoon`(성문안) — oakvalley S1 코스와 동일 데이터(중복). oakvalley 스크래퍼가 `cc_name='성문안CC'`로 이미 커버. 2026-06-01 레지스트리에서 제거.

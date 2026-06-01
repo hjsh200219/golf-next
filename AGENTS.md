@@ -1,7 +1,7 @@
 # GolfShin -- Agent Rules
 
 > Golf tee-time reservation aggregator for Korean golf courses.
-> Real-time scraping from 34 club websites, Supabase backend, Next.js 14 frontend.
+> Real-time scraping from 33 club websites, Supabase backend, Next.js 14 frontend.
 
 ## Tech Stack
 
@@ -30,7 +30,7 @@ src/
   hooks/            # useTeeTimes, useClubs, useWeather, useFavorites, useAuth, useDeviceId, useFilters
   lib/
     constants/      # regions, club-mappings
-    scrapers/       # 34 club scrapers extending BaseScraper + index registry
+    scrapers/       # 33 club scrapers extending BaseScraper + index registry
     supabase/       # client, server, middleware helpers
     types/          # database, tee-time, weather
     utils/          # date, price, time, group, event, geohash, uuid, weather

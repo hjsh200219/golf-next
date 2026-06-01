@@ -84,9 +84,7 @@ describe('getActiveScraperIds', () => {
  * Add entries here (with a TODO comment) when a scraper is registered before
  * its region classification is finalised.
  */
-const KNOWN_UNMAPPED_SCRAPERS = new Set<string>([
-  'sungmoon', // TODO: classify region before enabling region-filter UI
-]);
+const KNOWN_UNMAPPED_SCRAPERS = new Set<string>([]);
 
 describe('SCRAPER_MAP / CLUB_REGION_MAP cross-reference', () => {
   it('every scraper ID has a corresponding entry in CLUB_REGION_MAP (or is in the known-unmapped allowlist)', () => {

@@ -26,7 +26,6 @@ import TheCrosbyScraper from './thecrosby';
 import SamsungGolfScraper from './samsunggolf';
 import PurunsolScraper from './purunsol';
 import PhilosgcScraper from './philosgc';
-import SungmoonScraper from './sungmoon';
 import CascadiaScraper from './cascadia';
 import OakValleyScraper from './oakvalley';
 import OwnersScraper from './owners';
@@ -64,7 +63,6 @@ export const SCRAPER_MAP: Record<string, ScraperConstructor> = {
   samsunggolf: SamsungGolfScraper,
   purunsol: PurunsolScraper,
   philosgc: PhilosgcScraper,
-  sungmoon: SungmoonScraper,
   cascadia: CascadiaScraper,
   oakvalley: OakValleyScraper,
   owners: OwnersScraper,
