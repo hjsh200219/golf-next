@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { http, HttpResponse } from 'msw';
-import { server, lastTelegramRequest } from '../../helpers/msw-server';
+import { server, lastTelegramRequest, lastTelegramToken } from '../../helpers/msw-server';
 
 beforeAll(() => {
   process.env.TELEGRAM_BOT_TOKEN = 'test-token';
@@ -48,5 +48,39 @@ describe('telegram client', () => {
     );
     const { sendMessage } = await import('@/lib/telegram/client');
     await expect(sendMessage(1, 'x')).rejects.toThrow();
+  });
+
+  // Guard tests for the token-parameterization (2nd-bot support). The DEFAULT
+  // path must remain byte-identical for the existing GolfShin bot.
+  it('default (no token arg) targets TELEGRAM_BOT_TOKEN', async () => {
+    const { sendMessage } = await import('@/lib/telegram/client');
+    await sendMessage(1, 'x');
+    expect(lastTelegramToken('sendMessage')).toBe('test-token');
+  });
+
+  it('explicit token arg overrides the default', async () => {
+    const { sendMessage } = await import('@/lib/telegram/client');
+    await sendMessage(1, 'x', undefined, undefined, 'jk-token');
+    expect(lastTelegramToken('sendMessage')).toBe('jk-token');
+  });
+
+  it('throws "not set" when no token arg AND env unset (no leak to a default)', async () => {
+    const saved = process.env.TELEGRAM_BOT_TOKEN;
+    delete process.env.TELEGRAM_BOT_TOKEN;
+    try {
+      const { sendMessage } = await import('@/lib/telegram/client');
+      await expect(sendMessage(1, 'x')).rejects.toThrow(/not set/);
+    } finally {
+      process.env.TELEGRAM_BOT_TOKEN = saved;
+    }
+  });
+
+  it('editMessageReplyMarkup posts chat_id + message_id (button-removal helper)', async () => {
+    const { editMessageReplyMarkup } = await import('@/lib/telegram/client');
+    await editMessageReplyMarkup(123, 456, undefined, 'jk-token');
+    const body = lastTelegramRequest<Record<string, unknown>>('editMessageReplyMarkup');
+    expect(body!.chat_id).toBe(123);
+    expect(body!.message_id).toBe(456);
+    expect(lastTelegramToken('editMessageReplyMarkup')).toBe('jk-token');
   });
 });

@@ -252,6 +252,62 @@ export interface Database {
         Update: Partial<Database['public']['Tables']['telegram_watches']['Insert']>;
         Relationships: [];
       };
+      yangju_reservation_watches: {
+        Row: {
+          id: number;
+          chat_id: number;
+          date: string;
+          time_from: string;
+          time_to: string;
+          course: string | null;
+          status: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: number;
+          chat_id: number;
+          date: string;
+          time_from: string;
+          time_to: string;
+          course?: string | null;
+          status?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database['public']['Tables']['yangju_reservation_watches']['Insert']>;
+        Relationships: [];
+      };
+      yangju_reservation_attempts: {
+        Row: {
+          id: number;
+          chat_id: number;
+          date: string;
+          tee_time: string;
+          course: string;
+          resolved_pointid: string | null;
+          status: string;
+          idempotency_key: string;
+          payload_log: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: number;
+          chat_id: number;
+          date: string;
+          tee_time: string;
+          course: string;
+          resolved_pointid?: string | null;
+          status?: string;
+          idempotency_key: string;
+          payload_log?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database['public']['Tables']['yangju_reservation_attempts']['Insert']>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

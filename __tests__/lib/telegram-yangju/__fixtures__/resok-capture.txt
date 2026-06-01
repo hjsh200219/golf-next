@@ -1,0 +1,1 @@
+cmd=ins&cmval=0&cmkind=&calltype=AJAX&gonexturl=.%2Fmy_golfreslist.asp&backurl=&pointdate=20260630&openyn=1&dategbn=3&pointid=1&pointname=%25uB3D9&pointtime=0612&golfuser_name=&hand_tel1=010&hand_tel2=8002&hand_tel3=8080&join_bookg_cnt=&pointhole=18%ED%99%80&ref_check=&ref_name=&ref_tel1=010&ref_tel2=&ref_tel3=&coupon_info=&self_r_yn=N&self_c_yn=
