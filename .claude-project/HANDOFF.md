@@ -1,8 +1,16 @@
 ---
-created: 2026-06-01T06:40:00+09:00
+created: 2026-06-01T09:30:00+09:00
 project: golf-next
-summary: Telegram 티타임 워치 봇 + Vercel cron 마이그레이션 — 구현·PR#1·push 완료. onetheclub GitHub 유지 확정, PRD exec-plans/active로 이동
+summary: Telegram 빈자리 알림 봇 — 배포·E2E 검증 완료, /help·/cancel·목록삭제·콜백 견고성 추가(PR#2 머지). 봇 라이브 운영 중
 ---
+
+## 현재 상태: 라이브 운영 중 ✅
+- 봇 @golfshinbot 배포 완료. webhook 등록, prod env(`TELEGRAM_WEBHOOK_SECRET`,`TELEGRAM_BOT_TOKEN`) 설정, migration 011 적용.
+- PR#1(봇 본체) + PR#2(/help·/cancel·삭제·견고성·README) 둘 다 main 머지.
+- E2E prod 검증 완료: `/watch` 흐름·`/list`·삭제·check cron 매칭→알림발송(`sent:1`)·/help·/cancel·견고성(가짜 query id에도 watch 생성/삭제) 전부 실제 동작 확인.
+- onetheclub은 GitHub Actions 유지(봇은 tee_times 읽기만 → 출처 무관).
+- 디버깅 교훈: [vercel-env-quote-trap](memory/vercel-env-quote-trap.md) — env 따옴표 오염 + 재배포 필요로 "200인데 봇 무응답" 겪음.
+
 
 ## Session Digest
 
