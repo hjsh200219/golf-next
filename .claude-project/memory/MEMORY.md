@@ -34,3 +34,6 @@
 ## Session 5 (2026-06-01)
 - [PostgREST partial-index upsert trap](postgrest-partial-index-upsert-trap.md) — 부분 유니크 인덱스에 .upsert는 42P10, INSERT+catch 23505 써야 함 (mock은 green/prod dead)
 - [Vercel env quote trap](vercel-env-quote-trap.md) — .env.local 따옴표째 주입 시 키 손상 + env 변경은 재배포(scope=hjsh) 필요, "webhook 200인데 무응답" 진단법
+
+## Session 6 (2026-06-02)
+- [Yangju pw-expiry usable](yangju-pw-expiry-usable.md) — 양주 "비밀번호 변경기간 경과"는 로그인 실패 아님, 만료 PW로도 세션 발급·조회/예약 가능. login()은 통과+warn 처리
