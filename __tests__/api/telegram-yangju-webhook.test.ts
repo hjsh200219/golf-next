@@ -109,11 +109,21 @@ describe('auth', () => {
 });
 
 describe('/book', () => {
-  it('allowlisted /book → login + fetchSlots, shows slots (no booking)', async () => {
+  it('/book → date keyboard only, NO login yet (date chosen at tap-time)', async () => {
     const { POST } = await import('@/app/api/telegram/yangju/webhook/route');
     await POST(req({ message: { chat: { id: 1 }, text: '/book' } }));
+    expect(login).not.toHaveBeenCalled();
+    expect(fetchSlots).not.toHaveBeenCalled();
+    // sent a date-selection keyboard with b|date| buttons
+    const markup = sendMessage.mock.calls[0][2] as any;
+    expect(markup.inline_keyboard[0][0].callback_data).toMatch(/^b\|date\|\d{8}$/);
+  });
+
+  it('b|date|<date> tap → login + fetchSlots for that date, shows slots (no booking)', async () => {
+    const { POST } = await import('@/app/api/telegram/yangju/webhook/route');
+    await POST(req({ callback_query: { id: 'c', message: { chat: { id: 1 } }, data: 'b|date|20260630' } }));
     expect(login).toHaveBeenCalled();
-    expect(fetchSlots).toHaveBeenCalled();
+    expect(fetchSlots).toHaveBeenCalledWith('20260630');
     expect(submitReservation).not.toHaveBeenCalled();
     expect(sendMessage).toHaveBeenCalled();
   });

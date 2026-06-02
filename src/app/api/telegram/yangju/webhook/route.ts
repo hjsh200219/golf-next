@@ -9,6 +9,8 @@ import {
   confirmKeyboard,
   yangjuDateKeyboard,
   yangjuTimeRangeKeyboard,
+  bookDateKeyboard,
+  decodeBookCb,
 } from '@/lib/telegram-yangju/keyboards';
 import {
   createYangjuWatch,
@@ -97,14 +99,14 @@ async function handleMessage(m: TgMessage): Promise<void> {
     return;
   }
   if (text === '/book') {
-    await runBook(chatId);
+    await send(chatId, '예약할 날짜를 선택하세요 (취소: /cancel)', bookDateKeyboard());
     return;
   }
   await send(chatId, HELP);
 }
 
-/** /book: live login + fetchSlots → show open slots as [예약] buttons. Read-only. */
-async function runBook(chatId: number): Promise<void> {
+/** Book-flow date tapped: live login + fetchSlots for that date → [예약] buttons. */
+async function runBookForDate(chatId: number, date: string): Promise<void> {
   const client = new YangjuReservationClient(getYangjuCreds());
   try {
     await client.login();
@@ -112,9 +114,6 @@ async function runBook(chatId: number): Promise<void> {
     await send(chatId, `로그인 실패: ${(err as Error).message}`);
     return;
   }
-  // tomorrow as default booking date (golf is booked 1+ day ahead)
-  const d = new Date(Date.now() + 86400000);
-  const date = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
   let slots;
   try {
     slots = await client.fetchSlots(date);
@@ -150,6 +149,13 @@ async function handleCallback(cb: TgCallback): Promise<void> {
       await stopYangjuWatch(Number(parts[2]));
       await send(chatId, '알림을 삭제했습니다.');
     }
+    return;
+  }
+
+  // book-flow date scheme b|date|<YYYYMMDD> → fetch that date's slots
+  if (data.startsWith('b|')) {
+    const { date } = decodeBookCb(data);
+    if (date) await runBookForDate(chatId, date);
     return;
   }
 

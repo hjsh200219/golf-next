@@ -1,4 +1,6 @@
 import { dateKeyboard, timeRangeKeyboard, type InlineKeyboardMarkup } from '@/lib/telegram/keyboards';
+import { datesInRange } from '@/lib/telegram/time';
+import { toYmd } from './slot-format';
 import type { SlotInfo } from './resok-payload';
 
 /**
@@ -75,4 +77,27 @@ export function yangjuDateKeyboard(now?: number): InlineKeyboardMarkup {
 /** Yangju watch-flow time-range keyboard. */
 export function yangjuTimeRangeKeyboard(date: string): InlineKeyboardMarkup {
   return timeRangeKeyboard('yangju', date);
+}
+
+/**
+ * Book-flow date keyboard (`b|date|<YYYYMMDD>`), distinct from the watch-flow `w|`
+ * keyboard. `/book` shows this first; tapping a date triggers login + fetchSlots
+ * for that date (truth at tap-time), then slotListKeyboard.
+ */
+export function bookDateKeyboard(now?: number): InlineKeyboardMarkup {
+  return {
+    inline_keyboard: datesInRange(now).map((dateDash) => [
+      { text: dateDash, callback_data: `b|date|${toYmd(dateDash)}` },
+    ]),
+  };
+}
+
+export interface BookCbParts {
+  step: 'date';
+  date: string; // YYYYMMDD
+}
+
+export function decodeBookCb(s: string): BookCbParts {
+  const seg = s.split('|');
+  return { step: 'date', date: seg[2] };
 }

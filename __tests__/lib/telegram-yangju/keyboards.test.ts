@@ -6,7 +6,28 @@ import {
   confirmKeyboard,
   yangjuDateKeyboard,
   yangjuTimeRangeKeyboard,
+  bookDateKeyboard,
+  decodeBookCb,
 } from '@/lib/telegram-yangju/keyboards';
+
+describe('book-flow date keyboard (b| namespace)', () => {
+  it('offers D+1..D+14 (14 dates)', () => {
+    const k = bookDateKeyboard();
+    expect(k.inline_keyboard).toHaveLength(14);
+  });
+
+  it('each button is b|date|YYYYMMDD and round-trips', () => {
+    const k = bookDateKeyboard();
+    const cb = k.inline_keyboard[0][0].callback_data;
+    expect(cb).toMatch(/^b\|date\|\d{8}$/);
+    expect(decodeBookCb(cb)).toEqual({ step: 'date', date: cb.split('|')[2] });
+  });
+
+  it('callback_data stays under 64 bytes', () => {
+    const cb = bookDateKeyboard().inline_keyboard[0][0].callback_data;
+    expect(Buffer.byteLength(cb, 'utf8')).toBeLessThan(64);
+  });
+});
 
 describe('reserve callback_data (r| namespace)', () => {
   it('round-trips date/time/course/pointid', () => {
