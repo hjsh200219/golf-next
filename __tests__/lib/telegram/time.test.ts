@@ -9,20 +9,20 @@ describe('telegram time', () => {
     expect(kstToday(NOW)).toBe('2026-06-01');
   });
 
-  it('datesInRange returns 14 dates starting at D+1', () => {
+  it('datesInRange returns 30 dates starting at D+1', () => {
     const dates = datesInRange(NOW);
-    expect(dates).toHaveLength(14);
+    expect(dates).toHaveLength(30);
     expect(dates[0]).toBe('2026-06-02'); // D+1
-    expect(dates[13]).toBe('2026-06-15'); // D+14
+    expect(dates[29]).toBe('2026-07-01'); // D+30
   });
 
-  it('isDateInRange is true for D+1 and D+14', () => {
+  it('isDateInRange is true for D+1 and D+30', () => {
     expect(isDateInRange('2026-06-02', NOW)).toBe(true);
-    expect(isDateInRange('2026-06-15', NOW)).toBe(true);
+    expect(isDateInRange('2026-07-01', NOW)).toBe(true);
   });
 
-  it('isDateInRange is false for D+0 and D+15', () => {
+  it('isDateInRange is false for D+0 and D+31', () => {
     expect(isDateInRange('2026-06-01', NOW)).toBe(false); // D+0 (today)
-    expect(isDateInRange('2026-06-16', NOW)).toBe(false); // D+15 (out of range)
+    expect(isDateInRange('2026-07-02', NOW)).toBe(false); // D+31 (out of range)
   });
 });

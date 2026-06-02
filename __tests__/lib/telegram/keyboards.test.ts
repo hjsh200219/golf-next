@@ -64,10 +64,10 @@ describe('clubKeyboard', () => {
 });
 
 describe('dateKeyboard', () => {
-  it('yields 14 buttons with range-step callback_data', () => {
+  it('yields 30 buttons with range-step callback_data', () => {
     const kb = dateKeyboard('golfzoncounty', NOW);
     const buttons = kb.inline_keyboard.flat();
-    expect(buttons).toHaveLength(14);
+    expect(buttons).toHaveLength(30);
     expect(decodeCb(buttons[0].callback_data)).toEqual({
       step: 'range',
       club: 'golfzoncounty',

@@ -11,9 +11,9 @@ import {
 } from '@/lib/telegram-yangju/keyboards';
 
 describe('book-flow date keyboard (b| namespace)', () => {
-  it('offers D+1..D+14 (14 dates)', () => {
+  it('offers D+1..D+30 (30 dates)', () => {
     const k = bookDateKeyboard();
-    expect(k.inline_keyboard).toHaveLength(14);
+    expect(k.inline_keyboard).toHaveLength(30);
   });
 
   it('each button is b|date|YYYYMMDD and round-trips', () => {
@@ -72,9 +72,9 @@ describe('slotListKeyboard', () => {
 });
 
 describe('yangju watch-flow keyboards (no club step)', () => {
-  it('dateKeyboard offers D+1..D+14 with date callbacks', () => {
+  it('dateKeyboard offers D+1..D+30 with date callbacks', () => {
     const k = yangjuDateKeyboard();
-    expect(k.inline_keyboard.length).toBe(14);
+    expect(k.inline_keyboard.length).toBe(30);
   });
 
   it('timeRangeKeyboard offers the standard time buckets', () => {
