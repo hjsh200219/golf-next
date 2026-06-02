@@ -65,10 +65,18 @@ describe('YangjuReservationClient.login', () => {
     await expect(c.login()).rejects.toThrow();
   });
 
-  it('throws a DISTINCT pw-expiry error', async () => {
+  it('pw-expiry is NOT a failure — session still usable, login resolves', async () => {
+    // yangju issues a usable session cookie even when the password-change period
+    // has elapsed (verified by live probe); treat it as success, not a throw.
     server.use(http.post(LOGIN, () => html(LOGIN_PWEXPIRED)));
     const c = new YangjuReservationClient(creds);
-    await expect(c.login()).rejects.toThrow(/비밀번호 변경|pw.?expir|password/i);
+    await expect(c.login()).resolves.toBeUndefined();
+  });
+
+  it('throws on an unrecognized body (no 환영, no known alert) — unauth bounce', async () => {
+    server.use(http.post(LOGIN, () => html('<script>location.href="/login/login.asp";</script>')));
+    const c = new YangjuReservationClient(creds);
+    await expect(c.login()).rejects.toThrow();
   });
 });
 

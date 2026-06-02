@@ -70,10 +70,12 @@ export class YangjuReservationClient {
   }
 
   /**
-   * Log in. Throws DISTINCT errors on the two known auth failures so the caller can
-   * react (and so pw-expiry — the current real-account state — is loud, not silent).
-   * Requires a POSITIVE success signal (환영합니다): absence of a known-fail alert is
-   * NOT treated as success on the booking path.
+   * Log in. Throws on genuine credential failure. The pw-expiry case
+   * (비밀번호 변경기간이 경과) is NOT a failure: yangju still issues a usable session
+   * cookie and the reservation/list endpoints work under it (verified by live
+   * probe) — so it is treated as a successful login and only logged as a warning.
+   * Success requires a POSITIVE signal: either 환영합니다 OR the pw-expiry alert;
+   * any other body (no welcome, no known alert) is an unauthenticated bounce → throw.
    */
   async login(): Promise<void> {
     const res = await this.fetch(LOGIN_URL, {
@@ -87,11 +89,14 @@ export class YangjuReservationClient {
     });
     const body = await this.decode(res);
 
-    if (/비밀번호 변경기간이 경과/.test(body)) {
-      throw new Error('yangju login: password expired — rotate the account password before booking');
-    }
     if (/아이디 또는 비밀번호가 일치하지 않습니다/.test(body)) {
       throw new Error('yangju login: wrong id/password');
+    }
+    const pwExpired = /비밀번호 변경기간이 경과/.test(body);
+    if (pwExpired) {
+      // Session is still usable for booking; surface as a warning, do not block.
+      log.warn('yangju login: password-change period elapsed (session still usable; rotate soon)');
+      return;
     }
     if (!/환영합니다/.test(body)) {
       throw new Error('yangju login: no success signal (환영합니다) — not authenticated');
