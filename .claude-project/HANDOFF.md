@@ -1,41 +1,56 @@
 ---
-created: 2026-06-02T12:15:00+09:00
+created: 2026-06-05T14:30:00+09:00
 project: golf-next
-summary: 양주봇 2번째 사용자 jonnyjhkim(chat_id 8407185514) allowlist 추가·재배포 완료. 코드 변경 없음(env-only). Phase 7 사람 감독 첫 실예약은 여전히 미완료.
+summary: 남춘천CC 스크래퍼 구현·활성화 (미구현 4개 중 1개 마이그레이션, 3개 defer)
 ---
 
 ## Session Digest
 
-양주 예약봇(@jonnyjhkimbot)에 **2번째 인가 사용자 추가** 세션. jonnyjhkim chat_id를 vercel logs warn(`chat not allowlisted`)에서 라이브 캡처(8407185514), `TELEGRAM_JK_ALLOWED_CHAT_IDS`를 `5893350521,8407185514`로 갱신(Vercel prod + 로컬 .env), prod 재배포(golfshin.vercel.app alias). **코드 파일 변경 0 — env-only.** 부수로 golf-next Vercel 링크 stale 교정(무료팀→hjsh 유료팀 이전 반영, .vercel/project.json 재연결).
+미구현 골프장 4개(fortunehills, namchuncheon_new, lakeside_new, namyeoju) 스크래퍼 마이그레이션 시도. 라이브 프로브(실제 로그인+데이터 요청)로 실현 가능성 판정 → **남춘천CC(namchuncheon_new) 1개만 구현 성공**, 나머지 3개는 봇/로그인 차단으로 defer. 커밋 `20bd0de` push 완료(origin/main).
+
+남춘천은 `holeinonecloud.com` 멀티테넌트 플랫폼 REST API 사용: `POST /api/v1/auth/login`(JSON `{userId,password}`, 헤더 `golfclubid:2`) → JWT(`contents.accessToken`) → `GET /api/v1/booking/list/token?bookingDate=YYYY.MM.DD&bookingQueryType=ALL`(Bearer). 할인가(`greenFeeDiscountAmt`) 저장. 라이브 18행 수집 검증 완료.
 
 ## Progress
 
-### 완료 (이번 세션)
-- **사용자 추가**: jonnyjhkim(8407185514) allowlist 등록. 방식=대상이 봇에 메시지→vercel logs에서 chat_id 캡처→env 콤마추가→재배포. ([[yangju-bot-allowlist]])
-- **Vercel 링크 교정**: golf-next가 sh-consulting-free→hjsh(유료) 이전됨. 로컬 project.json orgId stale → `vercel link --scope hjsh` 재연결, env pull 정상화(53 vars).
-- env/vercel-config는 gitignored → git 코드 변경 없음.
+**완료**
+- `src/lib/scrapers/namchuncheon.ts` 구현 (clubId `namchuncheon_new`)
+- TDD 테스트 `__tests__/lib/scrapers/namchuncheon.test.ts` (5 tests: 로그인/booking요청/파싱/throw 2종)
+- `index.ts` SCRAPER_MAP + `regions.ts` CLUB_REGION_MAP(강원) 등록
+- `base.test.ts` 스크래퍼 카운트 33→34
+- **DB 활성화**: `golf_clubs` `namchuncheon_new` → `is_active=true, scraper_type=requests` (Supabase 프로덕션 PATCH 실행 완료)
+- 검증: lint ✅ / tsc ✅ / test 564 ✅ / build ✅
+- 라이브 실주행 검증: 셸 클래스로 실제 API 호출 → 18행 수집 확인
+- 문서: `docs/UNIMPLEMENTED_CLUBS.md` 갱신(7→6), `docs/PLANS/2026-06-05-migrate-4-unimplemented-scrapers.md` 플랜, `AGENTS.md` 한글 응답 규칙
+- 커밋·푸시 완료 (`20bd0de`)
 
-### 이월 (이전 세션부터 미완료)
-- **Phase 7 — 사람 감독 첫 실예약 1건** (사용자 직접). 실예약 ON(YANGJU_BOOK_LIVE=1, Vercel prod). 다음 [예약 확정] 탭=진짜 예약.
+**미완료 (defer)**
+- fortunehills, lakeside_new, namyeoju — 구현 불가 판정, UNIMPLEMENTED_CLUBS.md에 근거 기록
 
-## Next Steps (우선순위)
-1. **[P0/사용자] 첫 실예약 1건** — 봇 /book→실제 슬롯→확정. "✅ 예약 요청 완료"면 양주 my_golfreslist 실제 반영 확인. 잘못되면 양주 사이트서 수동 취소(봇 취소 없음).
-2. **[검증] golfuser_name 빈값 실예약 성립 여부** — 첫 실예약서만 확정. 실패 시 BOOKER_NAME 부활 등 코드 보완.
-3. **[검증] 만료 PW 세션이 resOk까지 받나** — 첫 실예약서 확정. 안 되면 PW 로테이션. ([[yangju-pw-expiry-usable]])
-4. **[P1] 실 Postgres 동시성 테스트** — 동시 confirm·distinct claim. 유닛 목은 partial-unique/CAS 재현 불가.
+## Next Steps
+
+1. **남춘천 cron 실수집 확인** — 다음 정시(`0 * * * *`)부터 자동 수집. `tee_times` 테이블에 `club_id='namchuncheon_new'` 행이 실제로 upsert되는지, `scrape_club_results`에서 success인지 확인.
+2. course명 영문 표기 검토 — 현재 `Victory`/`Challenge` 영문 그대로 저장됨. UI/다른 클럽과 일관성 위해 한글화 필요한지 판단.
+3. (선택) CLAUDE.md/AGENTS.md 본문의 "33 club scrapers/websites" 문구 → 34로 갱신(문서 수치만).
 
 ## Blockers
-- 없음. 봇 전 기능 가동, 2명 인가(owner + jonnyjhkim). 첫 실예약은 사용자 액션 대기.
+
+- 없음. (남춘천 완료, 나머지 3개는 의도적 defer)
 
 ## Watch Out
-- **실예약 ON (YANGJU_BOOK_LIVE=1, Vercel prod).** 다음 [예약 확정]=진짜 예약. 하루 3건 캡. **allowlist=5893350521,8407185514 (2명).** 취소 봇 없음→양주 사이트 수동. **추가 사용자도 owner 계정으로 실예약 가능** — 권한 부여 시 경고 필수.
-- **사용자 추가는 username 불가** — 숫자 chat_id 필요, vercel logs warn에서 캡처. env 변경 후 **재배포 필수**(scope hjsh). ([[yangju-bot-allowlist]] [[vercel-env-quote-trap]])
-- **golf-next는 hjsh(sh-consulting 유료)팀 소속** — Vercel 작업 시 `--scope hjsh`. 무료팀 scope로는 "project transferred" 실패.
-- **로컬은 DRY-RUN 유지**(.env에 BOOK_LIVE 없음) — 로컬 개발 실수 예약 방지.
-- **euc-kr=응답 디코드 전용. 예약 POST 본문=UTF-8 form.** cmd=ins. golfuser_name 빈값.
-- **migration 승인제** — supabase/migrations 임의 변경 금지(012 적용 완료).
 
-## Files Touched (이번 세션 — git 코드 변경 없음)
-- `.env`, `.vercel/project.json` (gitignored): allowlist 갱신, 링크 교정
-- Vercel env (코드 아님): TELEGRAM_JK_ALLOWED_CHAT_IDS=5893350521,8407185514
-- `.claude-project/` (이 pack): HANDOFF + yangju-bot-allowlist 메모리
+- **남춘천 JWT 만료**: accessToken exp 24h. 스크래퍼는 매 실행 재로그인하므로 문제 없음. 로그인 실패 시 `throw`(liveness invariant 준수) → cron에서 failed 기록.
+- **holeinonecloud 플랫폼 재사용 가능**: 다른 클럽이 같은 플랫폼이면 호스트(`<club>-hp-api.holeinonecloud.com`)+`golfclubid` tenantId만 교체. 메모리 `holeinonecloud-platform-scraper` 참고.
+- **defer 3개는 "브라우저로도 클라우드 불가"**: fortunehills(Cloudflare), lakeside(reCAPTCHA+Imperva), namyeoju(비회원·빈사이트). bearcreek/bearsbest 동급. fetch로는 불가.
+- 회원 정보: inter349 공유 계정 = fortunehills·lakeside·남춘천 회원, 남여주 비회원.
+
+## Files Touched
+
+- `src/lib/scrapers/namchuncheon.ts` (신규)
+- `src/lib/scrapers/index.ts`
+- `src/lib/constants/regions.ts`
+- `__tests__/lib/scrapers/namchuncheon.test.ts` (신규)
+- `__tests__/lib/scrapers/base.test.ts`
+- `docs/UNIMPLEMENTED_CLUBS.md`
+- `docs/PLANS/2026-06-05-migrate-4-unimplemented-scrapers.md` (신규)
+- `AGENTS.md`
+- (DB) `golf_clubs` 테이블 `namchuncheon_new` row UPDATE

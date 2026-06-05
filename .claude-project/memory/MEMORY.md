@@ -40,3 +40,6 @@
 
 ## Session 7 (2026-06-02)
 - [Yangju bot allowlist](yangju-bot-allowlist.md) — 양주봇 사용자 추가법: username 불가, chat_id를 vercel logs warn에서 캡처→TELEGRAM_JK_ALLOWED_CHAT_IDS 콤마추가→재배포. jonnyjhkim(8407185514) 추가
+
+## Session 8 (2026-06-05)
+- [holeinonecloud platform scraper](holeinonecloud-platform-scraper.md) — 멀티테넌트 골프 플랫폼: JWT 로그인(golfclubid 헤더)→GET booking/list/token?bookingDate=Y.M.D, Bearer 필수(쿠키만으론 booking FM_AUTH_000). 남춘천=tenant 2. 같은 플랫폼 클럽 재사용 가능
