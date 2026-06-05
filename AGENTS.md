@@ -3,6 +3,8 @@
 > Golf tee-time reservation aggregator for Korean golf courses.
 > Real-time scraping from 33 club websites, Supabase backend, Next.js 14 frontend.
 
+> **응답 언어: 한국어** — 사용자에게는 항상 한글로 답변한다. (코드/커밋/PR/식별자는 영문 유지)
+
 ## Tech Stack
 
 - **Framework**: Next.js 14 (App Router) + React 18 + TypeScript 5

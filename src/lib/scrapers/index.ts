@@ -33,6 +33,7 @@ import RayCastleScraper from './raycastle';
 import SeowonScraper from './seowon';
 import ShineDaleScraper from './shinedale';
 import TaekwangScraper from './taekwang';
+import NamchuncheonScraper from './namchuncheon';
 
 type ScraperConstructor = new (date: string, credentials: LoginCredentials) => BaseScraper;
 
@@ -70,6 +71,7 @@ export const SCRAPER_MAP: Record<string, ScraperConstructor> = {
   seowon: SeowonScraper,
   shinedale: ShineDaleScraper,
   taekwang: TaekwangScraper,
+  namchuncheon_new: NamchuncheonScraper,
 };
 
 export function createScraper(

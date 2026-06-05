@@ -52,6 +52,7 @@ export const CLUB_REGION_MAP: Record<string, RegionKey> = {
   shinedale: '강원',
   hilldeloci: '강원',
   cascadia: '강원',
+  namchuncheon_new: '강원',
 
   orangedunesyj: '인천',
   onetheclub: '인천',
