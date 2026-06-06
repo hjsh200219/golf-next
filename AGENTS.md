@@ -90,6 +90,7 @@ src/
 - **Telegram bots (2개)**:
   - **Main bot** — 전 골프장 빈자리 알림(watch-only). Logic `src/lib/telegram/`; webhook `/api/telegram/webhook`; watch check `/api/telegram/check`; DB `telegram_watches` (migration 011). Env: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`.
   - **Yangju bot** (@jonnyjhkimbot) — 양주CC 전용. 알림(`/watch`) + **실예약**(`/book`→슬롯→`r|` 예약 flow). Logic `src/lib/telegram-yangju/`; webhook `/api/telegram/yangju/webhook`; check `/api/telegram/yangju/check`; migration 012. Env: `TELEGRAM_JK_BOT_TOKEN`, `TELEGRAM_JK_WEBHOOK_SECRET`, `TELEGRAM_JK_ALLOWED_CHAT_IDS`(allowlist). 공유 키보드는 `telegram/keyboards.ts`(`chunk`/`dateKeyboard`/`timeRangeKeyboard`) 위임.
+  - **운영 스크립트** (`scripts/`): 슬래시 커맨드 자동완성은 `set-telegram-commands.ts`(setMyCommands), 웹훅 등록은 `set-telegram-webhook.ts`. 둘 다 멱등 — 명령어/문구 또는 웹훅 변경 시 해당 토큰 env 주입 후 `npx tsx scripts/<file>` 재실행. 핸들러에 명령어 추가/제거 시 `set-telegram-commands.ts`의 목록도 함께 갱신.
 
 ## File Conventions
 
