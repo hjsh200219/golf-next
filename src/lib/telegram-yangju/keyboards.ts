@@ -1,7 +1,10 @@
-import { chunk, dateKeyboard, timeRangeKeyboard, type InlineKeyboardMarkup } from '@/lib/telegram/keyboards';
+import { chunk, dateKeyboard, timeRangeKeyboard, DATE_COLUMNS, type InlineKeyboardMarkup } from '@/lib/telegram/keyboards';
 import { datesInRange } from '@/lib/telegram/time';
 import { toYmd } from './slot-format';
 import type { SlotInfo } from './resok-payload';
+
+/** Buttons per row for the open-slot (tee-off) reservation list. */
+const SLOT_COLUMNS = 2;
 
 /**
  * Reserve-flow callback_data uses the `r|` namespace (distinct from the existing
@@ -56,7 +59,7 @@ export function slotListKeyboard(slots: SlotInfo[]): InlineKeyboardMarkup {
       pointid: s.pointid,
     }),
   }));
-  return { inline_keyboard: chunk(buttons, 2) };
+  return { inline_keyboard: chunk(buttons, SLOT_COLUMNS) };
 }
 
 /** Confirm keyboard — the second tap. Carries only the attemptId (CAS target). */
@@ -86,7 +89,7 @@ export function bookDateKeyboard(now?: number): InlineKeyboardMarkup {
     text: dateDash,
     callback_data: `b|date|${toYmd(dateDash)}`,
   }));
-  return { inline_keyboard: chunk(buttons, 3) };
+  return { inline_keyboard: chunk(buttons, DATE_COLUMNS) };
 }
 
 export interface BookCbParts {

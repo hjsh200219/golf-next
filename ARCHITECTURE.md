@@ -103,6 +103,23 @@ Supabase Auth with session management via middleware.
 - `src/lib/supabase/middleware.ts` — `updateSession()` helper
 - `src/app/api/auth/callback/route.ts` — OAuth callback handler
 
+### 6. Telegram Bots (2개)
+
+별개의 봇 토큰으로 동작하는 두 텔레그램 봇. 알림(watch)은 hourly cron으로 빈자리를 감지해 푸시한다.
+
+**Main bot** — 전 골프장 빈자리 알림 전용(watch-only, 예약 기능 없음).
+- `src/lib/telegram/` — watches, match, keyboards, client, time
+- `src/app/api/telegram/webhook/route.ts` — 명령/콜백 (`/watch` 골프장→날짜→시간대, `/list`, `/stop`)
+- `src/app/api/telegram/check/route.ts` — cron(`50 * * * *`) 빈자리 매칭→알림. DB `telegram_watches` (migration 011)
+- Env: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`
+
+**Yangju bot** (@jonnyjhkimbot) — 양주CC 전용. 알림 + **실예약** 수행.
+- `src/lib/telegram-yangju/` — auth, watches, keyboards, booker, reservation-client, attempts(멱등성), resok-payload, slot-format
+- `src/app/api/telegram/yangju/webhook/route.ts` — `/watch`(날짜→시간대 알림), `/book`(날짜→빈자리 슬롯→`r|` 2-tap 예약 확정)
+- `src/app/api/telegram/yangju/check/route.ts` — cron 빈자리 알림. DB migration 012
+- allowlist(`TELEGRAM_JK_ALLOWED_CHAT_IDS`)로 인가된 chat만 사용. Env: `TELEGRAM_JK_BOT_TOKEN`, `TELEGRAM_JK_WEBHOOK_SECRET`
+- 키보드는 main bot의 `telegram/keyboards.ts`(`chunk`, `dateKeyboard`, `timeRangeKeyboard`)를 위임 재사용
+
 ## Database Schema
 
 > Full reference: [docs/generated/db-schema.md](./docs/generated/db-schema.md)

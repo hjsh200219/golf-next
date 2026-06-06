@@ -1,7 +1,7 @@
 # GolfShin -- Agent Rules
 
 > Golf tee-time reservation aggregator for Korean golf courses.
-> Real-time scraping from 33 club websites, Supabase backend, Next.js 14 frontend.
+> Real-time scraping from 34 club websites, Supabase backend, Next.js 14 frontend.
 
 > **응답 언어: 한국어** — 사용자에게는 항상 한글로 답변한다. (코드/커밋/PR/식별자는 영문 유지)
 
@@ -32,11 +32,12 @@ src/
   hooks/            # useTeeTimes, useClubs, useWeather, useFavorites, useAuth, useDeviceId, useFilters
   lib/
     constants/      # regions, club-mappings
-    scrapers/       # 33 club scrapers extending BaseScraper + index registry
+    scrapers/       # 34 club scrapers extending BaseScraper + index registry
     supabase/       # client, server, middleware helpers
     types/          # database, tee-time, weather
     utils/          # date, price, time, group, event, geohash, uuid, weather
-    telegram/       # Telegram bot: watches, match, keyboards, client, time helpers
+    telegram/       # Main bot (33+ clubs): watches, match, keyboards, client, time helpers
+    telegram-yangju/ # Yangju-only bot (@jonnyjhkimbot): watch + book/reserve flow
     logger.ts       # Structured logger (JSON prod / human dev)
     schema.ts       # JSON-LD schema generation
   middleware.ts     # Supabase session + auth redirect
@@ -78,6 +79,7 @@ src/
 | [docs/UNIMPLEMENTED_CLUBS.md](./docs/UNIMPLEMENTED_CLUBS.md) | Unimplemented club list |
 | [docs/DEPLOY_CRON_TELEGRAM.md](./docs/DEPLOY_CRON_TELEGRAM.md) | Telegram bot + Vercel cron setup; GitHub Actions deletion checklist |
 | [docs/generated/db-schema.md](./docs/generated/db-schema.md) | Database schema reference |
+| [docs/harness/llm-coding-principles.md](./docs/harness/llm-coding-principles.md) | LLM coding behavioral guidelines |
 
 ## Common Tasks
 
@@ -85,7 +87,9 @@ src/
 - **Add page**: Create `src/app/{route}/page.tsx`, add nav link in `MobileNav.tsx` + `Header.tsx`
 - **Add API route**: Create `src/app/api/{endpoint}/route.ts`, use `createServerClient()` for DB
 - **Modify DB schema**: Requires explicit approval. Create migration, update `src/lib/types/database.ts`
-- **Telegram bot**: Logic in `src/lib/telegram/`; webhook at `/api/telegram/webhook`; watch check at `/api/telegram/check`; DB table `telegram_watches` (migration 011)
+- **Telegram bots (2개)**:
+  - **Main bot** — 전 골프장 빈자리 알림(watch-only). Logic `src/lib/telegram/`; webhook `/api/telegram/webhook`; watch check `/api/telegram/check`; DB `telegram_watches` (migration 011). Env: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`.
+  - **Yangju bot** (@jonnyjhkimbot) — 양주CC 전용. 알림(`/watch`) + **실예약**(`/book`→슬롯→`r|` 예약 flow). Logic `src/lib/telegram-yangju/`; webhook `/api/telegram/yangju/webhook`; check `/api/telegram/yangju/check`; migration 012. Env: `TELEGRAM_JK_BOT_TOKEN`, `TELEGRAM_JK_WEBHOOK_SECRET`, `TELEGRAM_JK_ALLOWED_CHAT_IDS`(allowlist). 공유 키보드는 `telegram/keyboards.ts`(`chunk`/`dateKeyboard`/`timeRangeKeyboard`) 위임.
 
 ## File Conventions
 
@@ -108,89 +112,11 @@ src/
 > Be concise. No filler. Straight to the point. Use fewer words.
 
 
-## TDD 필수
+## TDD & 코딩 원칙
 
-모든 새 기능/로직 변경은 반드시 TDD로 개발한다.
-1. Red: 실패하는 테스트 먼저 작성
-2. Green: 테스트를 통과하는 최소 코드 작성
-3. Refactor: 코드 정리
-테스트 없는 코드 변경은 허용하지 않는다.
-
----
-
-## Behavioral Guidelines
-
-Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific instructions as needed.
-
-Tradeoff: These guidelines bias toward caution over speed. For trivial tasks, use judgment.
-
-### 1. Think Before Coding
-
-Don't assume. Don't hide confusion. Surface tradeoffs.
-
-Before implementing:
-
-- State your assumptions explicitly. If uncertain, ask.
-- If multiple interpretations exist, present them — don't pick silently.
-- If a simpler approach exists, say so. Push back when warranted.
-- If something is unclear, stop. Name what's confusing. Ask.
-
-### 2. Simplicity First
-
-Minimum code that solves the problem. Nothing speculative.
-
-- No features beyond what was asked.
-- No abstractions for single-use code.
-- No "flexibility" or "configurability" that wasn't requested.
-- No error handling for impossible scenarios.
-- If you write 200 lines and it could be 50, rewrite it.
-
-Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
-
-### 3. Surgical Changes
-
-Touch only what you must. Clean up only your own mess.
-
-When editing existing code:
-
-- Don't "improve" adjacent code, comments, or formatting.
-- Don't refactor things that aren't broken.
-- Match existing style, even if you'd do it differently.
-- If you notice unrelated dead code, mention it — don't delete it.
-
-When your changes create orphans:
-
-- Remove imports/variables/functions that YOUR changes made unused.
-- Don't remove pre-existing dead code unless asked.
-
-The test: Every changed line should trace directly to the user's request.
-
-### 4. Goal-Driven Execution
-
-Define success criteria. Loop until verified.
-
-Transform tasks into verifiable goals:
-
-- "Add validation" → "Write tests for invalid inputs, then make them pass"
-- "Fix the bug" → "Write a test that reproduces it, then make it pass"
-- "Refactor X" → "Ensure tests pass before and after"
-
-For multi-step tasks, state a brief plan:
-
-1. [Step] → verify: [check]
-2. [Step] → verify: [check]
-3. [Step] → verify: [check]
-
-Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
-
-These guidelines are working if: fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
+- **TDD 필수**: 모든 새 기능/로직 변경은 Red(실패 테스트 먼저) → Green(통과 최소 구현) → Refactor 순서로 개발한다. 테스트 없는 코드 변경 불가.
+- **LLM 코딩 행동 원칙**: Think Before Coding · Simplicity First · Surgical Changes · Goal-Driven Execution. 상세는 [docs/harness/llm-coding-principles.md](docs/harness/llm-coding-principles.md).
 
 ## 세션 시작 시 Handoff 강제
 
-세션을 시작할 때 프로젝트 루트에 `handoff.md` 파일이 있는지 먼저 확인한다.
-- `handoff.md`가 존재하면 다른 어떤 작업보다 먼저 **반드시 전체를 읽고 인수인계 컨텍스트를 파악한 뒤 시작**한다.
-- 파일이 없으면 정상 진행한다.
-
-이 규칙은 이전 세션의 미완료 작업·결정 사항·주의사항을 놓치지 않기 위한 강제 사항이다.
-
-**이 프로젝트의 handoff 위치**: `.claude-project/HANDOFF.md`
+새 세션 시작 시 `.claude-project/HANDOFF.md`를 다른 작업보다 먼저 반드시 읽어 이전 세션 컨텍스트(미완료 작업·결정·주의사항)를 파악한 뒤 시작한다. 파일이 없으면 정상 진행.

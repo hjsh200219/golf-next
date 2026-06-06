@@ -34,7 +34,7 @@ const TIME_BUCKETS = [
 const AFFILIATE_PREFIX = /^\[제휴\]\s*/;
 
 /** Buttons per row for date keyboards (keeps the date list short to scroll). */
-const DATE_COLUMNS = 3;
+export const DATE_COLUMNS = 3;
 /** Buttons per row for club and time-range keyboards. */
 const CLUB_COLUMNS = 2;
 const RANGE_COLUMNS = 2;
