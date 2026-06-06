@@ -61,7 +61,7 @@ describe('slotListKeyboard', () => {
       { pointdate: '20260630', pointid: '1', pointtime: '0619', pointname: '동', pointhole: '18홀' },
     ];
     const k = slotListKeyboard(slots);
-    expect(k.inline_keyboard).toHaveLength(2);
+    expect(k.inline_keyboard.flat()).toHaveLength(2);
     expect(k.inline_keyboard[0][0].text).toContain('06:12');
     expect(k.inline_keyboard[0][0].text).toContain('서');
     expect(decodeReserveCb(k.inline_keyboard[0][0].callback_data)).toMatchObject({
@@ -70,6 +70,21 @@ describe('slotListKeyboard', () => {
       course: '서',
       pointid: '2',
     });
+  });
+
+  it('lays out slots 2 per row', () => {
+    const slots = Array.from({ length: 5 }, (_, i) => ({
+      pointdate: '20260630',
+      pointid: String(i),
+      pointtime: '0612',
+      pointname: '서',
+      pointhole: '18홀',
+    }));
+    const k = slotListKeyboard(slots);
+    expect(k.inline_keyboard.flat()).toHaveLength(5);
+    expect(k.inline_keyboard.every((row) => row.length <= 2)).toBe(true);
+    // 5 slots / 2 per row = 3 rows (2, 2, 1)
+    expect(k.inline_keyboard).toHaveLength(3);
   });
 });
 

@@ -47,19 +47,16 @@ function hhmm(t: string): string {
 
 /** One [예약] button per open slot; tapping a slot is reserve-flow step "pick". */
 export function slotListKeyboard(slots: SlotInfo[]): InlineKeyboardMarkup {
-  return {
-    inline_keyboard: slots.map((s) => [
-      {
-        text: `⛳️ ${hhmm(s.pointtime)} ${s.pointname} (${s.pointhole})`,
-        callback_data: encodeReserveCb({
-          date: s.pointdate,
-          time: s.pointtime,
-          course: s.pointname,
-          pointid: s.pointid,
-        }),
-      },
-    ]),
-  };
+  const buttons = slots.map((s) => ({
+    text: `⛳️ ${hhmm(s.pointtime)} ${s.pointname} (${s.pointhole})`,
+    callback_data: encodeReserveCb({
+      date: s.pointdate,
+      time: s.pointtime,
+      course: s.pointname,
+      pointid: s.pointid,
+    }),
+  }));
+  return { inline_keyboard: chunk(buttons, 2) };
 }
 
 /** Confirm keyboard — the second tap. Carries only the attemptId (CAS target). */
