@@ -186,8 +186,9 @@ describe('POST /api/telegram/webhook', () => {
     expect(sendMessage).toHaveBeenCalledTimes(1);
     const [, text, replyMarkup] = vi.mocked(sendMessage).mock.calls[0];
     expect(text).toContain('날짜를 선택하세요');
-    // real dateKeyboard: 30 days
-    expect((replyMarkup as { inline_keyboard: unknown[] }).inline_keyboard).toHaveLength(30);
+    // real dateKeyboard: 30 days, laid out 3 per row → 10 rows
+    expect((replyMarkup as { inline_keyboard: unknown[][] }).inline_keyboard.flat()).toHaveLength(30);
+    expect((replyMarkup as { inline_keyboard: unknown[] }).inline_keyboard).toHaveLength(10);
   });
 
   // --- callback: range step ------------------------------------------------

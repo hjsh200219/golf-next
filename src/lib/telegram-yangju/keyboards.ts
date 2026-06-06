@@ -1,4 +1,4 @@
-import { dateKeyboard, timeRangeKeyboard, type InlineKeyboardMarkup } from '@/lib/telegram/keyboards';
+import { chunk, dateKeyboard, timeRangeKeyboard, type InlineKeyboardMarkup } from '@/lib/telegram/keyboards';
 import { datesInRange } from '@/lib/telegram/time';
 import { toYmd } from './slot-format';
 import type { SlotInfo } from './resok-payload';
@@ -85,11 +85,11 @@ export function yangjuTimeRangeKeyboard(date: string): InlineKeyboardMarkup {
  * for that date (truth at tap-time), then slotListKeyboard.
  */
 export function bookDateKeyboard(now?: number): InlineKeyboardMarkup {
-  return {
-    inline_keyboard: datesInRange(now).map((dateDash) => [
-      { text: dateDash, callback_data: `b|date|${toYmd(dateDash)}` },
-    ]),
-  };
+  const buttons = datesInRange(now).map((dateDash) => ({
+    text: dateDash,
+    callback_data: `b|date|${toYmd(dateDash)}`,
+  }));
+  return { inline_keyboard: chunk(buttons, 3) };
 }
 
 export interface BookCbParts {

@@ -33,6 +33,18 @@ const TIME_BUCKETS = [
 
 const AFFILIATE_PREFIX = /^\[제휴\]\s*/;
 
+/** Buttons per row for date keyboards (keeps the date list short to scroll). */
+const DATE_COLUMNS = 3;
+
+/** Split a flat array into rows of at most `size` items. */
+export function chunk<T>(items: T[], size: number): T[][] {
+  const rows: T[][] = [];
+  for (let i = 0; i < items.length; i += size) {
+    rows.push(items.slice(i, i + size));
+  }
+  return rows;
+}
+
 /**
  * Encode callback_data: `w|s=<step>|<club>|<date>|<range>` with trailing empty
  * segments dropped. Round-trip safe with `decodeCb`.
@@ -70,14 +82,11 @@ export function clubKeyboard(clubs: ClubLike[]): InlineKeyboardMarkup {
 
 /** Build a date keyboard (D+1..D+14). Picking a date advances to the range step. */
 export function dateKeyboard(club: string, now?: number): InlineKeyboardMarkup {
-  return {
-    inline_keyboard: datesInRange(now).map((date) => [
-      {
-        text: date,
-        callback_data: encodeCb({ step: 'range', club, date: date.replace(/-/g, '') }),
-      },
-    ]),
-  };
+  const buttons = datesInRange(now).map((date) => ({
+    text: date,
+    callback_data: encodeCb({ step: 'range', club, date: date.replace(/-/g, '') }),
+  }));
+  return { inline_keyboard: chunk(buttons, DATE_COLUMNS) };
 }
 
 /** Build a time-range keyboard. Picking a range completes the watch (done step). */

@@ -11,9 +11,11 @@ import {
 } from '@/lib/telegram-yangju/keyboards';
 
 describe('book-flow date keyboard (b| namespace)', () => {
-  it('offers D+1..D+30 (30 dates)', () => {
+  it('offers D+1..D+30 (30 dates), laid out 3 per row', () => {
     const k = bookDateKeyboard();
-    expect(k.inline_keyboard).toHaveLength(30);
+    expect(k.inline_keyboard.flat()).toHaveLength(30);
+    expect(k.inline_keyboard.every((row) => row.length <= 3)).toBe(true);
+    expect(k.inline_keyboard).toHaveLength(10);
   });
 
   it('each button is b|date|YYYYMMDD and round-trips', () => {
@@ -72,9 +74,11 @@ describe('slotListKeyboard', () => {
 });
 
 describe('yangju watch-flow keyboards (no club step)', () => {
-  it('dateKeyboard offers D+1..D+30 with date callbacks', () => {
+  it('dateKeyboard offers D+1..D+30 with date callbacks, 3 per row', () => {
     const k = yangjuDateKeyboard();
-    expect(k.inline_keyboard.length).toBe(30);
+    expect(k.inline_keyboard.flat().length).toBe(30);
+    expect(k.inline_keyboard.every((row) => row.length <= 3)).toBe(true);
+    expect(k.inline_keyboard.length).toBe(10);
   });
 
   it('timeRangeKeyboard offers the standard time buckets', () => {

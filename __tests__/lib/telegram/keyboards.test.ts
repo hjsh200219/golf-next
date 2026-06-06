@@ -74,6 +74,13 @@ describe('dateKeyboard', () => {
       date: '20260602',
     });
   });
+
+  it('lays out dates 3 per row to keep the list short', () => {
+    const kb = dateKeyboard('golfzoncounty', NOW);
+    expect(kb.inline_keyboard.every((row) => row.length <= 3)).toBe(true);
+    // 30 dates / 3 per row = 10 rows
+    expect(kb.inline_keyboard).toHaveLength(10);
+  });
 });
 
 describe('timeRangeKeyboard', () => {
