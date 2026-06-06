@@ -161,8 +161,9 @@ describe('POST /api/telegram/webhook', () => {
     expect(chatId).toBe(555);
     expect(text).toContain('골프장을 선택하세요');
     expect(replyMarkup).toBeDefined();
-    // real clubKeyboard markup
-    expect((replyMarkup as { inline_keyboard: unknown[] }).inline_keyboard).toHaveLength(2);
+    // real clubKeyboard markup: 2 clubs laid out 2 per row → 1 row
+    expect((replyMarkup as { inline_keyboard: unknown[][] }).inline_keyboard.flat()).toHaveLength(2);
+    expect((replyMarkup as { inline_keyboard: unknown[] }).inline_keyboard).toHaveLength(1);
   });
 
   it('/start behaves like /watch', async () => {

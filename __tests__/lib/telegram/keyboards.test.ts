@@ -61,6 +61,19 @@ describe('clubKeyboard', () => {
     const kb = clubKeyboard([{ id: 'onetheclub', name: '원더클럽', display_name: null }]);
     expect(kb.inline_keyboard[0][0].text).toContain('(전체)');
   });
+
+  it('lays out clubs 2 per row', () => {
+    const clubs = Array.from({ length: 5 }, (_, i) => ({
+      id: `c${i}`,
+      name: `club${i}`,
+      display_name: null,
+    }));
+    const kb = clubKeyboard(clubs);
+    expect(kb.inline_keyboard.flat()).toHaveLength(5);
+    expect(kb.inline_keyboard.every((row) => row.length <= 2)).toBe(true);
+    // 5 clubs / 2 per row = 3 rows (2, 2, 1)
+    expect(kb.inline_keyboard).toHaveLength(3);
+  });
 });
 
 describe('dateKeyboard', () => {
@@ -94,5 +107,12 @@ describe('timeRangeKeyboard', () => {
       date: '20260602',
       range: '0600-0800',
     });
+  });
+
+  it('lays out ranges 2 per row', () => {
+    const kb = timeRangeKeyboard('golfzoncounty', '20260602');
+    expect(kb.inline_keyboard.every((row) => row.length <= 2)).toBe(true);
+    // 6 buckets / 2 per row = 3 rows
+    expect(kb.inline_keyboard).toHaveLength(3);
   });
 });

@@ -35,6 +35,9 @@ const AFFILIATE_PREFIX = /^\[제휴\]\s*/;
 
 /** Buttons per row for date keyboards (keeps the date list short to scroll). */
 const DATE_COLUMNS = 3;
+/** Buttons per row for club and time-range keyboards. */
+const CLUB_COLUMNS = 2;
+const RANGE_COLUMNS = 2;
 
 /** Split a flat array into rows of at most `size` items. */
 export function chunk<T>(items: T[], size: number): T[][] {
@@ -69,15 +72,14 @@ export function decodeCb(s: string): CbParts {
 
 /** Build a club-selection keyboard. Picking a club advances to the date step. */
 export function clubKeyboard(clubs: ClubLike[]): InlineKeyboardMarkup {
-  return {
-    inline_keyboard: clubs.map((club) => {
-      let text = (club.display_name || club.name).replace(AFFILIATE_PREFIX, '');
-      if (club.id === 'onetheclub') {
-        text += ' (전체)';
-      }
-      return [{ text, callback_data: encodeCb({ step: 'date', club: club.id }) }];
-    }),
-  };
+  const buttons = clubs.map((club) => {
+    let text = (club.display_name || club.name).replace(AFFILIATE_PREFIX, '');
+    if (club.id === 'onetheclub') {
+      text += ' (전체)';
+    }
+    return { text, callback_data: encodeCb({ step: 'date', club: club.id }) };
+  });
+  return { inline_keyboard: chunk(buttons, CLUB_COLUMNS) };
 }
 
 /** Build a date keyboard (D+1..D+14). Picking a date advances to the range step. */
@@ -91,12 +93,9 @@ export function dateKeyboard(club: string, now?: number): InlineKeyboardMarkup {
 
 /** Build a time-range keyboard. Picking a range completes the watch (done step). */
 export function timeRangeKeyboard(club: string, date: string): InlineKeyboardMarkup {
-  return {
-    inline_keyboard: TIME_BUCKETS.map((range) => [
-      {
-        text: range,
-        callback_data: encodeCb({ step: 'done', club, date, range }),
-      },
-    ]),
-  };
+  const buttons = TIME_BUCKETS.map((range) => ({
+    text: range,
+    callback_data: encodeCb({ step: 'done', club, date, range }),
+  }));
+  return { inline_keyboard: chunk(buttons, RANGE_COLUMNS) };
 }
