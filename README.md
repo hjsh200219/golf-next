@@ -17,7 +17,7 @@
 ```bash
 npm install
 npm run dev        # 개발 서버
-npm test           # Vitest (~469 tests / 44 files)
+npm test           # Vitest (~569 tests / 60 files)
 npm run build      # 프로덕션 빌드
 npm run lint       # 레이어 규칙 포함 린트
 npx tsc --noEmit   # 타입 체크
@@ -32,9 +32,11 @@ npx tsc --noEmit   # 타입 체크
 
 ## 🤖 텔레그램 봇
 
-[@golfshinbot](https://t.me/golfshinbot) 에서 빈자리 알림을 등록할 수 있습니다.
+봇 2개가 운영 중입니다.
 
-### 슬래시 커맨드
+### 메인봇 — [@golfshinbot](https://t.me/golfshinbot)
+
+전체 골프장 빈자리 알림(watch-only).
 
 | 커맨드 | 설명 |
 |--------|------|
@@ -44,15 +46,26 @@ npx tsc --noEmit   # 타입 체크
 | `/cancel` | 진행 중인 알림 설정 취소 |
 | `/help` | 커맨드 사용 안내 |
 
+### 양주봇 — [@jonnyjhkimbot](https://t.me/jonnyjhkimbot)
+
+양주CC 전용. 알림(`/watch`) + **실예약**(`/book` → 슬롯 선택 → 예약) allowlist 게이팅.
+
+| 커맨드 | 설명 |
+|--------|------|
+| `/watch` | 양주CC 빈자리 알림 등록 (D+1~D+30) |
+| `/book` | 양주CC 티타임 실예약 (allowlist 사용자만) |
+| `/list` | 등록한 알림 목록 보기 + 삭제 |
+| `/cancel` | 진행 중인 설정 취소 |
+
 ### 동작 방식
 
 1. `/watch` → 골프장 선택 → 날짜(내일~14일) 선택 → 시간대 선택 → 등록 완료
-2. 매시간 정각(`0 * * * *`)에 전체 골프장을 크롤링하고, 50분(`50 * * * *`)에 등록된 알림을 확인
+2. Vercel Cron 3종: 매시 정각(`0 * * * *`) 전체 크롤링, 50분(`50 * * * *`) 메인봇 알림 확인, 55분(`55 * * * *`) 양주봇 알림 확인
 3. 등록한 조건에 **새로** 빈자리가 잡히면 텔레그램으로 알림 발송
    - 판정 기준: `tee_times.scraped_at >= S` (S = 해당 골프장·날짜의 최신 **성공** 스크랩 시각). 예약돼서 사라진 오래된 슬롯을 빈자리로 오인하지 않도록 설계.
 4. 자리가 차면 알림 중단. `/list` 또는 `/stop` 으로 직접 삭제 가능. 지난 날짜 알림은 자동 정리(KST 기준).
 
-> 한 사용자당 최대 20개까지 등록 가능. 배포·운영 설정은 [docs/DEPLOY_CRON_TELEGRAM.md](./docs/DEPLOY_CRON_TELEGRAM.md) 참고.
+> 메인봇: 한 사용자당 최대 20개까지 등록 가능. 배포·운영 설정은 [docs/DEPLOY_CRON_TELEGRAM.md](./docs/DEPLOY_CRON_TELEGRAM.md) 참고.
 
 ## 아키텍처 / 문서
 
