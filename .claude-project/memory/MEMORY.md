@@ -43,3 +43,6 @@
 
 ## Session 8 (2026-06-05)
 - [holeinonecloud platform scraper](holeinonecloud-platform-scraper.md) — 멀티테넌트 골프 플랫폼: JWT 로그인(golfclubid 헤더)→GET booking/list/token?bookingDate=Y.M.D, Bearer 필수(쿠키만으론 booking FM_AUTH_000). 남춘천=tenant 2. 같은 플랫폼 클럽 재사용 가능
+
+## Session 9 (2026-06-18)
+- [Scrape dispatch waitUntil](scrape-dispatch-waituntil.md) — cron 504 = cosmetic(club 독립함수가 따로 upsert). /api/scrape는 waitUntil로 dispatch만+즉시 201, club 완료 안 기다림. scrape_club_results가 authoritative

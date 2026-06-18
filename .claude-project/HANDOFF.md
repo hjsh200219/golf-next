@@ -1,46 +1,43 @@
 ---
-created: 2026-06-06T18:30:00+09:00
+created: 2026-06-18T13:35:00+09:00
 project: golf-next
-summary: 텔레그램 봇 슬래시 커맨드 자동완성 등록(setMyCommands 스크립트 신규) + 푸시·배포 검증
+summary: 시간당 스크랩 cron 504 오탐 수정 — /api/scrape를 waitUntil로 dispatch만 하고 즉시 201 반환
 ---
 
 ## Session Digest
 
-텔레그램 봇 슬래시 커맨드 자동완성 등록. `scripts/set-telegram-commands.ts` 신규 작성 → `setMyCommands` API로 메인봇·양주봇 명령어 등록 → `getMyCommands`로 검증 → 커밋 fb9dcd5 main 푸시 → Vercel 배포 `jqar8cnxs` Ready(35s) 확인. AGENTS.md에 운영 스크립트 한 줄 문서화.
+GitHub Actions "Scrape Tee Times (Hourly)" 1회 실패 알림 진단. 원인: `/api/scrape`가 (club×date)별 `/api/scrape/club` fetch를 fan-out 후 `await Promise.allSettled(pendingFetches)`로 **모든 club 응답을 대기** → 가장 느린 club이 전체를 bound → Vercel `maxDuration=60` 초과 → cron이 504. 단, club 함수는 독립 invocation이라 데이터는 그대로 upsert됨(= cosmetic 오탐). 20회 중 1회 transient.
+
+수정: `await Promise.allSettled(...)` → `waitUntil(Promise.allSettled(...))`(`@vercel/functions` 신규 의존성) + 즉시 201. cron의 await가 dispatch에서 resolve → 504 소멸. 실제 실패(auth/job생성)는 여전히 non-201로 노출. next@14.2엔 `unstable_after` 없어 `@vercel/functions` 사용.
+
+커밋 `7fbaeda` push 완료(origin/main). 푸시 전 remote와 rebase(package-lock 충돌은 lock 재생성으로 해소).
 
 ## Progress
 
-**완료 — 텔레그램 봇 슬래시 커맨드 자동완성 (커밋 fb9dcd5)**
-- `scripts/set-telegram-commands.ts` 신규 (74줄, 멱등)
-- `setMyCommands` API 등록:
-  - 메인봇: `/watch` `/list` `/stop` `/cancel` `/help`
-  - 양주봇(@jonnyjhkimbot): `/book` `/watch` `/list` `/stop` `/cancel` `/help`
-- `getMyCommands` 검증 통과, gc(lint+tsc+test+build) 통과
-- main 푸시 + Vercel 배포 Ready 확인
-- AGENTS.md Telegram bots 섹션에 운영 스크립트 한 줄 추가
-- 실행법: `TELEGRAM_BOT_TOKEN=... TELEGRAM_JK_BOT_TOKEN=... npx tsx scripts/set-telegram-commands.ts`
-
-**미완료 — 직전 세션 이월 (knip 고아 파일 결정)**
-- knip 고아 파일 6건 wire-up/제거 결정 미해결
-- coverage 점진 상향 (선택, 미착수)
+**완료**
+- `src/app/api/scrape/route.ts`: `waitUntil` import + dispatch 후 즉시 201
+- `__tests__/api/scrape-dispatch.test.ts`(신규): never-resolve club fetch로도 201 즉시 반환 + waitUntil 호출 검증 (RED 317ms행→GREEN 4ms)
+- `@vercel/functions@^3.7.1` 의존성 추가
+- 검증: tsc ✅ / lint ✅ / test 569 ✅ / build ✅
+- 메모리: `scrape-dispatch-waituntil.md` (504 cosmetic + waitUntil 패턴)
 
 ## Next Steps
 
-1. **knip 고아 파일 6건 결정 (사용자 판단)** — `src/components/{auth/AuthGuard, map/ClubMarker, map/GolfMap, map/MapTooltip, results/TeeTimeCard}.tsx`, `src/lib/constants/club-mappings.ts`. import 0건. ARCHITECTURE.md는 club-mappings.ts를 "key file"로 문서화(불일치). 연결 or 제거 결정 후 `knip`을 `npm run gc` gate에 편입하면 P7 만점화.
-2. (선택) coverage 점진 상향 — 미테스트 영역(app pages, supabase client, components) 테스트 추가 시 vitest thresholds 상향.
+1. **다음 정시 cron 확인** — 04:16Z 실패 후 수정 배포됨. 다음 `0 * * * *` 런이 200(success)인지, 시간당 504가 사라졌는지 GitHub Actions 탭에서 확인.
+2. (선택) `/api/scrape` 자체엔 `maxDuration` 미설정 — waitUntil 작업은 함수 기본 한도까지만 살아있음. fetch flush엔 충분하나, 추후 club 수 급증 시 명시 검토.
 
 ## Blockers
 
-- 없음. 이번 세션 작업 완전 종료(커밋·푸시·배포 검증 완료).
+- 없음.
 
 ## Watch Out
 
-- **set-telegram-commands.ts는 일회성 수동 실행 스크립트** — CI/배포 파이프라인 미연결. 커맨드 목록이 스크립트 내부에 하드코딩됨. 핸들러(`src/lib/telegram*`)에 명령어 추가/제거 시 스크립트 목록도 함께 갱신 후 재실행해야 자동완성에 반영.
-- **봇별 토큰 env 키**: 메인봇 `TELEGRAM_BOT_TOKEN`, 양주봇 `TELEGRAM_JK_BOT_TOKEN`. 클라이언트 캐시로 기존 채팅창 자동완성 갱신은 몇 분 소요(앱 재시작 시 즉시).
-- **knip은 `gc` gate에 미편입** — 고아 파일 6건 미해결로 `dead-code` 스크립트로만 분리. 정리 후 gc에 `&& npm run dead-code` 추가.
-- coverage thresholds는 `vitest run --coverage`(test:coverage)에서만 평가. `npm test`/`gc`/pre-commit은 plain `vitest run`이라 영향 없음.
+- **504가 사라져도 데이터 누락은 별개 신호로 봐야 함** — cron HTTP status는 health 신호가 아님(원래도 아니었음). 실제 클럽별 수집 상태는 `scrape_club_results` 테이블이 authoritative. 메모리 [[scrape-dispatch-waituntil]] 참고.
+- **waitUntil 로컬/테스트 동작**: Vercel 런타임 전용. 테스트는 `vi.mock('@vercel/functions')`로 처리. 로컬 dev에선 Node가 freeze 안 해 in-flight fetch 자연 완주.
 
 ## Files Touched
 
-- `scripts/set-telegram-commands.ts` (신규)
-- `AGENTS.md` (Telegram bots 섹션 운영 스크립트 한 줄 추가)
+- `src/app/api/scrape/route.ts`
+- `__tests__/api/scrape-dispatch.test.ts` (신규)
+- `package.json` / `package-lock.json` (+`@vercel/functions`)
+- `.claude-project/memory/scrape-dispatch-waituntil.md` (신규), `MEMORY.md`
