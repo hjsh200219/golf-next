@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { waitUntil } from '@vercel/functions';
 import { createAdminClient } from '@/lib/supabase/server';
 import { createLogger } from '@/lib/logger';
 
@@ -151,9 +152,14 @@ export async function POST(request: NextRequest) {
         .eq('id', job.id);
     }
 
-    // Wait for all fetch requests to be sent (not for responses).
-    // On Vercel each /api/scrape/club runs as its own serverless function.
-    await Promise.allSettled(pendingFetches);
+    // Keep the function alive until the trigger fetches flush WITHOUT blocking
+    // the response on them. Each /api/scrape/club runs as its own serverless
+    // function and scrapes synchronously before responding, so awaiting their
+    // responses here bounded this route — and the cron caller that awaits it —
+    // by the SLOWEST club, tripping Vercel's 60s maxDuration (504) on a slow
+    // tail. waitUntil hands the settle to the platform so dispatch returns
+    // immediately; the club functions keep running and persist independently.
+    waitUntil(Promise.allSettled(pendingFetches));
 
     return NextResponse.json(
       {
