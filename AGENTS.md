@@ -54,7 +54,7 @@ src/
 - **Weather**: OpenWeatherMap API with Supabase caching via geohash.
 - **PWA**: next-pwa with offline fallback, service worker auto-registration.
 - **Date Tabs**: Tomorrow-focused (not today). Golf reservations are booked 1+ days ahead.
-- **SEO**: `src/lib/schema.ts` generates JSON-LD dynamically; `public/llms.txt` for LLM discovery.
+- **SEO/GEO**: `src/lib/schema.ts` generates JSON-LD dynamically; `public/llms.txt` for LLM discovery; `src/app/sitemap.ts` → `/sitemap.xml` (indexable pages only); `src/app/robots.ts` → `/robots.txt` (prod allow-all + sitemap ref, Vercel preview blocked). Sync all on content/feature changes (or run `/sh:geo-update`).
 - **Scrape Schedule**: Vercel Cron — scrape hourly (`0 * * * *`) at `/api/scrape/cron`; Telegram watch check (`50 * * * *`) at `/api/telegram/check`.
 
 ## Design System

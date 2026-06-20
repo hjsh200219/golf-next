@@ -46,3 +46,6 @@
 
 ## Session 9 (2026-06-18)
 - [Scrape dispatch waitUntil](scrape-dispatch-waituntil.md) — cron 504 = cosmetic(club 독립함수가 따로 upsert). /api/scrape는 waitUntil로 dispatch만+즉시 201, club 완료 안 기다림. scrape_club_results가 authoritative
+
+## Session 10 (2026-06-20)
+- [GEO/SEO assets](geo-seo-assets.md) — 자산 4종(llms.txt·schema.ts·sitemap.ts·robots.ts) + 콘텐츠 변경 시 동기화 규칙. 메인 봇 @golfshinbot은 allowlist 없이 전체 공개(/chatbot 안내 페이지 신설)

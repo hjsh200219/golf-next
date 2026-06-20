@@ -1,30 +1,31 @@
 ---
-created: 2026-06-18T13:35:00+09:00
+created: 2026-06-20T18:50:00+09:00
 project: golf-next
-summary: 시간당 스크랩 cron 504 오탐 수정 — /api/scrape를 waitUntil로 dispatch만 하고 즉시 201 반환
+summary: 텔레그램 챗봇 안내 페이지(/chatbot) 신설 + GEO 동기화 + sitemap/robots 추가, 푸시·배포 완료
 ---
 
 ## Session Digest
 
-GitHub Actions "Scrape Tee Times (Hourly)" 1회 실패 알림 진단. 원인: `/api/scrape`가 (club×date)별 `/api/scrape/club` fetch를 fan-out 후 `await Promise.allSettled(pendingFetches)`로 **모든 club 응답을 대기** → 가장 느린 club이 전체를 bound → Vercel `maxDuration=60` 초과 → cron이 504. 단, club 함수는 독립 invocation이라 데이터는 그대로 upsert됨(= cosmetic 오탐). 20회 중 1회 transient.
+메인 텔레그램 봇 @golfshinbot을 사이트에서 발견·사용할 수 있도록 안내 페이지를 추가하고, GEO/SEO 자산을 동기화했다. 메인 봇은 webhook(`/api/telegram/webhook`)에 allowlist가 없어 **이미 전체 공개** 상태였으므로 봇 접근 제어 코드는 손대지 않았고(양주봇 게이팅도 그대로), 실제 장벽이던 "사이트 진입점 부재"를 메뉴+페이지로 해결했다. 이어 GEO 동기화(llms.txt·schema.ts)와 SEO 인프라(sitemap.ts·robots.ts)를 추가했다.
 
-수정: `await Promise.allSettled(...)` → `waitUntil(Promise.allSettled(...))`(`@vercel/functions` 신규 의존성) + 즉시 201. cron의 await가 dispatch에서 resolve → 504 소멸. 실제 실패(auth/job생성)는 여전히 non-201로 노출. next@14.2엔 `unstable_after` 없어 `@vercel/functions` 사용.
-
-커밋 `7fbaeda` push 완료(origin/main). 푸시 전 remote와 rebase(package-lock 충돌은 lock 재생성으로 해소).
+커밋 `1746c58` push 완료(origin/main). Vercel production 자동 배포 Ready 확인(golf-next-ezbk7okd3-hjsh, hoshin).
 
 ## Progress
 
 **완료**
-- `src/app/api/scrape/route.ts`: `waitUntil` import + dispatch 후 즉시 201
-- `__tests__/api/scrape-dispatch.test.ts`(신규): never-resolve club fetch로도 201 즉시 반환 + waitUntil 호출 검증 (RED 317ms행→GREEN 4ms)
-- `@vercel/functions@^3.7.1` 의존성 추가
-- 검증: tsc ✅ / lint ✅ / test 569 ✅ / build ✅
-- 메모리: `scrape-dispatch-waituntil.md` (504 cosmetic + waitUntil 패턴)
+- `src/app/chatbot/page.tsx`(신규): 안내 페이지 — CTA(https://t.me/golfshinbot)·3단계 사용법·명령어표. 서버 컴포넌트, metadata 포함, 디자인 토큰(glass/golf-primary, 텔레그램 #229ED9 CTA)
+- `Header.tsx`/`MobileNav.tsx`: "챗봇" 메뉴 추가(예약/날씨/챗봇/설정), MobileNav에 ChatIcon
+- GEO 동기화: `public/llms.txt`(텔레그램 알림봇 섹션), `src/lib/schema.ts`(WebApplication featureList + FAQ "빈자리 알림을 받을 수 있나요?")
+- SEO 인프라(신규): `src/app/sitemap.ts`(동적 /sitemap.xml, 색인 대상 /·/weather·/chatbot), `src/app/robots.ts`(production allow-all+/api/ disallow+sitemap, preview 전체 차단)
+- 테스트 신규 15개: chatbot-page 7, sitemap 5, robots 3
+- 검증: tsc ✅ / lint ✅ / test 584 pass(+1 skip, 64파일) ✅ / build ✅(/chatbot·/sitemap.xml·/robots.txt 생성)
+- 메모리: `geo-seo-assets.md`
 
 ## Next Steps
 
-1. **다음 정시 cron 확인** — 04:16Z 실패 후 수정 배포됨. 다음 `0 * * * *` 런이 200(success)인지, 시간당 504가 사라졌는지 GitHub Actions 탭에서 확인.
-2. (선택) `/api/scrape` 자체엔 `maxDuration` 미설정 — waitUntil 작업은 함수 기본 한도까지만 살아있음. fetch flush엔 충분하나, 추후 club 수 급증 시 명시 검토.
+1. (선택) 배포 후 `https://golfshin.com/sitemap.xml`을 Google Search Console에 제출 → 색인 촉진.
+2. (선택) `https://golfshin.com/robots.txt` 프로덕션 출력이 allow-all+sitemap 참조인지 1회 확인.
+3. (선택) JSON-LD는 배포 후 Google Rich Results Test(search.google.com/test/rich-results)로 검증.
 
 ## Blockers
 
@@ -32,12 +33,15 @@ GitHub Actions "Scrape Tee Times (Hourly)" 1회 실패 알림 진단. 원인: `/
 
 ## Watch Out
 
-- **504가 사라져도 데이터 누락은 별개 신호로 봐야 함** — cron HTTP status는 health 신호가 아님(원래도 아니었음). 실제 클럽별 수집 상태는 `scrape_club_results` 테이블이 authoritative. 메모리 [[scrape-dispatch-waituntil]] 참고.
-- **waitUntil 로컬/테스트 동작**: Vercel 런타임 전용. 테스트는 `vi.mock('@vercel/functions')`로 처리. 로컬 dev에선 Node가 freeze 안 해 in-flight fetch 자연 완주.
+- **robots.ts는 `VERCEL_ENV` 의존**: 로컬/비-Vercel 빌드에선 `VERCEL_ENV` 부재로 전체 disallow가 출력된다(정상). 프로덕션 Vercel 빌드만 allow-all. preview 배포는 의도적으로 전체 색인 차단.
+- **메인 봇 vs 양주봇**: 메인 @golfshinbot은 공개(무게이팅), 양주 @jonnyjhkimbot만 allowlist. 혼동 주의 — [[geo-seo-assets]] [[yangju-bot-allowlist]].
+- json-ld-component 테스트는 스키마 개수 3 고정 검증 — schema.ts에 새 @type 스키마를 **추가**하면 이 테스트도 갱신 필요(이번엔 FAQ 항목만 추가라 무관).
 
 ## Files Touched
 
-- `src/app/api/scrape/route.ts`
-- `__tests__/api/scrape-dispatch.test.ts` (신규)
-- `package.json` / `package-lock.json` (+`@vercel/functions`)
-- `.claude-project/memory/scrape-dispatch-waituntil.md` (신규), `MEMORY.md`
+- `src/app/chatbot/page.tsx` (신규)
+- `src/app/sitemap.ts` (신규), `src/app/robots.ts` (신규)
+- `src/components/layout/Header.tsx`, `src/components/layout/MobileNav.tsx`
+- `public/llms.txt`, `src/lib/schema.ts`
+- `__tests__/components/chatbot-page.test.tsx`, `__tests__/geo/sitemap.test.ts`, `__tests__/geo/robots.test.ts` (신규)
+- `.claude-project/memory/geo-seo-assets.md` (신규), `MEMORY.md`
