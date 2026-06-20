@@ -8,6 +8,7 @@ import LoginButton from '@/components/auth/LoginButton';
 const NAV_ITEMS = [
   { href: '/', label: '예약조회' },
   { href: '/weather', label: '날씨' },
+  { href: '/chatbot', label: '챗봇' },
   { href: '/settings', label: '설정' },
 ];
 

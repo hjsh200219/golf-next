@@ -51,7 +51,7 @@ export function getWebApplicationSchema() {
       price: '0',
       priceCurrency: 'KRW',
     },
-    featureList: `실시간 티타임 조회 (매시간 업데이트), 날짜·시간대·가격 필터링, ${REGION_KEYS.join('·')} ${REGION_KEYS.length}개 권역, 골프장별 48시간 날씨 예보, 즐겨찾기 기능`,
+    featureList: `실시간 티타임 조회 (매시간 업데이트), 날짜·시간대·가격 필터링, ${REGION_KEYS.join('·')} ${REGION_KEYS.length}개 권역, 골프장별 48시간 날씨 예보, 즐겨찾기 기능, 텔레그램 빈자리 알림봇(@golfshinbot)`,
   };
 }
 
@@ -91,6 +91,14 @@ export function getFAQPageSchema() {
         acceptedAnswer: {
           '@type': 'Answer',
           text: '각 골프장의 예약 시스템에서 매시간 데이터를 자동 수집하여, 거의 실시간에 가까운 티타임 정보를 제공합니다.',
+        },
+      },
+      {
+        '@type': 'Question',
+        name: '빈자리 알림을 받을 수 있나요?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: '네. 텔레그램 봇 @golfshinbot(https://t.me/golfshinbot)에서 /watch로 원하는 골프장·날짜·시간대를 등록하면, 빈자리가 나는 즉시 무료로 알림을 받을 수 있습니다. 별도 가입 없이 누구나 이용할 수 있습니다.',
         },
       },
     ],
