@@ -1,10 +1,13 @@
 import type { Metadata, Viewport } from 'next';
+import Script from 'next/script';
 import { Toaster } from 'sonner';
 import './globals.css';
 import Header from '@/components/layout/Header';
 import MobileNav from '@/components/layout/MobileNav';
 import Footer from '@/components/layout/Footer';
 import JsonLdSchema from '@/components/JsonLdSchema';
+
+const GA_MEASUREMENT_ID = 'G-XGF7QPQ338';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://golfshin.vercel.app'),
@@ -62,6 +65,16 @@ export default function RootLayout({
           href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
         />
         <JsonLdSchema />
+        <Script
+          src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+          strategy="afterInteractive"
+        />
+        <Script id="ga4-init" strategy="afterInteractive">
+          {`window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '${GA_MEASUREMENT_ID}');`}
+        </Script>
       </head>
       <body className="min-h-dvh bg-golf-bg noise-overlay">
         <Header />
