@@ -49,3 +49,7 @@
 
 ## Session 10 (2026-06-20)
 - [GEO/SEO assets](geo-seo-assets.md) — 자산 4종(llms.txt·schema.ts·sitemap.ts·robots.ts) + 콘텐츠 변경 시 동기화 규칙. 메인 봇 @golfshinbot은 allowlist 없이 전체 공개(/chatbot 안내 페이지 신설)
+
+## Session 11 (2026-07-04)
+- [Supabase browser client singleton](supabase-browser-client-singleton.md) — createClient() 싱글톤 필수, createBrowserClient 매번 호출 시 auth-token navigator lock 경합("Lock ... stolen")
+- [tee-times max_rows pagination](teetimes-maxrows-pagination.md) — max_rows 1000 상한, 단일 select 조용히 잘림 → .range() 페이지 순회로 전량 조회(id 보조정렬). "정확히 1000건"은 상한 신호
