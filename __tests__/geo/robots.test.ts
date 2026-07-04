@@ -18,7 +18,7 @@ describe('robots', () => {
     expect(rules.userAgent).toBe('*');
     expect(rules.allow).toBe('/');
     expect(rules.disallow).toBe('/api/');
-    expect(result.sitemap).toBe('https://golfshin.com/sitemap.xml');
+    expect(result.sitemap).toBe('https://golfshin.vercel.app/sitemap.xml');
   });
 
   it('production: does NOT block AI crawlers (no global disallow of /)', () => {

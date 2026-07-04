@@ -17,7 +17,7 @@ GolfShin(골프신)은 한국 수도권 및 강원·충청 지역 골프장의 �
 - 기능: 빈자리 알림 — 골프장·날짜·시간대를 등록하면 매시간 빈자리를 확인해 자리가 나는 즉시 알려줍니다
 - 명령어: /watch(알림 등록), /list(등록 목록 보기), /stop(알림 삭제), /cancel(설정 취소), /help(도움말)
 - 이용: 무료, 누구나 사용 가능 (별도 가입 불필요)
-- 안내 페이지: https://golfshin.com/chatbot
+- 안내 페이지: https://golfshin.vercel.app/chatbot
 
 ## 지원 골프장 (34개, 지역별 가나다순)
 
@@ -72,7 +72,7 @@ GolfShin(골프신)은 한국 수도권 및 강원·충청 지역 골프장의 �
 - 실시간 웹 스크래핑 엔진
 
 ## Website
-- 서비스 URL: https://golfshin.com
+- 서비스 URL: https://golfshin.vercel.app
 
 ## 이용 안내
 - 이용 요금: 무료

@@ -6,9 +6,9 @@ describe('sitemap', () => {
   const urls = entries.map((e) => e.url);
 
   it('lists the public indexable routes', () => {
-    expect(urls).toContain('https://golfshin.com');
-    expect(urls).toContain('https://golfshin.com/weather');
-    expect(urls).toContain('https://golfshin.com/chatbot');
+    expect(urls).toContain('https://golfshin.vercel.app');
+    expect(urls).toContain('https://golfshin.vercel.app/weather');
+    expect(urls).toContain('https://golfshin.vercel.app/chatbot');
   });
 
   it('excludes auth/user-specific and offline routes', () => {
@@ -17,8 +17,8 @@ describe('sitemap', () => {
     expect(urls.some((u) => u.includes('/_offline'))).toBe(false);
   });
 
-  it('uses absolute https URLs under golfshin.com', () => {
-    urls.forEach((u) => expect(u).toMatch(/^https:\/\/golfshin\.com/));
+  it('uses absolute https URLs under golfshin.vercel.app', () => {
+    urls.forEach((u) => expect(u).toMatch(/^https:\/\/golfshin\.vercel\.app/));
   });
 
   it('sets valid priorities (0..1) and changeFrequency on every entry', () => {
@@ -40,7 +40,7 @@ describe('sitemap', () => {
   });
 
   it('gives the homepage top priority', () => {
-    const home = entries.find((e) => e.url === 'https://golfshin.com');
+    const home = entries.find((e) => e.url === 'https://golfshin.vercel.app');
     expect(home?.priority).toBe(1);
   });
 });

@@ -2,7 +2,7 @@ import { getActiveScraperIds } from '@/lib/scrapers';
 import { REGIONS, REGION_KEYS } from '@/lib/constants/regions';
 
 const SITE_NAME = '골프 예약 조회 | GolfShin';
-const SITE_URL = 'https://golfshin.com';
+const SITE_URL = 'https://golfshin.vercel.app';
 
 function getScraperCount(): number {
   return getActiveScraperIds().length;

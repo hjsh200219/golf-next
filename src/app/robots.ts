@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next';
 
-const SITE_URL = 'https://golfshin.com';
+const SITE_URL = 'https://golfshin.vercel.app';
 
 /**
  * Dynamic robots.txt (Next.js App Router → /robots.txt).
