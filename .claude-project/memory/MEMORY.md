@@ -53,3 +53,6 @@
 ## Session 11 (2026-07-04)
 - [Supabase browser client singleton](supabase-browser-client-singleton.md) — createClient() 싱글톤 필수, createBrowserClient 매번 호출 시 auth-token navigator lock 경합("Lock ... stolen")
 - [tee-times max_rows pagination](teetimes-maxrows-pagination.md) — max_rows 1000 상한, 단일 select 조용히 잘림 → .range() 페이지 순회로 전량 조회(id 보조정렬). "정확히 1000건"은 상한 신호
+
+## Session 12 (2026-07-04)
+- [GA4 GolfShin setup](ga4-golfshin-setup.md) — 속성 properties/544166567(SH Consulting GA계정 353033332 하위), 측정ID G-XGF7QPQ338, gtag 직접삽입(GTM 미경유). 서비스계정 뷰어 미부여(수동 필요)

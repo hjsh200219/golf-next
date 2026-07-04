@@ -1,55 +1,50 @@
 ---
-created: 2026-07-04T21:20:00+09:00
+created: 2026-07-04T21:35:00+09:00
 project: golf-next
-summary: favicon 투명화(탭 한정) + tee-time max_rows 페이지네이션 + 골프장별 지연 렌더 + supabase client 싱글톤. 코드 2커밋 push 완료. GSC 등록 요청 미착수.
+summary: GSC 등록(사용자 완료) + GA4 신규 생성·gtag 설치·배포 완료. 서비스계정 GA 뷰어 권한만 수동 대기.
 ---
 
 ## Session Digest
 
-UI/데이터 품질 개선 5건 + 후속 iOS 아이콘 회귀 수정 1건.
+이전 세션에서 미완료였던 GSC 등록은 사용자가 직접 완료. 이번 세션은 GA4 트래픽 분석 셋업.
 
-1. **favicon 투명화** — 탭용(favicon.ico/webp/svg)만 투명. 처음엔 apple-touch-icon·icon-192·512까지 투명화했다가 문서화된 iOS 회귀([[pwa-icon-ios-transparency]]: iOS는 투명 영역을 검정 렌더)를 발견, 흰 배경 flatten으로 되돌림.
-2. **Footer** — 저작권에 `SH Consulting` 추가.
-3. **Supabase browser client 싱글톤** — createClient()가 매번 새 client 생성 → auth-token navigator lock 경합 런타임 에러. 모듈 캐시로 문서당 1개. [[supabase-browser-client-singleton]]
-4. **/api/tee-times 페이지네이션** — max_rows 1000 상한에 조용히 잘리던 것(결과 배지 "1000건" 고정)을 .range() 페이지 순회로 전량 조회. [[teetimes-maxrows-pagination]]
-5. **골프장별(ClubGroupView) 지연 렌더** — 클럽 섹션 초기 10개만 + IntersectionObserver로 스크롤 시 +10. 초기 렌더 경량화.
-
-커밋 `735647c`(기능 5건) + `fca39fd`(아이콘 회귀 수정) origin/main push 완료. Vercel 자동 배포.
+1. **GA4 property 신규 생성** — Admin API로 `properties/544166567`("GolfShin") 생성, `accounts/353033332`(SH Consulting, shc/ikeike/thechain와 동일 계정) 하위. 첫 시도는 GTM 계정ID(6360767339)로 잘못 넣어 403 → `accounts.list`로 실제 GA 계정 확인 후 재시도해 해결.
+2. **web data stream + 측정ID** — `G-XGF7QPQ338` 발급.
+3. **gtag 코드 설치** — `src/app/layout.tsx`에 `next/script`(afterInteractive)로 gtag.js + config 스니펫 삽입. GTM 미경유(컨테이너 없음).
+4. **검증 4/4** — lint(0 경고)·tsc·test(588 pass)·build 전부 통과.
+5. **커밋 `c45d0e1` push + Vercel 자동배포 확인(Ready)**, 배포된 페이지 HTML에서 gtag 스크립트 태그 curl로 실확인.
+6. **`/ga` 스킬에 `golf` 별칭 등록** — `~/.claude/skills/ga/ga-report.mjs` ALIASES/NAMES/DOMAIN_TO_ALIAS + SKILL.md 매핑표.
+7. **미해결**: `ga-reader@marketing-team-484114.iam.gserviceaccount.com` 서비스계정에 새 속성 뷰어 권한이 아직 없음 — Admin API `accessBindings` 생성은 `analytics.manage.users` 스코프 필요한데 현재 ADC 토큰엔 없어 403. 상세: [[ga4-golfshin-setup]].
 
 ## Progress
 
 **완료**
-- favicon 탭 투명 + iOS/PWA 아이콘 흰 flatten 유지 (회귀 방지)
-- Footer SH Consulting
-- supabase client 싱글톤 (+테스트 client.test.ts)
-- tee-times max_rows 페이지네이션 (+테스트: 1000+500 집계)
-- ClubGroupView 지연 렌더 (+테스트: 초기10/스크롤 증분)
-- 검증 4/4 통과(lint·tsc·test 588·build), 2커밋 push
+- GSC 등록 (사용자, 이전 세션 Next Steps #1 해소)
+- GA4 property + data stream 생성, 측정ID 확보
+- gtag 코드 설치·검증·배포·라이브 확인
+- `/ga golf` 별칭 등록(스킬 코드 레벨)
 
 **미완료**
-- **Google Search Console 등록** — 사용자가 GSC 로그인 후 "GSC에 추가해줘" 요청했으나 세션 종료 흐름(git-push)에 밀려 미착수.
+- **서비스 계정 GA 뷰어 권한 부여** — 이게 없으면 `/ga golf`(ga-report.mjs가 키파일 인증 우선 사용) 조회 시 403 남. 콘솔에서 30초면 되는 수동 작업, 또는 ADC를 `analytics.manage.users` 스코프 포함해 재로그인 후 API로도 가능.
+- GA4 실시간 데이터 유입 확인 (배포 직후라 아직 트래픽 확인 안 함, ~24h 후 표준 리포트 반영)
 
 ## Next Steps
 
-1. **GSC 등록** (우선) — golfshin 사이트를 Search Console에 추가. 필요 결정:
-   - 소유권 확인 방식: HTML 메타태그(layout.tsx `<meta name="google-site-verification">`) vs DNS TXT vs HTML 파일 업로드(public/). 메타태그 방식이면 사용자에게 verification 토큰 받아야 함.
-   - 등록 후 sitemap 제출: `https://<도메인>/sitemap.xml` (src/app/sitemap.ts 이미 존재).
-2. GSC 등록 완료되면 색인 상태 점검.
+1. **서비스 계정 뷰어 권한 부여** (우선) — GA 콘솔 → GolfShin 속성(544166567) → 관리 → 속성 액세스 관리 → 사용자 추가 → `ga-reader@marketing-team-484114.iam.gserviceaccount.com` → 뷰어. 완료 후 `/ga golf`로 확인.
+2. 며칠 뒤 `/ga golf`로 실제 트래픽 유입 확인 (GSC+신규 GA4라 초기엔 데이터 적을 수 있음).
 
 ## Blockers
 
-- GSC 소유권 확인 토큰/방식은 사용자 입력 필요 (verification 문자열 or DNS 접근). 하드 블록은 아니고 다음 턴 첫 질문으로 해소 가능.
+- 서비스 계정 뷰어 권한: 콘솔 수동 클릭 또는 사용자의 gcloud 재로그인(브라우저 인터랙션) 필요 — 에이전트가 자동 완료 불가.
 
 ## Watch Out
 
 - **아이콘 교체 시**: 탭 favicon만 투명, iOS/PWA(apple-touch-icon·icon-192·512)는 반드시 흰 배경 flatten. [[pwa-icon-ios-transparency]] 재발 주의.
 - **대량 행 쿼리**: Supabase max_rows 1000 상한. 새 리스트 API는 .range() 페이지 순회 확인.
 - 브라우저 supabase는 항상 createClient() 싱글톤 경유.
+- GA4 Admin API 작업 시 "account" 필드 혼동 주의: GTM 계정ID ≠ GA Admin 계정ID (gtm.mjs SITES의 `account`는 GTM 전용, 신규 GA property 생성 시 `accounts.list`로 실제 GA 계정 확인 필요). [[ga4-golfshin-setup]]
 
 ## Files Touched
 
-- public/{favicon.ico,favicon.webp,apple-touch-icon.png,icon-192.png,icon-512.png}
-- src/components/layout/Footer.tsx
-- src/lib/supabase/client.ts (+__tests__/lib/supabase/client.test.ts)
-- src/app/api/tee-times/route.ts (+__tests__/api/tee-times.test.ts, __tests__/helpers/mock-supabase.ts)
-- src/components/results/ClubGroupView.tsx (+__tests__/components/club-group-view.test.tsx)
+- src/app/layout.tsx (gtag 스니펫 추가)
+- (외부) `~/.claude/skills/ga/ga-report.mjs`, `~/.claude/skills/ga/SKILL.md` — golf 별칭 등록 (이 repo 밖, git 비추적)
