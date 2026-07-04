@@ -44,7 +44,7 @@ function buildChain(getResponse: () => QueryResponse): Record<string, unknown> {
   // All filter/modifier methods just return the chain for chaining
   for (const method of [
     'select', 'eq', 'neq', 'in', 'gte', 'lte', 'gt', 'lt',
-    'order', 'limit', 'insert', 'update', 'delete', 'upsert',
+    'order', 'limit', 'range', 'insert', 'update', 'delete', 'upsert',
   ]) {
     chain[method] = vi.fn().mockReturnValue(chain);
   }

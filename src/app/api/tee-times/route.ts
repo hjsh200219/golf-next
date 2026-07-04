@@ -70,52 +70,58 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    let query = supabase
-      .from('tee_times')
-      .select('*')
-      .eq('date', date)
-      .order('teeoff', { ascending: true });
+    const clubIds = clubs
+      ? clubs.split(',').map((id) => id.trim()).filter(Boolean)
+      : [];
 
-    // Filter by club IDs
-    if (clubs) {
-      const clubIds = clubs
-        .split(',')
-        .map((id) => id.trim())
-        .filter(Boolean);
-      if (clubIds.length > 0) {
-        query = query.in('club_id', clubIds);
+    // Rebuild the filtered query per page: the builder is single-use, and each
+    // page needs a fresh instance to apply its own .range().
+    const buildQuery = () => {
+      let query = supabase
+        .from('tee_times')
+        .select('*')
+        .eq('date', date)
+        // teeoff is the primary sort; id breaks ties so pagination is stable
+        // (a nondeterministic tie order could drop or duplicate rows at a page
+        // boundary).
+        .order('teeoff', { ascending: true })
+        .order('id', { ascending: true });
+
+      if (clubIds.length > 0) query = query.in('club_id', clubIds);
+      if (time_from) query = query.gte('teeoff', time_from);
+      if (time_to) query = query.lte('teeoff', time_to);
+      if (parsedPriceMin !== undefined) query = query.gte('price', parsedPriceMin);
+      if (parsedPriceMax !== undefined) query = query.lte('price', parsedPriceMax);
+      return query;
+    };
+
+    // Supabase caps a single response at max_rows (default 1000). Page through
+    // until a short page proves the result set is exhausted, so the count and
+    // list reflect the true total instead of silently stopping at 1000.
+    const PAGE_SIZE = 1000;
+    const MAX_PAGES = 20; // safety ceiling: 20k rows
+    const rows: NonNullable<Awaited<ReturnType<typeof buildQuery>>['data']> = [];
+
+    for (let page = 0; page < MAX_PAGES; page++) {
+      const from = page * PAGE_SIZE;
+      const { data, error } = await buildQuery().range(from, from + PAGE_SIZE - 1);
+
+      if (error) {
+        log.error('Supabase error', { error: error.message });
+        return NextResponse.json(
+          { error: 'Failed to fetch tee times' },
+          { status: 500 },
+        );
       }
-    }
 
-    // Filter by tee-off time range
-    if (time_from) {
-      query = query.gte('teeoff', time_from);
-    }
-    if (time_to) {
-      query = query.lte('teeoff', time_to);
-    }
-
-    // Filter by price range
-    if (parsedPriceMin !== undefined) {
-      query = query.gte('price', parsedPriceMin);
-    }
-    if (parsedPriceMax !== undefined) {
-      query = query.lte('price', parsedPriceMax);
-    }
-
-    const { data, error } = await query;
-
-    if (error) {
-      log.error('Supabase error', { error: error.message });
-      return NextResponse.json(
-        { error: 'Failed to fetch tee times' },
-        { status: 500 },
-      );
+      const batch = data ?? [];
+      rows.push(...batch);
+      if (batch.length < PAGE_SIZE) break;
     }
 
     // Legacy scrapes stored partner CCs with a "[제휴]" prefix; strip it on the wire
     // so both display and grouping use the clean club name.
-    const cleaned = (data ?? []).map((row) => ({
+    const cleaned = rows.map((row) => ({
       ...row,
       cc_name: typeof row.cc_name === 'string' ? row.cc_name.replace(/^\[제휴\]\s*/, '') : row.cc_name,
     }));

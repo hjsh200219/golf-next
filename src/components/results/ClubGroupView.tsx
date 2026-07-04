@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { TeeTime } from '@/lib/types/tee-time';
 import { groupByClub, type EmptyClub } from '@/lib/utils/group';
 import { formatPrice } from '@/lib/utils/price';
@@ -238,8 +238,18 @@ function ClubSection({
   );
 }
 
+// How many club sections to render on first paint, and how many more to reveal
+// each time the sentinel scrolls into view. Keeping the first paint small makes
+// the club view mount fast even with 30+ clubs; the rest stream in as the user
+// scrolls.
+const INITIAL_VISIBLE = 10;
+const STEP = 10;
+
+type ClubEntry =
+  | { kind: 'group'; clubName: string; items: TeeTime[] }
+  | { kind: 'empty'; club: EmptyClub };
+
 export default function ClubGroupView({ data, emptyClubs = [] }: ClubGroupViewProps) {
-  const groups = groupByClub(data);
   const { data: clubs } = useClubs();
 
   const clubsById = useMemo(() => {
@@ -248,31 +258,75 @@ export default function ClubGroupView({ data, emptyClubs = [] }: ClubGroupViewPr
     return map;
   }, [clubs]);
 
-  if (groups.size === 0 && emptyClubs.length === 0) return null;
+  // Clubs with times first, empty (no-availability) clubs last — a single
+  // ordered list so lazy reveal spans both.
+  const entries = useMemo<ClubEntry[]>(() => {
+    const groups = groupByClub(data);
+    return [
+      ...[...groups.entries()].map(
+        ([clubName, items]): ClubEntry => ({ kind: 'group', clubName, items }),
+      ),
+      ...emptyClubs.map((club): ClubEntry => ({ kind: 'empty', club })),
+    ];
+  }, [data, emptyClubs]);
+
+  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE);
+  const total = entries.length;
+  const hasMore = visibleCount < total;
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+
+  // Reset the window whenever the underlying list changes (new date, filter,
+  // refresh) so a scrolled-down state doesn't carry over to fresh results.
+  useEffect(() => {
+    setVisibleCount(INITIAL_VISIBLE);
+  }, [entries]);
+
+  // Reveal the next page when the bottom sentinel enters the viewport.
+  useEffect(() => {
+    if (!hasMore) return;
+    const el = sentinelRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+
+    const io = new IntersectionObserver(
+      (obsEntries) => {
+        if (obsEntries.some((e) => e.isIntersecting)) {
+          setVisibleCount((c) => Math.min(c + STEP, total));
+        }
+      },
+      { rootMargin: '400px' },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [hasMore, total]);
+
+  if (total === 0) return null;
 
   return (
     <div className="animate-fade-up space-y-3">
-      {[...groups.entries()].map(([clubName, items]) => {
-        const dominantClubId = pickDominantClubId(items);
+      {entries.slice(0, visibleCount).map((entry) => {
+        if (entry.kind === 'empty') {
+          return (
+            <ClubSection
+              key={`empty-${entry.club.clubId}`}
+              clubName={entry.club.clubName}
+              items={[]}
+              club={clubsById.get(entry.club.clubId)}
+              dominantClubId={entry.club.clubId}
+            />
+          );
+        }
+        const dominantClubId = pickDominantClubId(entry.items);
         return (
           <ClubSection
-            key={clubName}
-            clubName={clubName}
-            items={items}
+            key={entry.clubName}
+            clubName={entry.clubName}
+            items={entry.items}
             club={dominantClubId ? clubsById.get(dominantClubId) : undefined}
             dominantClubId={dominantClubId}
           />
         );
       })}
-      {emptyClubs.map((c) => (
-        <ClubSection
-          key={`empty-${c.clubId}`}
-          clubName={c.clubName}
-          items={[]}
-          club={clubsById.get(c.clubId)}
-          dominantClubId={c.clubId}
-        />
-      ))}
+      {hasMore && <div ref={sentinelRef} aria-hidden className="h-1 w-full" />}
     </div>
   );
 }

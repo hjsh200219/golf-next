@@ -3,8 +3,8 @@
  * A club expected by the active filter but with zero tee-times must still
  * appear, labelled "예약 가능 시간 없음", instead of silently disappearing.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, act } from '@testing-library/react';
 import React from 'react';
 import ClubGroupView from '@/components/results/ClubGroupView';
 import type { TeeTime } from '@/lib/types/tee-time';
@@ -78,5 +78,70 @@ describe('ClubGroupView empty clubs', () => {
     );
     const btn = screen.getByRole('button', { name: /양주CC 예약 가능 시간 없음/ });
     expect(btn).toBeDisabled();
+  });
+});
+
+describe('ClubGroupView lazy section rendering', () => {
+  let ioCallback: IntersectionObserverCallback | null = null;
+  const observeSpy = vi.fn();
+  const disconnectSpy = vi.fn();
+
+  beforeEach(() => {
+    ioCallback = null;
+    observeSpy.mockClear();
+    disconnectSpy.mockClear();
+    class MockIntersectionObserver {
+      constructor(cb: IntersectionObserverCallback) {
+        ioCallback = cb;
+      }
+      observe = observeSpy;
+      unobserve = vi.fn();
+      disconnect = disconnectSpy;
+      takeRecords = vi.fn(() => []);
+      root = null;
+      rootMargin = '';
+      thresholds = [];
+    }
+    vi.stubGlobal('IntersectionObserver', MockIntersectionObserver);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  // Zero-padded names so groupByClub's lexical sort matches numeric order,
+  // making "first N" deterministic.
+  function manyClubs(n: number): TeeTime[] {
+    return Array.from({ length: n }, (_, i) => {
+      const label = String(i).padStart(2, '0');
+      return makeTeeTime({ id: i + 1, club_id: `c${label}`, cc_name: `클럽${label}` });
+    });
+  }
+
+  it('renders only the first screenful of clubs and lazily reveals more on scroll', () => {
+    render(<ClubGroupView data={manyClubs(25)} emptyClubs={[]} />);
+
+    // First page (10) rendered
+    expect(screen.getByText('클럽00')).toBeInTheDocument();
+    expect(screen.getByText('클럽09')).toBeInTheDocument();
+    // Beyond the first page is not in the DOM yet
+    expect(screen.queryByText('클럽10')).not.toBeInTheDocument();
+
+    // Observer is watching the sentinel
+    expect(observeSpy).toHaveBeenCalledTimes(1);
+
+    // Scroll the sentinel into view → next page appears
+    act(() => {
+      ioCallback?.([{ isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver);
+    });
+    expect(screen.getByText('클럽10')).toBeInTheDocument();
+    expect(screen.getByText('클럽19')).toBeInTheDocument();
+    expect(screen.queryByText('클럽20')).not.toBeInTheDocument();
+  });
+
+  it('does not attach an observer when everything fits in the first page', () => {
+    render(<ClubGroupView data={manyClubs(3)} emptyClubs={[]} />);
+    expect(screen.getByText('클럽02')).toBeInTheDocument();
+    expect(observeSpy).not.toHaveBeenCalled();
   });
 });

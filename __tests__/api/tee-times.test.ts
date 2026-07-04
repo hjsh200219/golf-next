@@ -198,6 +198,43 @@ describe('GET /api/tee-times', () => {
     expect(body).toHaveLength(2);
   });
 
+  it('paginates past the 1000-row cap and aggregates every page', async () => {
+    // Supabase max_rows defaults to 1000, so a single query silently truncates.
+    // The route must page through until a short page proves the set is exhausted.
+    const page1 = Array.from({ length: 1000 }, (_, i) =>
+      makeTeeTime({ id: i + 1, teeoff: '08:00' }),
+    );
+    const page2 = Array.from({ length: 500 }, (_, i) =>
+      makeTeeTime({ id: 1000 + i + 1, teeoff: '09:00' }),
+    );
+
+    const rangeCalls: Array<[number, number]> = [];
+    const pages = [page1, page2];
+    let pageIdx = 0;
+
+    const chain: Record<string, unknown> = {};
+    for (const m of ['select', 'eq', 'in', 'gte', 'lte', 'order']) {
+      chain[m] = vi.fn().mockReturnValue(chain);
+    }
+    chain.range = vi.fn((from: number, to: number) => {
+      rangeCalls.push([from, to]);
+      const data = pages[pageIdx] ?? [];
+      pageIdx += 1;
+      return Promise.resolve({ data, error: null });
+    });
+    (mockSupabase.from as ReturnType<typeof vi.fn>).mockReturnValue(chain);
+
+    const res = await GET(makeRequest({ date: '2026-03-27' }));
+
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body).toHaveLength(1500);
+    expect(rangeCalls).toEqual([
+      [0, 999],
+      [1000, 1999],
+    ]);
+  });
+
   // ── Error handling ────────────────────────────────────────────────────────
 
   it('returns 500 when Supabase returns an error', async () => {
