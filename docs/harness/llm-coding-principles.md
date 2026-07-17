@@ -3,6 +3,8 @@
 > AGENTS.md에서 참조하는 상세 가이드. LLM의 흔한 코딩 실수를 줄이기 위한 행동 지침.
 > 프로젝트 고유 규칙과 병합해 적용한다. Tradeoff: 속도보다 신중함에 치우친다. 사소한 작업은 판단에 맡긴다.
 
+Layer note: These four principles are the behavioral/judgment layer. They complement — not duplicate — the tool-enforced invariants (P3 lint, P6 layer-rules, P7 knip dead-code). Tools catch mechanical violations after code exists; these guide the decisions tools cannot check (surfacing assumptions, avoiding over-building, not touching adjacent code, defining verifiable goals). All four are judgment, not lint targets.
+
 ## 1. Think Before Coding
 
 Don't assume. Don't hide confusion. Surface tradeoffs.
