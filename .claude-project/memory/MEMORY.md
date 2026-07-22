@@ -56,3 +56,6 @@
 
 ## Session 12 (2026-07-04)
 - [GA4 GolfShin setup](ga4-golfshin-setup.md) — 속성 properties/544166567(SH Consulting GA계정 353033332 하위), 측정ID G-XGF7QPQ338, gtag 직접삽입(GTM 미경유). 서비스계정 뷰어 미부여(수동 필요)
+
+## Session 13 (2026-07-22)
+- [WAF/Cloud IP blocking](scraper-waf-cloud-ip-blocking.md) *(updated)* — Scrapling StealthyFetcher(camoufox) bearcreek WAF 로컬 200 통과(HTTP 406), 로그인 ASP.NET WebForms postback 검증. WAF 클럽 미구현은 스크레이핑 기술 아니라 배포 IP + Python/TS 스택 분리. 검토만 종료
