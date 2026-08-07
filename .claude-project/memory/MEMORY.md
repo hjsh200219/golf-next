@@ -59,3 +59,9 @@
 
 ## Session 13 (2026-07-22)
 - [WAF/Cloud IP blocking](scraper-waf-cloud-ip-blocking.md) *(updated)* — Scrapling StealthyFetcher(camoufox) bearcreek WAF 로컬 200 통과(HTTP 406), 로그인 ASP.NET WebForms postback 검증. WAF 클럽 미구현은 스크레이핑 기술 아니라 배포 IP + Python/TS 스택 분리. 검토만 종료
+
+## Session 14 (2026-08-07)
+- [Scrape cron write loss](scrape-cron-write-loss.md) ⚠️ **미해결** — `status=success` + `tee_time_count` ~2000인데 `tee_times`엔 6~332행만 기록(1~15%). `tee_time_count`는 발견량이지 기록량이 아니다. liveness invariant상 미기록 슬롯은 "마감"으로 보임
+- [Scrape scheduler attribution](scrape-scheduler-attribution.md) — 행 출처 판별은 `scraped_at`의 분: Vercel `:00~:01` 정밀 vs GitHub Actions 10~25분 드리프트. 버킷 행 수를 수집량으로 읽지 말 것, 단일 시각 표본 일반화 금지
+- [PostgREST ad-hoc query traps](postgrest-adhoc-query-traps.md) — 진단 쿼리에서 `limit=10000`도 1000행 상한에 잘려 "시간대 구멍"으로 위장(합=1000이면 잘림), URL 한글은 `quote(path, safe='?&=.*,')`
+- [Cron scraping interval](cron-scraping-interval.md) *(updated)* — Vercel Cron이 유일 스케줄러(크론 3개), 중복 GitHub Actions 트리거 삭제·재추가 금지. 예외는 onetheclub 워크플로 1개

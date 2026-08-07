@@ -55,7 +55,7 @@ src/
 - **PWA**: next-pwa with offline fallback, service worker auto-registration.
 - **Date Tabs**: Tomorrow-focused (not today). Golf reservations are booked 1+ days ahead.
 - **SEO/GEO**: `src/lib/schema.ts` generates JSON-LD dynamically; `public/llms.txt` for LLM discovery; `src/app/sitemap.ts` → `/sitemap.xml` (indexable pages only); `src/app/robots.ts` → `/robots.txt` (prod allow-all + sitemap ref, Vercel preview blocked). Sync all on content/feature changes (or run `/sh:geo-update`).
-- **Scrape Schedule**: Vercel Cron (`vercel.json`, 3개) — scrape hourly (`0 * * * *`) at `/api/scrape/cron`; Telegram watch check (`50 * * * *`) at `/api/telegram/check`; Yangju watch check (`55 * * * *`) at `/api/telegram/yangju/check`. **예외 1개**: onetheclub 본진(파주/신라/클럽72)은 Vercel 람다에서 빈 응답이 와서 GitHub Actions `scrape-onetheclub.yml`(`30 * * * *`)이 러너에서 직접 스크레이핑 → 같은 `tee_times`에 upsert. 이 워크플로는 삭제 금지. 상세: [docs/DEPLOY_CRON_TELEGRAM.md](./docs/DEPLOY_CRON_TELEGRAM.md).
+- **Scrape Schedule**: Vercel Cron (`vercel.json`, 3개) — scrape hourly (`0 * * * *`) at `/api/scrape/cron`; Telegram watch check (`50 * * * *`) at `/api/telegram/check`; Yangju watch check (`55 * * * *`) at `/api/telegram/yangju/check`. **예외 1개**: GitHub Actions `scrape-onetheclub.yml`(`30 * * * *`)이 러너에서 onetheclub을 직접 스크레이핑 → 같은 `tee_times`에 upsert. Vercel cron도 onetheclub을 긁지만 **보고된 ~2000건 중 1~15%만 실제 기록**되는 미해결 이슈가 있어(원인 미파악), D+1~D+7 본진(파주/신라/클럽72)의 신뢰 가능한 유일한 소스가 이 러너다. 이 워크플로는 저장소에 남은 유일한 워크플로이며 **leftover 아님 — 삭제 금지**. 상세: [docs/DEPLOY_CRON_TELEGRAM.md](./docs/DEPLOY_CRON_TELEGRAM.md).
 
 ## Design System
 
@@ -77,13 +77,13 @@ src/
 | [docs/PLANS.md](./docs/PLANS.md) | Plans index |
 | [docs/RELIABILITY.md](./docs/RELIABILITY.md) | Reliability standards |
 | [docs/UNIMPLEMENTED_CLUBS.md](./docs/UNIMPLEMENTED_CLUBS.md) | Unimplemented club list |
-| [docs/DEPLOY_CRON_TELEGRAM.md](./docs/DEPLOY_CRON_TELEGRAM.md) | Telegram bot + Vercel cron setup; GitHub Actions deletion checklist |
+| [docs/DEPLOY_CRON_TELEGRAM.md](./docs/DEPLOY_CRON_TELEGRAM.md) | Telegram bot + Vercel cron 3개 설정; onetheclub GitHub Actions 워크플로를 유지하는 근거(측정치) + cron write-loss 미해결 이슈 |
 | [docs/generated/db-schema.md](./docs/generated/db-schema.md) | Database schema reference |
 | [docs/harness/llm-coding-principles.md](./docs/harness/llm-coding-principles.md) | LLM coding behavioral guidelines |
 
 ## Common Tasks
 
-- **Add scraper**: Create `src/lib/scrapers/{club-id}.ts` extending `BaseScraper`, register in `index.ts`, add to `regions.ts`
+- **Add scraper**: Create `src/lib/scrapers/{club-id}.ts` extending `BaseScraper`, register in `index.ts`, add to `regions.ts`. **GitHub Actions 워크플로는 만들지 않는다** -- Vercel cron이 호출한다. `scrape-onetheclub.yml`은 복제할 템플릿이 아니라 1회성 예외
 - **Add page**: Create `src/app/{route}/page.tsx`, add nav link in `MobileNav.tsx` + `Header.tsx`
 - **Add API route**: Create `src/app/api/{endpoint}/route.ts`, use `createServerClient()` for DB
 - **Modify DB schema**: Requires explicit approval. Create migration, update `src/lib/types/database.ts`
@@ -100,7 +100,7 @@ src/
 
 ## Testing & Verification
 
-- Run: `npm test` (Vitest, ~465 tests / 44 files)
+- Run: `npm test` (Vitest, ~588 tests / 65 files)
 - Build: `npm run build` (ignore `/login` prerender error -- expected without Supabase env vars)
 - Lint: `npm run lint` (layer rules enforced via `import/no-restricted-paths`)
 
@@ -108,6 +108,8 @@ src/
 
 - Build always fails prerendering `/login` without Supabase env vars -- expected
 - Scrapers depend on external golf club websites -- fragile by nature
+- **Vercel cron write loss (미해결)** -- `/api/scrape/cron`이 onetheclub을 `status=success` + ~2000건으로 보고하지만 `tee_times`에는 6~332행만 기록됨(1~15%). 원인 미파악. liveness invariant상 기록 안 된 슬롯은 "마감"으로 보임. D+1~D+7은 `:30` 러너가 매시 복구하지만 다른 클럽에도 같은 손실이 있는지 미확인
+- onetheclub 본진(파주/신라/클럽72) D+1~D+7은 GitHub Actions 러너(`scrape-onetheclub.yml`)에만 의존 -- 러너가 죽으면 해당 범위 본진 데이터가 사라진다
 - Weather cache expires based on `weather_cache.expires_at` -- stale data possible if cron misses
 
 > Be concise. No filler. Straight to the point. Use fewer words.
@@ -116,7 +118,7 @@ src/
 ## TDD & 코딩 원칙
 
 - **TDD 필수**: 모든 새 기능/로직 변경은 Red(실패 테스트 먼저) → Green(통과 최소 구현) → Refactor 순서로 개발한다. 테스트 없는 코드 변경 불가.
-- **LLM 코딩 행동 원칙**: Think Before Coding · Simplicity First · Surgical Changes · Goal-Driven Execution. 상세는 [docs/harness/llm-coding-principles.md](docs/harness/llm-coding-principles.md).
+- **LLM 코딩 행동 원칙**: Think Before Coding · Simplicity First · Surgical Changes · Goal-Driven Execution. 상세는 [docs/harness/llm-coding-principles.md](./docs/harness/llm-coding-principles.md).
 
 ## 세션 시작 시 Handoff 강제
 

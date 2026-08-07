@@ -1,9 +1,16 @@
 name: Scrape OneTheClub Home (Hourly)
 
-# Vercel production lambda 환경에서는 fetchCookie/세션 처리 차이로 원더클럽
-# 본진 CC(파주/신라/듄스) 호출이 빈 응답을 받는 문제가 있어, GitHub Actions
-# runner에서 직접 스크래퍼를 실행해 Supabase에 upsert한다. 본진 + 제휴 모두
-# 한 번에 처리하며, 제휴 부분은 production cron의 결과와 idempotent하게 합쳐진다.
+# 이 저장소에 남은 유일한 GitHub Actions 워크플로다. leftover 아니므로 삭제 금지.
+# (중복이던 scrape-cron.yml은 2026-08-07 제거 — Vercel cron이 대체)
+#
+# Vercel cron도 onetheclub을 긁지만, 보고된 ~2000건 중 tee_times에 실제로 기록되는
+# 건 6~332행(1~15%)뿐인 미해결 write-loss 이슈가 있다(원인 미파악). 그래서 D+1~D+7
+# 본진 CC(파주/신라/클럽72)의 신뢰 가능한 유일한 소스가 이 러너다. 본진 + 제휴를
+# 한 번에 처리하며, 제휴 부분은 production cron 결과와 idempotent하게 합쳐진다.
+# 상세: docs/DEPLOY_CRON_TELEGRAM.md §4
+#
+# 주의: 듄스는 onetheclub 본진이 아니다(과거 주석 오기). 라비에벨CC 듄스=laviebell,
+# 오렌지듄스영종GC=orangedunesyj — 별도 스크래퍼, Vercel cron이 담당.
 #
 # 필수 repo secrets:
 #   - GOLF_LOGIN_ID, GOLF_LOGIN_PW (필수)

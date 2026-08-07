@@ -21,15 +21,39 @@ Apply `supabase/migrations/011_telegram_watches.sql` to the Supabase project (ta
 **Do not re-add it.** If Vercel cron ever stops firing, fix the Vercel cron (check plan tier + `CRON_SECRET`) rather than restoring a second trigger — two triggers double-scrape every club.
 
 ## 4. onetheclub — keep on GitHub Actions (DECIDED: do NOT migrate)
-`scrape-onetheclub.yml` scrapes onetheclub 본진 CCs (파주/신라/클럽72 4개 코스) directly on the GitHub runner and upserts to the SAME `tee_times` table. The Vercel lambda gets near-empty 본진 responses, so this stays on the runner.
+`scrape-onetheclub.yml` scrapes onetheclub 본진 CCs (파주/신라/클럽72 4개 코스) directly on the GitHub runner and upserts to the SAME `tee_times` table. It is the only reliable source of D+1~D+7 본진 rows, so it stays on the runner.
 
-> Measured 2026-08-07, same hour, `club_id=onetheclub`: Vercel cron `00:01` → 14 rows / 6 CC (파주 0, 신라 0); GitHub runner `00:20` → 1000+ rows / 12 CC (파주 91, 신라 149, 클럽72 178).
+> **Correction (2026-08-07).** An earlier revision of this section claimed "the Vercel lambda gets near-empty 본진 responses." That is **not** what the data shows — it was generalized from one unlucky hour. The Vercel lambda *does* retrieve 본진: the `21:01` run wrote 329 본진 rows. The real split is by date range, not by 본진/제휴.
+>
+> `club_id=onetheclub` rows actually written to `tee_times`, by run:
+>
+> | run | source | range | rows | 본진 |
+> |---|---|---|---|---|
+> | `20:01` | Vercel | D+1~D+7 | 6 | 6 |
+> | `21:01` | Vercel | D+8~D+14 | 332 | 329 |
+> | `22:01` | Vercel | D+1~D+7 | 30 | 26 |
+> | `23:01` | Vercel | D+8~D+14 | 1000+ | 103 |
+> | `00:01` | Vercel | D+1~D+7 | 14 | 10 |
+> | `00:20` | GitHub runner | D+1~D+7 | 1000+ | 418 |
 >
 > Note: 듄스 is NOT an onetheclub 본진 CC (earlier drafts listed it). The two 듄스 courses in `tee_times` are `laviebell` (라비에벨CC 듄스) and `orangedunesyj` (오렌지듄스영종GC) — separate scrapers, both covered by Vercel cron.
 
-**This is fine and requires no further work:** the Telegram bot and the watch-check cron only READ `tee_times` — they don't care which job produced a row. The runner keeps 본진 data fresh (verified: a recent run upserted 파주CC 252 / 신라CC 166 / 클럽72 320+ rows), so 본진 watches work normally.
+### ⚠️ Open issue — Vercel cron reports success but writes ~1–15% of rows
 
-- **KEEP `.github/workflows/scrape-onetheclub.yml`.** Do not delete it, do not migrate onetheclub to Vercel. Migrating would risk breaking working 본진 coverage for no benefit (the data already lands in `tee_times`).
+Every Vercel `/api/scrape/cron` run records onetheclub as `status=success` with ~2000 tee times found, yet only a fraction reach `tee_times`:
+
+| run | `scrape_club_results` 합계 | rows in `tee_times` |
+|---|---|---|
+| `20:01` | 1964 | 6 |
+| `21:01` | 2121 | 332 |
+| `22:01` | 2107 | 30 |
+| `00:01` | 2060 | 14 |
+
+Mechanism unknown — candidates: upsert batch dropped (`ON CONFLICT DO UPDATE cannot affect row a second time` on in-batch duplicates), the 60s `maxDuration` on `/api/scrape/cron` cutting the write short, or `waitUntil` dispatch being killed. **This matters for the liveness invariant**: a row is treated as open only while `scraped_at >= latest successful scrape`, so rows the scraper saw but failed to write look *closed*. For D+1~D+7 the `:30` runner repairs this every hour, which is why 본진 still works in practice. Not investigated — see HANDOFF.
+
+**Why the runner stays regardless:** the Telegram bot and the watch-check cron only READ `tee_times` — they don't care which job produced a row. The runner reliably lands full D+1~D+7 본진 data (1000+ rows/run), and D+1~D+7 is the range users actually book.
+
+- **KEEP `.github/workflows/scrape-onetheclub.yml`.** Do not delete it, do not migrate onetheclub to Vercel — not until the write-loss issue above is understood. It is the one intentional workflow in the repo, not a leftover.
 - `ONETHECLUB_MEMBER_ID` lives only as a GitHub Actions secret (the runner injects it). No Vercel env entry needed.
 - "Vercel cron 통합" therefore means migrating ONLY `scrape-cron.yml` (the endpoint-trigger cron, §3). onetheclub is the one intentional exception.
 
