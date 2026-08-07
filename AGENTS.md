@@ -55,7 +55,7 @@ src/
 - **PWA**: next-pwa with offline fallback, service worker auto-registration.
 - **Date Tabs**: Tomorrow-focused (not today). Golf reservations are booked 1+ days ahead.
 - **SEO/GEO**: `src/lib/schema.ts` generates JSON-LD dynamically; `public/llms.txt` for LLM discovery; `src/app/sitemap.ts` → `/sitemap.xml` (indexable pages only); `src/app/robots.ts` → `/robots.txt` (prod allow-all + sitemap ref, Vercel preview blocked). Sync all on content/feature changes (or run `/sh:geo-update`).
-- **Scrape Schedule**: Vercel Cron — scrape hourly (`0 * * * *`) at `/api/scrape/cron`; Telegram watch check (`50 * * * *`) at `/api/telegram/check`.
+- **Scrape Schedule**: Vercel Cron (`vercel.json`, 3개) — scrape hourly (`0 * * * *`) at `/api/scrape/cron`; Telegram watch check (`50 * * * *`) at `/api/telegram/check`; Yangju watch check (`55 * * * *`) at `/api/telegram/yangju/check`. **예외 1개**: onetheclub 본진(파주/신라/클럽72)은 Vercel 람다에서 빈 응답이 와서 GitHub Actions `scrape-onetheclub.yml`(`30 * * * *`)이 러너에서 직접 스크레이핑 → 같은 `tee_times`에 upsert. 이 워크플로는 삭제 금지. 상세: [docs/DEPLOY_CRON_TELEGRAM.md](./docs/DEPLOY_CRON_TELEGRAM.md).
 
 ## Design System
 
