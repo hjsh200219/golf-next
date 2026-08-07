@@ -11,15 +11,21 @@ Implements `~/.claude/plans/golfshin-cron-telegram-plan.md`. Code is merged; the
 ## 2. Migration (USER APPROVED)
 Apply `supabase/migrations/011_telegram_watches.sql` to the Supabase project (table + active partial unique index + RLS service-role-only). Standard migration apply flow.
 
-## 3. Crons → Vercel (Task 1a)
-`vercel.json` now declares two crons (`/api/scrape/cron` @ `0 * * * *`, `/api/telegram/check` @ `50 * * * *`).
-1. **Confirm the project is on Vercel Pro** (Hobby caps cron at 1/day — hourly would fail deploy). If NOT Pro, hourly crons are invalid; do not proceed with cron migration.
-2. Deploy. In **Vercel → Settings → Cron Jobs**, confirm BOTH crons are registered.
-3. **Observe `/api/scrape/cron` firing hourly** across ≥2 consecutive hours (function logs show `Cron triggered` / `Cron completed`). Do NOT rely on a single 200.
-4. **Only after** hourly firing is confirmed: delete `.github/workflows/scrape-cron.yml`. (Sequenced → no coverage gap. The build did NOT delete it.)
+## 3. Crons → Vercel (Task 1a) — ✅ DONE (2026-08-07)
+`vercel.json` declares three crons (`/api/scrape/cron` @ `0 * * * *`, `/api/telegram/check` @ `50 * * * *`, `/api/telegram/yangju/check` @ `55 * * * *`).
+1. ✅ Vercel Pro confirmed (Hobby caps cron at 1/day — hourly would fail deploy).
+2. ✅ All three crons registered (`vercel crons ls`).
+3. ✅ Hourly firing verified in `scrape_club_results`: runs land at `:00`–`:01` UTC every hour, 18+ consecutive hours with no gap.
+4. ✅ `.github/workflows/scrape-cron.yml` deleted. It only `curl`ed `/api/scrape/cron`, which Vercel cron now does — pure duplicate. Its remaining runs were also failing on GitHub's side (`The job was not acquired by Runner of type hosted`).
+
+**Do not re-add it.** If Vercel cron ever stops firing, fix the Vercel cron (check plan tier + `CRON_SECRET`) rather than restoring a second trigger — two triggers double-scrape every club.
 
 ## 4. onetheclub — keep on GitHub Actions (DECIDED: do NOT migrate)
-`scrape-onetheclub.yml` scrapes onetheclub 본진 CCs (파주/신라/듄스/클럽72) directly on the GitHub runner and upserts to the SAME `tee_times` table. The Vercel lambda gets empty 본진 responses, so this stays on the runner.
+`scrape-onetheclub.yml` scrapes onetheclub 본진 CCs (파주/신라/클럽72 4개 코스) directly on the GitHub runner and upserts to the SAME `tee_times` table. The Vercel lambda gets near-empty 본진 responses, so this stays on the runner.
+
+> Measured 2026-08-07, same hour, `club_id=onetheclub`: Vercel cron `00:01` → 14 rows / 6 CC (파주 0, 신라 0); GitHub runner `00:20` → 1000+ rows / 12 CC (파주 91, 신라 149, 클럽72 178).
+>
+> Note: 듄스 is NOT an onetheclub 본진 CC (earlier drafts listed it). The two 듄스 courses in `tee_times` are `laviebell` (라비에벨CC 듄스) and `orangedunesyj` (오렌지듄스영종GC) — separate scrapers, both covered by Vercel cron.
 
 **This is fine and requires no further work:** the Telegram bot and the watch-check cron only READ `tee_times` — they don't care which job produced a row. The runner keeps 본진 data fresh (verified: a recent run upserted 파주CC 252 / 신라CC 166 / 클럽72 320+ rows), so 본진 watches work normally.
 
