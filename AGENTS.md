@@ -79,7 +79,6 @@ src/
 | [docs/UNIMPLEMENTED_CLUBS.md](./docs/UNIMPLEMENTED_CLUBS.md) | Unimplemented club list |
 | [docs/DEPLOY_CRON_TELEGRAM.md](./docs/DEPLOY_CRON_TELEGRAM.md) | Telegram bot + Vercel cron 3개 설정; onetheclub GitHub Actions 워크플로를 유지하는 근거(측정치) + cron write-loss 미해결 이슈 |
 | [docs/generated/db-schema.md](./docs/generated/db-schema.md) | Database schema reference |
-| [docs/harness/llm-coding-principles.md](./docs/harness/llm-coding-principles.md) | LLM coding behavioral guidelines |
 
 ## Common Tasks
 
@@ -115,10 +114,9 @@ src/
 > Be concise. No filler. Straight to the point. Use fewer words.
 
 
-## TDD & 코딩 원칙
+## TDD
 
 - **TDD 필수**: 모든 새 기능/로직 변경은 Red(실패 테스트 먼저) → Green(통과 최소 구현) → Refactor 순서로 개발한다. 테스트 없는 코드 변경 불가.
-- **LLM 코딩 행동 원칙**: Think Before Coding · Simplicity First · Surgical Changes · Goal-Driven Execution. 상세는 [docs/harness/llm-coding-principles.md](./docs/harness/llm-coding-principles.md).
 
 ## 세션 시작 시 Handoff 강제
 
