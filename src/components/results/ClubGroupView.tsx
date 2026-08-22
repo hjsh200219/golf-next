@@ -7,7 +7,7 @@ import { formatPrice } from '@/lib/utils/price';
 import { formatTime } from '@/lib/utils/time';
 import { formatEventDisplay } from '@/lib/utils/event';
 import { getRegionForClub } from '@/lib/constants/regions';
-import { getClubReservationUrl } from '@/lib/utils/clubLink';
+import { getClubHomepageUrl } from '@/lib/utils/clubLink';
 import { useClubs } from '@/hooks/useClubs';
 import type { Database } from '@/lib/types/database';
 
@@ -41,7 +41,7 @@ function ClubSection({
   dominantClubId: string | undefined;
 }) {
   const [isOpen, setIsOpen] = useState(false);
-  const reservationUrl = getClubReservationUrl(club);
+  const homepageUrl = getClubHomepageUrl(club);
 
   const lowestPrice = items.reduce((min, tt) => {
     if (tt.price === null) return min;
@@ -111,14 +111,14 @@ function ClubSection({
             )}
           </div>
         </button>
-        {reservationUrl && (
+        {homepageUrl && (
           <a
-            href={reservationUrl}
+            href={homepageUrl}
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
             className="shrink-0 inline-flex items-center gap-1 rounded-lg bg-golf-primary/10 px-2.5 py-1.5 text-xs font-semibold text-golf-primary hover:bg-golf-primary/20 transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-golf-primary/40 min-h-[36px]"
-            aria-label={`${clubName} 예약 페이지 새 탭에서 열기`}
+            aria-label={`${clubName} 홈페이지 새 탭에서 열기`}
           >
             <span>바로가기</span>
             <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

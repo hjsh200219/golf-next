@@ -1,8 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { createLogger } from '@/lib/logger';
+import { filterLiveTeeTimes, latestSuccessByClub } from '@/lib/utils/liveness';
 
 const log = createLogger('tee-times');
+
+const PAGE_SIZE = 1000;
+const MAX_PAGES = 20; // safety ceiling: 20k rows
+
+type QueryPage<T> = {
+  range: (from: number, to: number) => PromiseLike<{
+    data: T[] | null;
+    error: { message: string } | null;
+  }>;
+};
+
+async function fetchAllPages<T>(
+  build: () => QueryPage<T>,
+): Promise<{ data: T[]; error: { message: string } | null }> {
+  const rows: T[] = [];
+  for (let page = 0; page < MAX_PAGES; page++) {
+    const from = page * PAGE_SIZE;
+    const { data, error } = await build().range(from, from + PAGE_SIZE - 1);
+    if (error) return { data: rows, error };
+    const batch = data ?? [];
+    rows.push(...batch);
+    if (batch.length < PAGE_SIZE) break;
+  }
+  return { data: rows, error: null };
+}
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
@@ -45,7 +71,9 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const supabase = createServerSupabaseClient();
+    // Service role: scrape_jobs / scrape_club_results are not public-readable
+    // (anon RLS would return empty S and hide every slot).
+    const supabase = createAdminClient();
 
     // Validate price params early so we don't build a partial query
     let parsedPriceMin: number | undefined;
@@ -74,6 +102,54 @@ export async function GET(request: NextRequest) {
       ? clubs.split(',').map((id) => id.trim()).filter(Boolean)
       : [];
 
+    const { data: jobs, error: jobsError } = await fetchAllPages<{ id: number }>(() =>
+      supabase
+        .from('scrape_jobs')
+        .select('id')
+        .eq('date', date)
+        .order('id', { ascending: true }),
+    );
+
+    if (jobsError) {
+      log.error('Failed to fetch scrape jobs', { error: jobsError.message });
+      return NextResponse.json(
+        { error: 'Failed to fetch tee times' },
+        { status: 500 },
+      );
+    }
+
+    const jobIds = jobs.map((j) => j.id);
+    if (jobIds.length === 0) {
+      return NextResponse.json([]);
+    }
+
+    // Thousands of success rows per date (hourly jobs × clubs). Must page —
+    // a single select is capped at 1000 and would pin S to an early scrape.
+    const { data: results, error: resultsError } = await fetchAllPages<{
+      club_id: string;
+      scraped_at: string | null;
+    }>(() =>
+      supabase
+        .from('scrape_club_results')
+        .select('club_id, scraped_at')
+        .in('job_id', jobIds)
+        .eq('status', 'success')
+        .order('id', { ascending: true }),
+    );
+
+    if (resultsError) {
+      log.error('Failed to fetch scrape results', { error: resultsError.message });
+      return NextResponse.json(
+        { error: 'Failed to fetch tee times' },
+        { status: 500 },
+      );
+    }
+
+    const sByClub = latestSuccessByClub(results);
+    if (sByClub.size === 0) {
+      return NextResponse.json([]);
+    }
+
     // Rebuild the filtered query per page: the builder is single-use, and each
     // page needs a fresh instance to apply its own .range().
     const buildQuery = () => {
@@ -95,28 +171,16 @@ export async function GET(request: NextRequest) {
       return query;
     };
 
-    // Supabase caps a single response at max_rows (default 1000). Page through
-    // until a short page proves the result set is exhausted, so the count and
-    // list reflect the true total instead of silently stopping at 1000.
-    const PAGE_SIZE = 1000;
-    const MAX_PAGES = 20; // safety ceiling: 20k rows
-    const rows: NonNullable<Awaited<ReturnType<typeof buildQuery>>['data']> = [];
+    const { data: rows, error: teeTimesError } = await fetchAllPages<
+      NonNullable<Awaited<ReturnType<typeof buildQuery>>['data']>[number]
+    >(buildQuery);
 
-    for (let page = 0; page < MAX_PAGES; page++) {
-      const from = page * PAGE_SIZE;
-      const { data, error } = await buildQuery().range(from, from + PAGE_SIZE - 1);
-
-      if (error) {
-        log.error('Supabase error', { error: error.message });
-        return NextResponse.json(
-          { error: 'Failed to fetch tee times' },
-          { status: 500 },
-        );
-      }
-
-      const batch = data ?? [];
-      rows.push(...batch);
-      if (batch.length < PAGE_SIZE) break;
+    if (teeTimesError) {
+      log.error('Supabase error', { error: teeTimesError.message });
+      return NextResponse.json(
+        { error: 'Failed to fetch tee times' },
+        { status: 500 },
+      );
     }
 
     // Legacy scrapes stored partner CCs with a "[제휴]" prefix; strip it on the wire
@@ -126,7 +190,7 @@ export async function GET(request: NextRequest) {
       cc_name: typeof row.cc_name === 'string' ? row.cc_name.replace(/^\[제휴\]\s*/, '') : row.cc_name,
     }));
 
-    return NextResponse.json(cleaned);
+    return NextResponse.json(filterLiveTeeTimes(cleaned, sByClub));
   } catch (err) {
     log.error('Unexpected error', { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json(

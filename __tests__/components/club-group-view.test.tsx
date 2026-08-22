@@ -8,11 +8,40 @@ import { render, screen, act } from '@testing-library/react';
 import React from 'react';
 import ClubGroupView from '@/components/results/ClubGroupView';
 import type { TeeTime } from '@/lib/types/tee-time';
+import type { Database } from '@/lib/types/database';
+
+type GolfClub = Database['public']['Tables']['golf_clubs']['Row'];
+
+const useClubsMock = vi.hoisted(() =>
+  vi.fn(() => ({ data: [] as GolfClub[], isLoading: false, error: undefined, mutate: vi.fn() })),
+);
 
 // useClubs is a SWR-backed hook hitting /api/clubs; stub it.
 vi.mock('@/hooks/useClubs', () => ({
-  useClubs: () => ({ data: [], isLoading: false, error: undefined, mutate: vi.fn() }),
+  useClubs: () => useClubsMock(),
 }));
+
+function makeClub(overrides: Partial<GolfClub> = {}): GolfClub {
+  return {
+    id: 'laviebell',
+    name: '라비에벨CC',
+    display_name: null,
+    url: 'https://lavieestbellegolfnresort.com/oldcourse',
+    origin: 'https://lavieestbellegolfnresort.com',
+    referer_login: null,
+    referer_reservation: null,
+    login_path: null,
+    reservation_path: '/GolfRes/onepage/real_timelist_ajax_list.asp',
+    address: null,
+    lat: null,
+    lon: null,
+    scraper_type: 'requests',
+    is_active: true,
+    created_at: '',
+    updated_at: '',
+    ...overrides,
+  };
+}
 
 function makeTeeTime(overrides: Partial<TeeTime> = {}): TeeTime {
   return {
@@ -32,6 +61,7 @@ function makeTeeTime(overrides: Partial<TeeTime> = {}): TeeTime {
 describe('ClubGroupView empty clubs', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    useClubsMock.mockReturnValue({ data: [], isLoading: false, error: undefined, mutate: vi.fn() });
   });
 
   it('renders an empty club with "예약 가능 시간 없음"', () => {
@@ -81,6 +111,30 @@ describe('ClubGroupView empty clubs', () => {
   });
 });
 
+describe('ClubGroupView 바로가기', () => {
+  beforeEach(() => {
+    useClubsMock.mockReturnValue({
+      data: [makeClub()],
+      isLoading: false,
+      error: undefined,
+      mutate: vi.fn(),
+    });
+  });
+
+  it('links to the club homepage origin, not the scraper AJAX path', () => {
+    render(
+      <ClubGroupView
+        data={[makeTeeTime({ club_id: 'laviebell', cc_name: '라비에벨CC' })]}
+        emptyClubs={[]}
+      />,
+    );
+
+    const link = screen.getByRole('link', { name: '라비에벨CC 홈페이지 새 탭에서 열기' });
+    expect(link).toHaveAttribute('href', 'https://lavieestbellegolfnresort.com');
+    expect(link.getAttribute('href')).not.toContain('real_timelist_ajax_list');
+  });
+});
+
 describe('ClubGroupView lazy section rendering', () => {
   let ioCallback: IntersectionObserverCallback | null = null;
   const observeSpy = vi.fn();
@@ -90,6 +144,7 @@ describe('ClubGroupView lazy section rendering', () => {
     ioCallback = null;
     observeSpy.mockClear();
     disconnectSpy.mockClear();
+    useClubsMock.mockReturnValue({ data: [], isLoading: false, error: undefined, mutate: vi.fn() });
     class MockIntersectionObserver {
       constructor(cb: IntersectionObserverCallback) {
         ioCallback = cb;

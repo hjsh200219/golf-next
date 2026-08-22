@@ -35,7 +35,7 @@ src/
     scrapers/       # 34 club scrapers extending BaseScraper + index registry
     supabase/       # client, server, middleware helpers
     types/          # database, tee-time, weather
-    utils/          # date, price, time, group, event, geohash, uuid, weather
+    utils/          # date, price, time, group, event, geohash, uuid, weather, tee-time, clubLink, liveness
     telegram/       # Main bot (33+ clubs): watches, match, keyboards, client, time helpers
     telegram-yangju/ # Yangju-only bot (@jonnyjhkimbot): watch + book/reserve flow
     logger.ts       # Structured logger (JSON prod / human dev)
@@ -99,7 +99,7 @@ src/
 
 ## Testing & Verification
 
-- Run: `npm test` (Vitest, ~588 tests / 65 files)
+- Run: `npm test` (Vitest, ~611 tests / 67 files)
 - Build: `npm run build` (ignore `/login` prerender error -- expected without Supabase env vars)
 - Lint: `npm run lint` (layer rules enforced via `import/no-restricted-paths`)
 

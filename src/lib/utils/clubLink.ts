@@ -5,20 +5,13 @@ type GolfClub = Pick<
   'url' | 'origin' | 'reservation_path'
 >;
 
-export function getClubReservationUrl(club: GolfClub | undefined | null): string | null {
+/**
+ * User-facing 바로가기 URL.
+ * `reservation_path` is a scraper AJAX endpoint — never join it for the UI.
+ */
+export function getClubHomepageUrl(club: GolfClub | undefined | null): string | null {
   if (!club) return null;
-
-  const { origin, reservation_path, url } = club;
-
-  if (origin && reservation_path) {
-    try {
-      return new URL(reservation_path, origin).toString();
-    } catch {
-      // fall through to url
-    }
-  }
-
-  if (url) return url;
-  if (origin) return origin;
+  if (club.origin) return club.origin;
+  if (club.url) return club.url;
   return null;
 }

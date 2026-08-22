@@ -61,10 +61,14 @@ The primary feature. Users search for available golf tee times across 34 clubs.
 
 **Data flow**: Cron trigger → `/api/scrape/cron` → `/api/scrape` (creates jobs) → `/api/scrape/club` per club → `BaseScraper.run()` → upsert into `tee_times` table → Client fetches via `/api/tee-times` with filters → `SearchSection` renders results
 
+**Liveness**: `tee_times` rows are never deleted. A booked slot freezes at its last-seen `scraped_at`. `/api/tee-times` (and the Telegram watch matcher) treat a row as open only if `scraped_at >= S`, where `S` is the latest successful `scrape_club_results.scraped_at` for that club+date. `S` is computed across **all** success rows for the date (paged past PostgREST's 1000-row cap) — a single unpaged select would pin `S` to an early scrape and keep booked slots visible for every club.
+
 **Key files**:
 - `src/lib/scrapers/base.ts` — Abstract scraper with login, parsing, cookie management
 - `src/lib/scrapers/index.ts` — Registry of all 34 scrapers
-- `src/app/api/tee-times/route.ts` — Query endpoint with date/club/time/price filters
+- `src/app/api/tee-times/route.ts` — Query endpoint with date/club/time/price filters + liveness (`scraped_at >= S`)
+- `src/lib/utils/liveness.ts` — Latest successful scrape S per club; filter frozen (booked) rows
+- `src/lib/utils/clubLink.ts` — User-facing 바로가기 = `origin` homepage, never scraper `reservation_path`
 - `src/components/search/SearchSection.tsx` — Main search UI orchestrator
 
 ### 2. Golf Club Registry
