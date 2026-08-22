@@ -56,6 +56,7 @@ src/
 - **Date Tabs**: Tomorrow-focused (not today). Golf reservations are booked 1+ days ahead.
 - **SEO/GEO**: `src/lib/schema.ts` generates JSON-LD dynamically; `public/llms.txt` for LLM discovery; `src/app/sitemap.ts` → `/sitemap.xml` (indexable pages only); `src/app/robots.ts` → `/robots.txt` (prod allow-all + sitemap ref, Vercel preview blocked). Sync all on content/feature changes (or run `/sh:geo-update`).
 - **Scrape Schedule**: Vercel Cron (`vercel.json`, 3개) — scrape hourly (`0 * * * *`) at `/api/scrape/cron`; Telegram watch check (`50 * * * *`) at `/api/telegram/check`; Yangju watch check (`55 * * * *`) at `/api/telegram/yangju/check`. **예외 1개**: GitHub Actions `scrape-onetheclub.yml`(`30 * * * *`)이 러너에서 onetheclub을 직접 스크레이핑 → 같은 `tee_times`에 upsert. Vercel cron도 onetheclub을 긁지만 **보고된 ~2000건 중 1~15%만 실제 기록**되는 미해결 이슈가 있어(원인 미파악), D+1~D+7 본진(파주/신라/클럽72)의 신뢰 가능한 유일한 소스가 이 러너다. 이 워크플로는 저장소에 남은 유일한 워크플로이며 **leftover 아님 — 삭제 금지**. 상세: [docs/DEPLOY_CRON_TELEGRAM.md](./docs/DEPLOY_CRON_TELEGRAM.md).
+- **Liveness**: `tee_times`는 삭제하지 않음. 빈자리는 `scraped_at >= S`(클럽·날짜별 최신 성공 스크랩). `/api/tee-times`와 텔레그램이 동일. `scrape_club_results`는 PostgREST 1000행 캡을 페이지로 넘겨야 함 — 한 번에 읽으면 S가 옛 스크랩에 고정돼 마감 슬롯이 다시 보임.
 
 ## Design System
 

@@ -60,6 +60,10 @@
 ## Session 13 (2026-07-22)
 - [WAF/Cloud IP blocking](scraper-waf-cloud-ip-blocking.md) *(updated)* — Scrapling StealthyFetcher(camoufox) bearcreek WAF 로컬 200 통과(HTTP 406), 로그인 ASP.NET WebForms postback 검증. WAF 클럽 미구현은 스크레이핑 기술 아니라 배포 IP + Python/TS 스택 분리. 검토만 종료
 
+## Session 15 (2026-08-23)
+- [Tee-time liveness invariant](teetime-liveness-invariant.md) — 웹 `/api/tee-times`도 `scraped_at >= S`. 행 삭제 없음. 8/24 저장 3359 vs 산 1058
+- [scrape_club_results 1000-row pagination](scrape-club-results-maxrows-pagination.md) — 날짜당 수천 행. 미페이지면 S가 이른 스크랩에 고정돼 마감 타임이 다시 보임 (`tee_times` 페이지와 별개)
+
 ## Session 14 (2026-08-07)
 - [Scrape cron write loss](scrape-cron-write-loss.md) ⚠️ **미해결** — `status=success` + `tee_time_count` ~2000인데 `tee_times`엔 6~332행만 기록(1~15%). `tee_time_count`는 발견량이지 기록량이 아니다. liveness invariant상 미기록 슬롯은 "마감"으로 보임
 - [Scrape scheduler attribution](scrape-scheduler-attribution.md) — 행 출처 판별은 `scraped_at`의 분: Vercel `:00~:01` 정밀 vs GitHub Actions 10~25분 드리프트. 버킷 행 수를 수집량으로 읽지 말 것, 단일 시각 표본 일반화 금지
