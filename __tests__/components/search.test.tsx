@@ -98,4 +98,17 @@ describe('SearchBar', () => {
     expect(pressedButtons[1]).toHaveTextContent('모레');
     expect(pressedButtons[2]).toHaveTextContent('글피');
   });
+
+  it('keeps each tab date on one line (no wrap at phone width)', () => {
+    render(<SearchBar />);
+
+    const pressedButtons = screen
+      .getAllByRole('button')
+      .filter((btn) => btn.hasAttribute('aria-pressed'));
+
+    for (const btn of pressedButtons) {
+      const dateSpan = btn.querySelectorAll('span')[1];
+      expect(dateSpan.className).toContain('whitespace-nowrap');
+    }
+  });
 });

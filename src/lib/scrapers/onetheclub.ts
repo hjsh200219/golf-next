@@ -87,16 +87,11 @@ export default class OneTheClubScraper extends BaseScraper {
     // Step 2: 본진 CC (selectMember가 있을 때만 호출)
     const selectMember = process.env.ONETHECLUB_MEMBER_ID || '';
     if (selectMember) {
+      // 본진 실패는 삼키지 않는다. 클럽 단위 liveness(S)라서 본진이 빠진 채 success를
+      // 보고하면 S가 앞당겨져 러너가 쓴 본진 행까지 전부 마감으로 보인다.
       for (const course of HOME_COURSES) {
-        try {
-          const courseRows = await this.scrapeHomeCourse(origin, course, selectMember);
-          rows.push(...courseRows);
-        } catch (error) {
-          console.error(
-            `[onetheclub] failed to scrape home ${course.code} (${course.name}):`,
-            error instanceof Error ? error.message : error,
-          );
-        }
+        const courseRows = await this.scrapeHomeCourse(origin, course, selectMember);
+        rows.push(...courseRows);
       }
     } else {
       console.warn(
@@ -104,17 +99,10 @@ export default class OneTheClubScraper extends BaseScraper {
       );
     }
 
-    // Step 3: 제휴 CC 9곳 (한 곳이 실패해도 다른 곳은 계속 긁는다)
+    // Step 3: 제휴 CC 9곳. 본진과 같은 이유로 실패를 삼키지 않는다.
     for (const partner of PARTNERS) {
-      try {
-        const partnerRows = await this.scrapePartner(origin, partner);
-        rows.push(...partnerRows);
-      } catch (error) {
-        console.error(
-          `[onetheclub] failed to scrape partner ${partner.code} (${partner.name}):`,
-          error instanceof Error ? error.message : error,
-        );
-      }
+      const partnerRows = await this.scrapePartner(origin, partner);
+      rows.push(...partnerRows);
     }
 
     return rows;
@@ -200,6 +188,16 @@ export default class OneTheClubScraper extends BaseScraper {
     );
     const html = await res.text();
     const $ = this.parseHtml(html);
+
+    // 회원 계정은 세션 1개만 유지된다. 여러 날짜를 동시에 로그인하면 마지막 세션만
+    // 살아남고, 밀려난 세션은 302·빈 본문 또는 골프장명이 빈 목록을 받는다.
+    // 정상 응답은 마감일이라도 "신라CC [ 마감 ]"처럼 골프장명이 찍힌다 (2026-10-17 실측).
+    const companyName = $('span.company_name').first().text().trim();
+    if (res.status !== 200 || !companyName) {
+      throw new Error(
+        `onetheclub session invalid for ${course.code} (${course.name}): status ${res.status}, empty company heading`,
+      );
+    }
 
     const rows: TeeTimeRow[] = [];
 

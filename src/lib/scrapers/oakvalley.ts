@@ -12,6 +12,45 @@ interface OakValleyResponse {
   [key: string]: unknown;
 }
 
+/** "290천원" → 290000, "9만5천" → 95000, "100,000" → 100000. */
+function parseAmount(raw: string): number | null {
+  const s = raw.replace(/[,\s원]/g, '');
+  const unit = s.match(/^(?:(\d+)만)?(?:(\d+)천)?$/);
+  if (unit && (unit[1] || unit[2])) {
+    return Number(unit[1] ?? 0) * 10000 + Number(unit[2] ?? 0) * 1000;
+  }
+  return /^\d+$/.test(s) ? Number(s) : null;
+}
+
+const AMOUNT = '([\\d,]+\\s*(?:천원|천|만(?:\\s*\\d+\\s*천)?)?)';
+
+/**
+ * ACT_GREENFEE is a sentence, not a number. Shapes seen live (2026-10-17):
+ *   성문안  "3~4인 시 290천원 / 2인 시 340천원"
+ *   월송리  "2~4인 시 100,000" | "3~4인 시 120,000 / 2인 시 140,000"
+ *   오크힐스 "18홀/월~목/선셋/17:00~17:59/9만5천"
+ * The 3~4인 (or 2~4인) figure is the headline price; the 2인 surcharge goes to event.
+ */
+export function parseOakValleyFee(raw: string): { price: number | null; event: string } {
+  const text = raw.trim();
+  if (!text) return { price: null, event: '' };
+
+  const party = text.match(new RegExp(`\\d\\s*~\\s*4인\\s*시\\s*${AMOUNT}`));
+  if (party) {
+    const price = parseAmount(party[1]);
+    const pair = text.match(new RegExp(`(?:^|/)\\s*2인\\s*시\\s*${AMOUNT}`));
+    const pairPrice = pair ? parseAmount(pair[1]) : null;
+    return {
+      price,
+      event: pairPrice != null ? `2인 시 ${pairPrice.toLocaleString('ko-KR')}원` : '',
+    };
+  }
+
+  const segments = text.split('/').map((p) => p.trim());
+  const price = parseAmount(segments[segments.length - 1]);
+  return { price, event: price != null && segments.includes('선셋') ? '선셋' : '' };
+}
+
 export default class OakValleyScraper extends BaseScraper {
   get clubId(): string {
     return 'oakvalley';
@@ -70,7 +109,9 @@ export default class OakValleyScraper extends BaseScraper {
 
       if (!teeoff) continue;
 
-      const { price, event } = this.processPrice(rawPrice, '');
+      const fee = parseOakValleyFee(rawPrice);
+      const price = fee.price ?? '';
+      const event = fee.event;
 
       rows.push({
         date: this.dateDash,

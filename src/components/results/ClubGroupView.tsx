@@ -63,14 +63,14 @@ function ClubSection({
           type="button"
           onClick={() => setIsOpen((p) => !p)}
           disabled={isEmpty}
-          className={`flex flex-1 items-center justify-between px-4 py-3.5 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-golf-primary/40 focus-visible:ring-inset min-h-[44px] ${isEmpty ? 'cursor-default' : 'cursor-pointer'}`}
+          className={`flex flex-1 min-w-0 items-center justify-between px-4 py-3.5 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-golf-primary/40 focus-visible:ring-inset min-h-[44px] ${isEmpty ? 'cursor-default' : 'cursor-pointer'}`}
           aria-expanded={isEmpty ? undefined : isOpen}
           aria-label={isEmpty ? `${clubName} 예약 가능 시간 없음` : `${clubName} ${items.length}건 ${isOpen ? '접기' : '펼치기'}`}
         >
           <div className="flex items-center gap-2 min-w-0 flex-nowrap overflow-hidden">
             <h2 className={`font-bold text-base truncate shrink min-w-0 ${isEmpty ? 'text-gray-400' : 'text-gray-900'}`}>{clubName}</h2>
             {region && (
-              <span className="shrink-0 rounded-md bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+              <span className="hidden sm:inline-block shrink-0 rounded-md bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
                 {region}
               </span>
             )}
@@ -117,10 +117,10 @@ function ClubSection({
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="shrink-0 inline-flex items-center gap-1 rounded-lg bg-golf-primary/10 px-2.5 py-1.5 text-xs font-semibold text-golf-primary hover:bg-golf-primary/20 transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-golf-primary/40 min-h-[36px]"
+            className="shrink-0 inline-flex items-center justify-center gap-1 min-w-[36px] rounded-lg bg-golf-primary/10 px-2.5 py-1.5 text-xs font-semibold text-golf-primary hover:bg-golf-primary/20 transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-golf-primary/40 min-h-[36px]"
             aria-label={`${clubName} 홈페이지 새 탭에서 열기`}
           >
-            <span>바로가기</span>
+            <span className="hidden sm:inline">바로가기</span>
             <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
             </svg>

@@ -55,7 +55,7 @@ src/
 - **PWA**: next-pwa with offline fallback, service worker auto-registration.
 - **Date Tabs**: Tomorrow-focused (not today). Golf reservations are booked 1+ days ahead.
 - **SEO/GEO**: `src/lib/schema.ts` generates JSON-LD dynamically; `public/llms.txt` for LLM discovery; `src/app/sitemap.ts` → `/sitemap.xml` (indexable pages only); `src/app/robots.ts` → `/robots.txt` (prod allow-all + sitemap ref, Vercel preview blocked). Sync all on content/feature changes (or run `/sh:geo-update`).
-- **Scrape Schedule**: Vercel Cron (`vercel.json`, 3개) — scrape hourly (`0 * * * *`) at `/api/scrape/cron`; Telegram watch check (`50 * * * *`) at `/api/telegram/check`; Yangju watch check (`55 * * * *`) at `/api/telegram/yangju/check`. **예외 1개**: GitHub Actions `scrape-onetheclub.yml`(`30 * * * *`)이 러너에서 onetheclub을 직접 스크레이핑 → 같은 `tee_times`에 upsert. Vercel cron도 onetheclub을 긁지만 **보고된 ~2000건 중 1~15%만 실제 기록**되는 미해결 이슈가 있어(원인 미파악), D+1~D+7 본진(파주/신라/클럽72)의 신뢰 가능한 유일한 소스가 이 러너다. 이 워크플로는 저장소에 남은 유일한 워크플로이며 **leftover 아님 — 삭제 금지**. 상세: [docs/DEPLOY_CRON_TELEGRAM.md](./docs/DEPLOY_CRON_TELEGRAM.md).
+- **Scrape Schedule**: Vercel Cron (`vercel.json`, 3개) — scrape hourly (`0 * * * *`) at `/api/scrape/cron`; Telegram watch check (`50 * * * *`) at `/api/telegram/check`; Yangju watch check (`55 * * * *`) at `/api/telegram/yangju/check`. **보조 1개**: GitHub Actions `scrape-onetheclub.yml`(`30 * * * *`)이 러너에서 onetheclub을 직접 스크레이핑 → 같은 `tee_times`에 upsert(백업, 삭제 금지). onetheclub 회원 계정은 **세션 1개만 유지**되므로 `/api/scrape`는 onetheclub 날짜를 직렬로 dispatch하고(`SINGLE_SESSION_CLUBS`), 스크래퍼는 본진 응답의 골프장명이 비면 실패로 끝낸다(S를 앞당기지 않음). 옛 "write-loss 1~15%"의 원인이 이 동시 로그인이었다(2026-10-17). 상세: [docs/DEPLOY_CRON_TELEGRAM.md](./docs/DEPLOY_CRON_TELEGRAM.md).
 - **Liveness**: `tee_times`는 삭제하지 않음. 빈자리는 `scraped_at >= S`(클럽·날짜별 최신 성공 스크랩). `/api/tee-times`와 텔레그램이 동일. `scrape_club_results`는 PostgREST 1000행 캡을 페이지로 넘겨야 함 — 한 번에 읽으면 S가 옛 스크랩에 고정돼 마감 슬롯이 다시 보임.
 
 ## Design System
@@ -78,7 +78,7 @@ src/
 | [docs/PLANS.md](./docs/PLANS.md) | Plans index |
 | [docs/RELIABILITY.md](./docs/RELIABILITY.md) | Reliability standards |
 | [docs/UNIMPLEMENTED_CLUBS.md](./docs/UNIMPLEMENTED_CLUBS.md) | Unimplemented club list |
-| [docs/DEPLOY_CRON_TELEGRAM.md](./docs/DEPLOY_CRON_TELEGRAM.md) | Telegram bot + Vercel cron 3개 설정; onetheclub GitHub Actions 워크플로를 유지하는 근거(측정치) + cron write-loss 미해결 이슈 |
+| [docs/DEPLOY_CRON_TELEGRAM.md](./docs/DEPLOY_CRON_TELEGRAM.md) | Telegram bot + Vercel cron 3개 설정; onetheclub 단일 세션 원인·직렬 dispatch·백업 러너 |
 | [docs/generated/db-schema.md](./docs/generated/db-schema.md) | Database schema reference |
 
 ## Common Tasks
@@ -108,8 +108,8 @@ src/
 
 - Build always fails prerendering `/login` without Supabase env vars -- expected
 - Scrapers depend on external golf club websites -- fragile by nature
-- **Vercel cron write loss (미해결)** -- `/api/scrape/cron`이 onetheclub을 `status=success` + ~2000건으로 보고하지만 `tee_times`에는 6~332행만 기록됨(1~15%). 원인 미파악. liveness invariant상 기록 안 된 슬롯은 "마감"으로 보임. D+1~D+7은 `:30` 러너가 매시 복구하지만 다른 클럽에도 같은 손실이 있는지 미확인
-- onetheclub 본진(파주/신라/클럽72) D+1~D+7은 GitHub Actions 러너(`scrape-onetheclub.yml`)에만 의존 -- 러너가 죽으면 해당 범위 본진 데이터가 사라진다
+- **단일 세션 클럽**: 동시 로그인 시 세션이 밀려나 빈 목록을 돌려주는 사이트(onetheclub)는 `src/app/api/scrape/route.ts`의 `SINGLE_SESSION_CLUBS`에 넣어 직렬 dispatch한다. 다른 클럽에 같은 증상(로그인 필요 + 날짜별 빈 결과)이 보이면 여기 추가
+- **Liveness는 클럽 단위 S**: 한 클럽 스크래퍼가 여러 cc를 긁을 때 일부 cc가 실패한 채 success를 보고하면 그 cc 행이 전부 마감으로 보인다. 하위 cc 실패는 삼키지 말고 스크랩 전체를 실패시킬 것
 - Weather cache expires based on `weather_cache.expires_at` -- stale data possible if cron misses
 
 > Be concise. No filler. Straight to the point. Use fewer words.

@@ -5,6 +5,15 @@ import { createLogger } from '@/lib/logger';
 
 const log = createLogger('scrape');
 
+// Clubs whose login allows a single live session. Concurrent per-date scrapes
+// kick each other out (onetheclub, measured 2026-10-17: 7 parallel dates → 6
+// returned blank 본진 lists), so their dates are dispatched one at a time.
+const SINGLE_SESSION_CLUBS = new Set(['onetheclub']);
+
+// Serial chain: up to 14 dates × ~25s of onetheclub scraping must outlive the
+// response, so give waitUntil room beyond the platform default.
+export const maxDuration = 800;
+
 function validateApiKey(request: NextRequest): boolean {
   const headerKey = request.headers.get('x-api-key');
   const envKey = process.env.SCRAPE_API_KEY;
@@ -76,9 +85,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const baseUrl = process.env.APP_URL ?? 'http://localhost:3000';
+    const triggerClub = (jobId: number, clubId: string, date: string) =>
+      fetch(`${baseUrl}/api/scrape/club`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': process.env.SCRAPE_API_KEY ?? '',
+        },
+        body: JSON.stringify({ jobId, clubId, date }),
+      }).catch((err) => {
+        log.error(`Failed to trigger scraper for club ${clubId}, date ${date}`, { error: err instanceof Error ? err.message : String(err) });
+      });
+
     // Create a scrape_job record for each date
     const jobIds: number[] = [];
     const pendingFetches: Promise<unknown>[] = [];
+    const serialQueue: { jobId: number; clubId: string; date: string }[] = [];
 
     for (const date of validDates) {
       const { data: job, error: jobError } = await supabase
@@ -124,25 +147,12 @@ export async function POST(request: NextRequest) {
       // Dispatch all club scrapes. Don't await responses — each
       // /api/scrape/club runs as its own serverless function on Vercel.
       // We collect the promises so they stay referenced in the event loop.
-      const baseUrl = process.env.APP_URL ?? 'http://localhost:3000';
-
       for (const club of clubs) {
-        pendingFetches.push(
-          fetch(`${baseUrl}/api/scrape/club`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-api-key': process.env.SCRAPE_API_KEY ?? '',
-            },
-            body: JSON.stringify({
-              jobId: job.id,
-              clubId: club.id,
-              date,
-            }),
-          }).catch((err) => {
-            log.error(`Failed to trigger scraper for club ${club.id}, date ${date}`, { error: err instanceof Error ? err.message : String(err) });
-          })
-        );
+        if (SINGLE_SESSION_CLUBS.has(club.id)) {
+          serialQueue.push({ jobId: job.id, clubId: club.id, date });
+        } else {
+          pendingFetches.push(triggerClub(job.id, club.id, date));
+        }
       }
 
       // Update job status to running
@@ -151,6 +161,15 @@ export async function POST(request: NextRequest) {
         .update({ status: 'running' })
         .eq('id', job.id);
     }
+
+    // /api/scrape/club responds only after its scrape finishes, so awaiting
+    // each trigger serialises the logins. triggerClub never rejects.
+    pendingFetches.push(
+      serialQueue.reduce<Promise<unknown>>(
+        (prev, t) => prev.then(() => triggerClub(t.jobId, t.clubId, t.date)),
+        Promise.resolve(),
+      ),
+    );
 
     // Keep the function alive until the trigger fetches flush WITHOUT blocking
     // the response on them. Each /api/scrape/club runs as its own serverless

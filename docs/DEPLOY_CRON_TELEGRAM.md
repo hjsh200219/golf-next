@@ -20,42 +20,21 @@ Apply `supabase/migrations/011_telegram_watches.sql` to the Supabase project (ta
 
 **Do not re-add it.** If Vercel cron ever stops firing, fix the Vercel cron (check plan tier + `CRON_SECRET`) rather than restoring a second trigger — two triggers double-scrape every club.
 
-## 4. onetheclub — keep on GitHub Actions (DECIDED: do NOT migrate)
-`scrape-onetheclub.yml` scrapes onetheclub 본진 CCs (파주/신라/클럽72 4개 코스) directly on the GitHub runner and upserts to the SAME `tee_times` table. It is the only reliable source of D+1~D+7 본진 rows, so it stays on the runner.
+## 4. onetheclub — single-session member account (resolved 2026-10-17)
+`scrape-onetheclub.yml` scrapes onetheclub (본진 파주/신라/클럽72 + 제휴) on the GitHub runner at `:30` and upserts to the SAME `tee_times` table. Since 2026-10-17 it is a backup; Vercel cron is the primary source again.
 
-> **Correction (2026-08-07).** An earlier revision of this section claimed "the Vercel lambda gets near-empty 본진 responses." That is **not** what the data shows — it was generalized from one unlucky hour. The Vercel lambda *does* retrieve 본진: the `21:01` run wrote 329 본진 rows. The real split is by date range, not by 본진/제휴.
->
-> `club_id=onetheclub` rows actually written to `tee_times`, by run:
->
-> | run | source | range | rows | 본진 |
-> |---|---|---|---|---|
-> | `20:01` | Vercel | D+1~D+7 | 6 | 6 |
-> | `21:01` | Vercel | D+8~D+14 | 332 | 329 |
-> | `22:01` | Vercel | D+1~D+7 | 30 | 26 |
-> | `23:01` | Vercel | D+8~D+14 | 1000+ | 103 |
-> | `00:01` | Vercel | D+1~D+7 | 14 | 10 |
-> | `00:20` | GitHub runner | D+1~D+7 | 1000+ | 418 |
->
-> Note: 듄스 is NOT an onetheclub 본진 CC (earlier drafts listed it). The two 듄스 courses in `tee_times` are `laviebell` (라비에벨CC 듄스) and `orangedunesyj` (오렌지듄스영종GC) — separate scrapers, both covered by Vercel cron.
+### Root cause of the old "write-loss" (1–15% of rows)
+It was never a write problem. The onetheclub **member account keeps one live session**. `/api/scrape` fanned out one `/api/scrape/club` function per date, so 7 functions logged in with the same account at once; each login kicked the previous session. Kicked sessions get a 본진 time list with a **blank company heading** (`span.company_name` empty), a `302`, or an empty body — parsed as "no slots". The scraper swallowed per-course errors and still reported `success` with partner rows only, so `scrape_club_results.scraped_at` (S) advanced and the liveness filter hid every 본진 row written earlier (including the runner's). Measured 2026-10-17: 7 parallel dates → 6 kicked; same dates run sequentially → all fine (신라CC 10-18: site 39 open, prod showed 0).
 
-### ⚠️ Open issue — Vercel cron reports success but writes ~1–15% of rows
+### Fix
+- `src/lib/scrapers/onetheclub.ts`: a 본진 response with a non-200 status or blank company heading throws `onetheclub session invalid …`; 본진 errors are no longer swallowed, so the whole scrape fails and S does not advance. A genuinely closed day still carries the heading (`신라CC [ 마감 ]`) and stays a success.
+- `src/app/api/scrape/route.ts`: `SINGLE_SESSION_CLUBS = {onetheclub}` dates are dispatched one after another inside `waitUntil` (`maxDuration = 800`, project has fluid compute on; ~25s/date × 7). Other clubs still fan out in parallel.
 
-Every Vercel `/api/scrape/cron` run records onetheclub as `status=success` with ~2000 tee times found, yet only a fraction reach `tee_times`:
+### Runner
+- **Keep `.github/workflows/scrape-onetheclub.yml`** as a backup (GitHub drops many scheduled runs — observed gaps of 2–5h, so it cannot be the primary). It does not write `scrape_club_results`, so its rows only show while they are newer than the last Vercel S. If a runner run overlaps the Vercel chain, the kicked side now fails loudly instead of writing empty 본진 data.
+- `ONETHECLUB_MEMBER_ID` is set in **both** GitHub Actions secrets and Vercel Production env (checked `vercel env ls production`, 2026-10-17).
 
-| run | `scrape_club_results` 합계 | rows in `tee_times` |
-|---|---|---|
-| `20:01` | 1964 | 6 |
-| `21:01` | 2121 | 332 |
-| `22:01` | 2107 | 30 |
-| `00:01` | 2060 | 14 |
-
-Mechanism unknown — candidates: upsert batch dropped (`ON CONFLICT DO UPDATE cannot affect row a second time` on in-batch duplicates), the 60s `maxDuration` on `/api/scrape/cron` cutting the write short, or `waitUntil` dispatch being killed. **This matters for the liveness invariant**: a row is treated as open only while `scraped_at >= latest successful scrape`, so rows the scraper saw but failed to write look *closed*. For D+1~D+7 the `:30` runner repairs this every hour, which is why 본진 still works in practice. Not investigated — see HANDOFF.
-
-**Why the runner stays regardless:** the Telegram bot and the watch-check cron only READ `tee_times` — they don't care which job produced a row. The runner reliably lands full D+1~D+7 본진 data (1000+ rows/run), and D+1~D+7 is the range users actually book.
-
-- **KEEP `.github/workflows/scrape-onetheclub.yml`.** Do not delete it, do not migrate onetheclub to Vercel — not until the write-loss issue above is understood. It is the one intentional workflow in the repo, not a leftover.
-- `ONETHECLUB_MEMBER_ID` lives only as a GitHub Actions secret (the runner injects it). No Vercel env entry needed.
-- "Vercel cron 통합" therefore means migrating ONLY `scrape-cron.yml` (the endpoint-trigger cron, §3). onetheclub is the one intentional exception.
+> Note: 듄스 is NOT an onetheclub 본진 CC. The two 듄스 courses in `tee_times` are `laviebell` (라비에벨CC 듄스) and `orangedunesyj` (오렌지듄스영종GC) — separate scrapers, both covered by Vercel cron. (`J5A 듄스` in onetheclub has only ever returned `[ 오픈전 ]`.)
 
 ## 5. Telegram webhook (one-time)
 After deploy + `TELEGRAM_WEBHOOK_SECRET` set:

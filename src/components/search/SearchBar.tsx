@@ -53,7 +53,7 @@ export default function SearchBar({ onSearch }: SearchBarProps) {
               onClick={() => selectDate(date)}
               aria-pressed={isSelected}
               className={[
-                'flex flex-col items-center px-4 sm:px-5 py-2.5 rounded-xl text-sm spring-hover',
+                'flex flex-1 sm:flex-none flex-col items-center px-2 sm:px-5 py-2.5 rounded-xl text-sm spring-hover',
                 'focus:outline-none focus-visible:ring-2 focus-visible:ring-golf-primary/40',
                 isSelected
                   ? 'bg-golf-primary text-white shadow-btn'
@@ -62,7 +62,7 @@ export default function SearchBar({ onSearch }: SearchBarProps) {
             >
               <span className="font-semibold leading-tight">{DAY_LABELS[index]}</span>
               <span className={[
-                'text-xs mt-0.5 tabular-nums',
+                'text-xs mt-0.5 tabular-nums whitespace-nowrap',
                 isSelected ? 'text-white/70' : 'text-gray-400',
               ].join(' ')}>
                 {formatDateKorean(date)}
@@ -75,7 +75,7 @@ export default function SearchBar({ onSearch }: SearchBarProps) {
         <button
           onClick={() => setShowDatePicker(!showDatePicker)}
           className={[
-            'flex flex-col items-center justify-center px-3 sm:px-4 py-2.5 rounded-xl text-sm spring-hover',
+            'flex shrink-0 flex-col items-center justify-center px-3 sm:px-4 py-2.5 rounded-xl text-sm spring-hover',
             'focus:outline-none focus-visible:ring-2 focus-visible:ring-golf-primary/40',
             !isQuickDate
               ? 'bg-golf-primary text-white shadow-btn'
@@ -87,7 +87,7 @@ export default function SearchBar({ onSearch }: SearchBarProps) {
             <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
           {!isQuickDate && (
-            <span className="text-xs mt-0.5 tabular-nums">{formatDateKorean(selectedDate)}</span>
+            <span className="text-xs mt-0.5 tabular-nums whitespace-nowrap">{formatDateKorean(selectedDate)}</span>
           )}
         </button>
 

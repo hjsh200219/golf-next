@@ -133,6 +133,20 @@ describe('ClubGroupView 바로가기', () => {
     expect(link).toHaveAttribute('href', 'https://lavieestbellegolfnresort.com');
     expect(link.getAttribute('href')).not.toContain('real_timelist_ajax_list');
   });
+
+  it('header toggle can shrink so a long club name never pushes 바로가기 off-screen', () => {
+    render(
+      <ClubGroupView
+        data={[makeTeeTime({ club_id: 'laviebell', cc_name: '골프존카운티 안성H' })]}
+        emptyClubs={[]}
+      />,
+    );
+
+    const link = screen.getByRole('link', { name: /홈페이지 새 탭에서 열기/ });
+    const toggle = link.parentElement!.querySelector('button')!;
+    // flex-1 alone keeps min-width:auto → the row overflows at phone width.
+    expect(toggle.className).toContain('min-w-0');
+  });
 });
 
 describe('ClubGroupView lazy section rendering', () => {
