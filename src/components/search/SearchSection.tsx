@@ -144,9 +144,9 @@ export default function SearchSection() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center gap-3">
-        <SearchBar onSearch={handleRefresh} />
-        <ResultSummary count={teeTimes.length} scrapedAt={scrapedAt} isLoading={isLoading} />
+      <SearchBar onSearch={handleRefresh} />
+
+      <div className="flex">
         <div className="flex rounded-lg ring-1 ring-gray-200 overflow-hidden">
           <button
             type="button"
@@ -173,11 +173,15 @@ export default function SearchSection() {
         </div>
       </div>
 
-      <FilterPanel
-        favoritesOnly={favoritesOnly}
-        onToggleFavoritesOnly={() => setFavoritesOnly((p) => !p)}
-        hasFavorites={favoriteIds.length > 0}
-      />
+      {/* 건수 · 수집 시각 · 필터를 한 줄에 둔다. 필터 본문은 줄바꿈되어 아래 전체 너비로 펼쳐진다 */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <ResultSummary count={teeTimes.length} scrapedAt={scrapedAt} isLoading={isLoading} />
+        <FilterPanel
+          favoritesOnly={favoritesOnly}
+          onToggleFavoritesOnly={() => setFavoritesOnly((p) => !p)}
+          hasFavorites={favoriteIds.length > 0}
+        />
+      </div>
 
       {scrapeProgress && (
         <div className="flex items-center gap-2 rounded-xl bg-golf-surface px-4 py-3 text-sm animate-fade-up text-golf-primary ring-1 ring-golf-primary/10">

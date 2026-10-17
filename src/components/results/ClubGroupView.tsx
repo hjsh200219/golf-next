@@ -141,18 +141,21 @@ function ClubSection({
                   className="px-4 py-3 active:bg-gray-50 transition-colors motion-safe:animate-fade-up"
                   style={staggerDelay ? { animationDelay: staggerDelay } : undefined}
                 >
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2.5">
-                      <span className="inline-flex items-center justify-center rounded-lg bg-golf-primary/10 px-2.5 py-1 font-mono text-golf-primary font-bold tabular-nums text-[15px]">
-                        {formatTime(tt.teeoff)}
-                      </span>
-                      {tt.course && (
-                        <span className="rounded-md bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-600">
+                  {/* 시간 · 티 · 금액을 고정 열로 둬 모든 골프장에서 티·금액이 같은 세로선에 선다 */}
+                  <div className="grid grid-cols-[5rem_4.5rem_minmax(0,1fr)] items-center gap-3">
+                    <span className="justify-self-start inline-flex items-center justify-center rounded-lg bg-golf-primary/10 px-2.5 py-1 font-mono text-golf-primary font-bold tabular-nums text-[15px]">
+                      {formatTime(tt.teeoff)}
+                    </span>
+                    <span className="min-w-0 justify-self-start">
+                      {tt.course ? (
+                        <span className="block max-w-full truncate rounded-md bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-600">
                           {tt.course}
                         </span>
+                      ) : (
+                        <span className="text-gray-300 text-[11px]">-</span>
                       )}
-                    </div>
-                    <span className="font-semibold text-gray-900 tabular-nums text-sm">
+                    </span>
+                    <span className="justify-self-end text-right font-semibold text-gray-900 tabular-nums text-sm">
                       {formatPrice(tt.price)}
                     </span>
                   </div>
@@ -177,12 +180,19 @@ function ClubSection({
 
           {/* Desktop table */}
           <div className="hidden md:block">
-            <table className="w-full text-sm">
+            {/* table-fixed + 고정 colgroup: 골프장마다 열 너비가 같아 가격 열이 세로로 맞는다 */}
+            <table className="w-full table-fixed text-sm">
+              <colgroup>
+                <col className="w-20" />
+                <col className="w-40" />
+                <col className="w-32" />
+                <col />
+              </colgroup>
               <thead>
                 <tr className="border-t border-gray-100 bg-gray-50/60">
-                  <th className="px-4 py-2 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-400 w-20">시간</th>
+                  <th className="px-4 py-2 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-400">시간</th>
                   <th className="px-4 py-2 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-400">코스</th>
-                  <th className="px-4 py-2 text-right text-[11px] font-semibold uppercase tracking-wider text-gray-400 w-28">가격</th>
+                  <th className="px-4 py-2 text-right text-[11px] font-semibold uppercase tracking-wider text-gray-400">가격</th>
                   <th className="px-4 py-2 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-400">비고</th>
                 </tr>
               </thead>

@@ -43,8 +43,8 @@ export default function SearchBar({ onSearch }: SearchBarProps) {
   }, [router, pathname, searchParams, dates, onSearch]);
 
   return (
-    <div className="animate-fade-up flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-      <div className="relative flex rounded-2xl bg-white p-1 shadow-card stagger-children">
+    <div className="animate-fade-up flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+      <div className="relative flex w-full min-w-0 rounded-2xl bg-white p-1 shadow-card stagger-children sm:flex-1">
         {dates.map((date, index) => {
           const isSelected = date === selectedDate;
           return (
@@ -53,7 +53,7 @@ export default function SearchBar({ onSearch }: SearchBarProps) {
               onClick={() => selectDate(date)}
               aria-pressed={isSelected}
               className={[
-                'flex flex-1 sm:flex-none flex-col items-center px-2 sm:px-5 py-2.5 rounded-xl text-sm spring-hover',
+                'flex flex-1 flex-col items-center px-2 sm:px-5 py-2.5 rounded-xl text-sm spring-hover',
                 'focus:outline-none focus-visible:ring-2 focus-visible:ring-golf-primary/40',
                 isSelected
                   ? 'bg-golf-primary text-white shadow-btn'
@@ -110,7 +110,7 @@ export default function SearchBar({ onSearch }: SearchBarProps) {
       {/* Search Button */}
       <button
         onClick={handleSearch}
-        className="flex items-center justify-center gap-1.5 rounded-xl bg-golf-primary px-5 py-2.5 text-sm font-semibold text-white shadow-btn spring-hover hover:shadow-btn-hover hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-golf-primary/40 focus-visible:ring-offset-2"
+        className="flex shrink-0 items-center justify-center gap-1.5 rounded-xl bg-golf-primary px-5 py-2.5 text-sm font-semibold text-white shadow-btn spring-hover hover:shadow-btn-hover hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-golf-primary/40 focus-visible:ring-offset-2"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"

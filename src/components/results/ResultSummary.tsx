@@ -29,15 +29,15 @@ export default function ResultSummary({
   }
 
   return (
-    <div className="animate-fade-up flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-      <span className="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 font-medium text-gray-700 shadow-card ring-1 ring-gray-100">
+    <div className="animate-fade-up flex min-w-0 flex-1 items-center gap-x-3 text-sm">
+      <span className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-white px-3 py-2.5 font-medium text-gray-700 shadow-card ring-1 ring-gray-100">
         <span className="tabular-nums text-golf-primary font-semibold">
           {count.toLocaleString('ko-KR')}
         </span>
         <span className="text-gray-400">건</span>
       </span>
       {scrapedAt && (
-        <span className="text-xs text-gray-400 tabular-nums">
+        <span className="min-w-0 truncate text-xs text-gray-400 tabular-nums">
           {formatScrapedAt(scrapedAt)} 수집
         </span>
       )}
