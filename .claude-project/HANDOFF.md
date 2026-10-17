@@ -1,51 +1,44 @@
 ---
-created: 2026-08-23T03:20:00+09:00
+created: 2026-10-17T16:35:00+09:00
 project: golf-next
-summary: 바로가기는 origin 홈, 웹 tee-times는 전 클럽 liveness(S) 필터. scrape_club_results 1000행 페이지. 2725f82 main push.
+summary: onetheclub 단일 세션 충돌(옛 write-loss) 해결·직렬 dispatch, 오크밸리 문장형 그린피 파서, 모바일 날짜·바로가기 줄바꿈. 7ca4530 운영 배포·확인 완료.
 ---
 
 ## Session Digest
 
-라비에벨 올드가 마감 타임을 그대로 보여 주고, 바로가기가 스크래퍼 AJAX 경로로 열리는 문제를 고쳤다. `/api/tee-times`는 텔레그램과 같이 `scraped_at >= S`로 전 클럽을 거르고, `scrape_club_results`는 PostgREST 1000행 상한을 페이지로 넘긴다. 테스트 611, lint/tsc/build 통과. `2725f82`를 `main`에 push했다.
+신라CC가 내일(10-18) 사이트 39건인데 운영 0건이던 원인은 onetheclub 회원 계정 단일 세션이었다. 날짜별 `/api/scrape/club`이 동시에 로그인해 서로 밀어내고, 밀린 쪽이 본진 빈 목록으로 success를 기록해 S가 앞당겨졌다(옛 "write-loss 1~15%"의 정체). 직렬 dispatch + 빈 헤더 응답 실패 처리로 고쳤다. 성문안 「3원」은 `3~4인 시 290천원 / 2인 시 340천원`을 parseInt한 결과 — `parseOakValleyFee` 추가. 날짜 탭 2줄·바로가기 화면 밖 밀림도 수정.
 
 ## Progress
 
 **완료**
-- 바로가기 = `golf_clubs.origin` 홈페이지. `reservation_path` AJAX는 UI 링크에 쓰지 않음
-- `/api/tee-times` liveness 필터 전 클럽 공통 (`scraped_at >= S`)
-- `scrape_club_results` 1000행 캡을 `.range()` 페이지 순회로 돌파
-- tests 611, lint/tsc/build 통과
-- 커밋·푸시 `2725f82`
-
-**미완료**
-- `2725f82` Vercel prod 배포 이 세션에서 미확인
-- scrape cron write-loss 미해결 (onetheclub 1–15%)
-- WAF 클럽 / residential proxy 결정 대기
+- `onetheclub.ts`: `span.company_name` 비거나 non-200이면 throw, 본진·제휴 오류 삼킴 제거
+- `/api/scrape`: `SINGLE_SESSION_CLUBS={onetheclub}` 날짜 직렬 dispatch, `maxDuration=800`(fluid on)
+- `oakvalley.ts`: `parseOakValleyFee` (천원·만천·원 단위, 2인 가격은 event, 선셋)
+- `SearchBar` 날짜 nowrap·flex-1, `ClubGroupView` 헤더 min-w-0 + 모바일에서 지역 배지·「바로가기」 글자 숨김
+- 테스트 626 통과, tsc/lint/build 통과, `7ca4530` push → Vercel READY
+- 운영 확인(16:27 KST 수동 수집 job 33648~33651): onetheclub 날짜별 duration 1.6~2.4s 순차, 10-18 신라 39·10-21 신라 11, 오크밸리 1만 미만 0건, 360/390px 날짜 1줄·넘침 0
 
 ## Next Steps
 
-1. 배포 후 `golfshin.vercel.app`에서 라비에벨 올드 내일이 실사이트와 같은 타임 수인지 확인
-2. write-loss 조사 (이전 HANDOFF: upsert 배치 드롭 / `maxDuration=60` / `waitUntil` kill)
+1. 며칠 뒤 `scrape_club_results`에서 onetheclub `session invalid` 실패 비율 확인 (러너 `:30`과 겹치면 생길 수 있음)
+2. 다른 로그인 클럽에 같은 단일 세션 증상이 있는지 (날짜별 빈 결과) 점검 → 있으면 `SINGLE_SESSION_CLUBS`에 추가
 
 ## Blockers
 
-- write-loss는 Vercel 함수 로그가 실시간 스트림만이라 재현 관측 또는 계측 추가 필요
-- residential proxy 예산·스택 결정 대기 (WAF 클럽)
+- 없음
 
 ## Watch Out
 
-- `tee_times`는 절대 삭제하지 않는다. 웹도 S 필터를 써야 한다
-- `scrape_club_results`도 1000행 캡. 단일 select면 S가 이른 스크랩에 고정되고 마감 타임이 다시 산다
-- `CLAUDE.md`는 `AGENTS.md` 심볼릭 링크 — 편집·staging은 `AGENTS.md`
-- 이번 `main` push는 Vercel 프로덕션 배포를 트리거한다. `deploy/prod` 슬롯 swap은 별도 지시 없이 하지 말 것
-- `scrape_club_results.tee_time_count`는 발견 건수이지 기록 건수가 아니다
-- `.github/workflows/scrape-onetheclub.yml` leftover 아님 — 삭제 금지
+- Liveness는 클럽 단위 S. 하위 cc 실패를 삼키고 success를 내면 그 cc 행 전부 마감으로 보인다
+- 10-19·10-20 신라CC는 사이트에서 실제 `[ 마감 ]` — 버그 아님
+- 레이캐슬 가격 null은 사이트에 가격 표기가 없어서 정상
+- 모바일에서 지역 배지를 숨겼다 (sm 이상에서만 표시)
+- `.github/workflows/scrape-onetheclub.yml`은 백업 러너 — 삭제 금지
+- `CLAUDE.md`는 `AGENTS.md` 심볼릭 링크
 
 ## Files Touched
 
-- `src/lib/utils/clubLink.ts`, `__tests__/lib/utils/clubLink.test.ts`
-- `src/components/results/ClubGroupView.tsx`, `__tests__/components/club-group-view.test.tsx`
-- `src/lib/utils/liveness.ts`, `__tests__/lib/utils/liveness.test.ts`
-- `src/app/api/tee-times/route.ts`, `__tests__/api/tee-times.test.ts`
-- `ARCHITECTURE.md`, `AGENTS.md`
-- `.claude-project/` (pack)
+- `src/lib/scrapers/onetheclub.ts`, `src/lib/scrapers/oakvalley.ts`, `src/app/api/scrape/route.ts`
+- `src/components/search/SearchBar.tsx`, `src/components/results/ClubGroupView.tsx`
+- `__tests__/lib/scrapers/{onetheclub,oakvalley}.test.ts`, `__tests__/api/scrape-dispatch-serial.test.ts`, `__tests__/components/{search,club-group-view}.test.tsx`
+- `AGENTS.md`, `docs/DEPLOY_CRON_TELEGRAM.md`, `.github/workflows/scrape-onetheclub.yml`
