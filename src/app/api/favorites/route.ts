@@ -7,7 +7,7 @@ const log = createLogger('favorites');
 // GET /api/favorites — list the authenticated user's favorite clubs
 export async function GET() {
   try {
-    const supabase = createServerSupabaseClient();
+    const supabase = await createServerSupabaseClient();
 
     const {
       data: { user },
@@ -45,7 +45,7 @@ export async function GET() {
 // POST /api/favorites — add a club to favorites
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createServerSupabaseClient();
+    const supabase = await createServerSupabaseClient();
 
     const {
       data: { user },
@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
 // DELETE /api/favorites — remove a club from favorites
 export async function DELETE(request: NextRequest) {
   try {
-    const supabase = createServerSupabaseClient();
+    const supabase = await createServerSupabaseClient();
 
     const {
       data: { user },

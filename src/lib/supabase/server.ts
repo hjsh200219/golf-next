@@ -14,8 +14,8 @@ import type { Database } from '@/lib/types/database';
  */
 type TypedClient = SupabaseClient<Database>;
 
-export function createServerSupabaseClient(): TypedClient {
-  const cookieStore = cookies();
+export async function createServerSupabaseClient(): Promise<TypedClient> {
+  const cookieStore = await cookies();
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,

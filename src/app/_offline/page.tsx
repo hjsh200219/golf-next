@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 
 export const metadata: Metadata = {
   title: '오프라인 | GolfShin',
@@ -12,12 +13,12 @@ export default function OfflinePage() {
       <p className="mb-6 text-gray-600">
         인터넷 연결을 확인하고 다시 시도해주세요.
       </p>
-      <a
+      <Link
         href="/"
         className="rounded-lg bg-green-600 px-6 py-3 font-medium text-white transition-colors hover:bg-green-700"
       >
         홈으로 돌아가기
-      </a>
+      </Link>
     </div>
   );
 }
