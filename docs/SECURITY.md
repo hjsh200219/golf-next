@@ -69,3 +69,10 @@ All other routes: Supabase session refresh + auth code redirect
 - Cookie jars are per-request (not shared between scrapers)
 - User-Agent spoofing is intentional (mimics Chrome browser)
 - Rate limiting: scrape cron runs on schedule, not user-triggered
+
+## Dependency security overrides (2026-10-27)
+
+- `rollup-plugin-terser > serialize-javascript` is pinned to `7.1.4` because Workbox 6 still requests vulnerable version 4. The CommonJS `serialize(value, options)` interface used by its worker is retained. Version 5 changes sparse-array output, version 6 adds URL support, and version 7 requires Node 20+; our worker inputs are ordinary option objects/functions/regular expressions and the deployment runtimes are Node 22/24. Validate worker serialization and the generated service worker when changing this override. [Upstream releases](https://github.com/yahoo/serialize-javascript/releases).
+- `postcss` follows the direct dependency floor `^8.5.32`, including Next.js's older pinned copy, to fix source-map file disclosure.
+- `@vercel/cli-config > zod` uses `^4.6.6` instead of its vulnerable fixed `4.1.11`; this stays within Zod 4.
+- Keep the existing `sharp` override so Next.js image processing resolves a patched version.

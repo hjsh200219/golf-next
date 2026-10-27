@@ -55,7 +55,7 @@
     "knip": "^6.16.0",
     "lint-staged": "^16.4.0",
     "msw": "^2.3.0",
-    "postcss": "^8.4.0",
+    "postcss": "^8.5.32",
     "tailwindcss": "^3.4.0",
     "typescript": "^5.5.0",
     "vitest": "^2.0.0"
@@ -69,6 +69,13 @@
     ]
   },
   "overrides": {
-    "sharp": "^0.35.5"
+    "sharp": "^0.35.5",
+    "rollup-plugin-terser": {
+      "serialize-javascript": "7.1.4"
+    },
+    "postcss": "$postcss",
+    "@vercel/cli-config": {
+      "zod": "^4.6.6"
+    }
   }
 }
