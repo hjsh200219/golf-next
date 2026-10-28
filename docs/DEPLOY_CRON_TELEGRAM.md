@@ -32,6 +32,7 @@ It was never a write problem. The onetheclub **member account keeps one live ses
 
 ### Runner
 - **Keep `.github/workflows/scrape-onetheclub.yml`** as a backup (GitHub drops many scheduled runs — observed gaps of 2–5h, so it cannot be the primary). It does not write `scrape_club_results`, so its rows only show while they are newer than the last Vercel S. If a runner run overlaps the Vercel chain, the kicked side now fails loudly instead of writing empty 본진 data.
+- GitHub delays the `:30` schedule (run `40647118121` started 06:58 UTC; its 07:00:57 date was kicked by the Vercel chain, which runs :00:48–:01:39 UTC per `scrape_club_results` 2026-10-26~28). Since 2026-10-28 the runner (`src/lib/scrapers/onetheclub-runner.ts`) does not start a date between :59:20 and :02:30 UTC, and retries a `session invalid` date once with a fresh login after 60s. A second kick still fails the run.
 - `ONETHECLUB_MEMBER_ID` is set in **both** GitHub Actions secrets and Vercel Production env (checked `vercel env ls production`, 2026-10-17).
 
 > Note: 듄스 is NOT an onetheclub 본진 CC. The two 듄스 courses in `tee_times` are `laviebell` (라비에벨CC 듄스) and `orangedunesyj` (오렌지듄스영종GC) — separate scrapers, both covered by Vercel cron. (`J5A 듄스` in onetheclub has only ever returned `[ 오픈전 ]`.)

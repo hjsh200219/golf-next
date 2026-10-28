@@ -20,7 +20,7 @@ summary: onetheclub 단일 세션 충돌(옛 write-loss) 해결·직렬 dispatch
 
 ## Next Steps
 
-1. 며칠 뒤 `scrape_club_results`에서 onetheclub `session invalid` 실패 비율 확인 (러너 `:30`과 겹치면 생길 수 있음)
+1. ~~onetheclub `session invalid` 실패 비율 확인~~ — 2026-10-28 확인: Vercel 쪽 10-26~28 실패 0, 러너가 지연 실행(06:58Z)으로 Vercel :00 체인에 밀린 1건(run 40647118121). 러너가 :59:20~:02:30 UTC 를 피하고 밀리면 1회 재시도하도록 수정(`onetheclub-runner.ts`)
 2. 다른 로그인 클럽에 같은 단일 세션 증상이 있는지 (날짜별 빈 결과) 점검 → 있으면 `SINGLE_SESSION_CLUBS`에 추가
 
 ## Blockers

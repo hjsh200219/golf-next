@@ -28,7 +28,7 @@ on:
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20  # Vercel :00 창 대기(최대 ~3분)·세션 밀림 재시도 여유
     steps:
       - uses: actions/checkout@v5
 

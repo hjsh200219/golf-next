@@ -17,6 +17,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import OneTheClubScraper from '../src/lib/scrapers/onetheclub';
+import { runDateAvoidingVercel } from '../src/lib/scrapers/onetheclub-runner';
 import type { LoginCredentials } from '../src/lib/scrapers/base';
 
 interface Args {
@@ -89,9 +90,12 @@ async function main() {
   const failedDates: string[] = [];
 
   for (const date of dates) {
-    const scraper = new OneTheClubScraper(date, credentials);
-    const start = Date.now();
-    const result = await scraper.run();
+    // 시도마다 새 인스턴스 = 새 쿠키 jar·새 로그인. Vercel cron 과의 세션 충돌 회피는 onetheclub-runner.ts.
+    let start = Date.now();
+    const result = await runDateAvoidingVercel(() => {
+      start = Date.now();
+      return new OneTheClubScraper(date, credentials).run();
+    });
     const durationMs = Date.now() - start;
 
     if (!result.success) {
