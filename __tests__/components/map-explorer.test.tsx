@@ -102,6 +102,16 @@ describe('MapExplorer', () => {
     expect(container.firstElementChild?.className).toContain('overflow-clip');
   });
 
+  it('hides the sheet on wide screens while the screen size is unknown (SSR/hydration)', () => {
+    renderExplorer({ hideSheetOnWide: true });
+    expect(screen.getByRole('region', { name: '예약 조회 시트' }).className).toContain('md:hidden');
+  });
+
+  it('keeps the sheet visible once the screen is known to be narrow', () => {
+    renderExplorer();
+    expect(screen.getByRole('region', { name: '예약 조회 시트' }).className).not.toContain('md:hidden');
+  });
+
   it('does not mount the map until the screen size is known', () => {
     renderExplorer({ mapEnabled: false });
     expect(screen.queryByTestId('map')).not.toBeInTheDocument();

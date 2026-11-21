@@ -174,6 +174,7 @@ export default function SearchSection() {
       >
         <MapExplorer
           layout={isDesktop ? 'split' : 'sheet'}
+          hideSheetOnWide={isDesktop === null}
           mapEnabled={mapLive}
           spots={spots}
           emptyClubs={emptyClubs}

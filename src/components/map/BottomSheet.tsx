@@ -13,6 +13,8 @@ interface BottomSheetProps {
   onPeekHeight?: (px: number) => void;
   /** Reports the height the sheet covers (capped at half) so the map can center a pin above it */
   onVisibleHeight?: (px: number) => void;
+  /** Extra classes on the sheet root (e.g. hide on wide screens before the width is known) */
+  className?: string;
 }
 
 const NEXT: Record<SheetSnap, SheetSnap> = { peek: 'half', half: 'full', full: 'peek' };
@@ -26,7 +28,7 @@ const useIsoLayoutEffect = typeof window === 'undefined' ? useEffect : useLayout
  * (handle + header) to resize; the handle button cycles sizes for keyboard and
  * screen-reader users. Body scrolls inside the visible height only.
  */
-export default function BottomSheet({ snap, onSnapChange, header, children, onPeekHeight, onVisibleHeight }: BottomSheetProps) {
+export default function BottomSheet({ snap, onSnapChange, header, children, onPeekHeight, onVisibleHeight, className }: BottomSheetProps) {
   const sheetRef = useRef<HTMLDivElement>(null);
   const topRef = useRef<HTMLDivElement>(null);
   const [containerH, setContainerH] = useState(0);
@@ -103,6 +105,7 @@ export default function BottomSheet({ snap, onSnapChange, header, children, onPe
         'absolute inset-x-0 bottom-0 z-20 flex h-full flex-col rounded-t-3xl bg-white',
         'shadow-[0_-8px_32px_rgba(15,23,42,0.14)] ring-1 ring-black/5',
         dragVisible == null ? 'motion-safe:transition-transform motion-safe:duration-300 motion-safe:ease-[cubic-bezier(0.16,1,0.3,1)]' : '',
+        className ?? '',
       ].join(' ')}
       style={{ transform: `translateY(${translate}px)` }}
     >

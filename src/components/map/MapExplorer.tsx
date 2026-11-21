@@ -31,6 +31,8 @@ interface MapExplorerProps {
    * 'split' (md+): left side panel (own scroll) + map filling the rest; no sheet.
    */
   layout?: 'sheet' | 'split';
+  /** Screen width not known yet (SSR/hydration): hide the mobile sheet on md+ so wide screens never flash it */
+  hideSheetOnWide?: boolean;
 }
 
 /**
@@ -40,7 +42,7 @@ interface MapExplorerProps {
  * blocks 조회.
  */
 export default function MapExplorer({
-  spots, emptyClubs, clubUrl, isLoading, error, onRetry, header, summary, filters, viewSwitch, mapEnabled = true, layout = 'sheet',
+  spots, emptyClubs, clubUrl, isLoading, error, onRetry, header, summary, filters, viewSwitch, mapEnabled = true, layout = 'sheet', hideSheetOnWide = false,
 }: MapExplorerProps) {
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [snap, setSnap] = useState<SheetSnap>('half');
@@ -137,6 +139,7 @@ export default function MapExplorer({
         onSnapChange={setSnap}
         onPeekHeight={setPeekH}
         onVisibleHeight={setCoveredH}
+        className={hideSheetOnWide ? 'md:hidden' : undefined}
         header={headerBlock}
       >
         {errorNotice}
