@@ -426,7 +426,6 @@ describe('GET /api/tee-times', () => {
 
     const rangeCalls: Array<[number, number]> = [];
     const pages = [page1, page2];
-    let pageIdx = 0;
 
     const thenable = (data: unknown) => {
       const chain: Record<string, unknown> = {};
@@ -444,11 +443,10 @@ describe('GET /api/tee-times', () => {
     for (const m of ['select', 'eq', 'in', 'gte', 'lte', 'order']) {
       teeTimesChain[m] = vi.fn().mockReturnValue(teeTimesChain);
     }
+    // 페이지는 호출 순서가 아니라 from 으로 고른다 — 라우트가 여러 페이지를 동시에 요청한다
     teeTimesChain.range = vi.fn((from: number, to: number) => {
       rangeCalls.push([from, to]);
-      const data = pages[pageIdx] ?? [];
-      pageIdx += 1;
-      return Promise.resolve({ data, error: null });
+      return Promise.resolve({ data: pages[from / 1000] ?? [], error: null });
     });
 
     (mockSupabase.from as ReturnType<typeof vi.fn>).mockImplementation((table: string) => {
@@ -464,10 +462,77 @@ describe('GET /api/tee-times', () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body).toHaveLength(1500);
-    expect(rangeCalls).toEqual([
+    expect(body.map((r: { id: number }) => r.id)).toEqual(Array.from({ length: 1500 }, (_, i) => i + 1));
+    // 짧은 페이지(2번째)를 본 묶음에서 멈춘다 — 다음 묶음을 더 요청하지 않는다
+    expect(Math.max(...rangeCalls.map(([from]) => from))).toBeLessThan(3000);
+    expect(rangeCalls.slice(0, 2)).toEqual([
       [0, 999],
       [1000, 1999],
     ]);
+  });
+
+  it('requests pages in parallel batches and keeps row order when later pages finish first', async () => {
+    // 5 페이지(4개 꽉 참 + 짧은 1개). 차례로 받으면 왕복 5번 — 묶음(3개씩)이면 2번에 끝나야 한다.
+    const pages = [0, 1, 2, 3].map((p) =>
+      Array.from({ length: 1000 }, (_, i) => makeTeeTime({ id: p * 1000 + i + 1 })),
+    );
+    pages.push([makeTeeTime({ id: 4001 })]);
+    let inFlight = 0;
+    let maxInFlight = 0;
+
+    const thenable = (data: unknown) => {
+      const chain: Record<string, unknown> = {};
+      for (const m of ['select', 'eq', 'in', 'gte', 'lte', 'order', 'range']) {
+        chain[m] = vi.fn().mockReturnValue(chain);
+      }
+      chain.then = (
+        resolve: (r: { data: unknown; error: null }) => unknown,
+        reject?: (e: unknown) => unknown,
+      ) => Promise.resolve({ data, error: null }).then(resolve, reject);
+      return chain;
+    };
+    const teeTimesChain: Record<string, unknown> = {};
+    for (const m of ['select', 'eq', 'in', 'gte', 'lte', 'order']) {
+      teeTimesChain[m] = vi.fn().mockReturnValue(teeTimesChain);
+    }
+    teeTimesChain.range = vi.fn(async (from: number) => {
+      inFlight += 1;
+      maxInFlight = Math.max(maxInFlight, inFlight);
+      // 뒤 페이지일수록 먼저 끝난다(순서 보존을 확인)
+      await new Promise((r) => setTimeout(r, 30 - (from / 1000) * 5));
+      inFlight -= 1;
+      return { data: pages[from / 1000] ?? [], error: null };
+    });
+    (mockSupabase.from as ReturnType<typeof vi.fn>).mockImplementation((table: string) => {
+      if (table === 'scrape_jobs') return thenable([{ id: 10 }]);
+      if (table === 'scrape_club_results') return thenable([{ club_id: 'ga', scraped_at: LIVE_S }]);
+      return teeTimesChain;
+    });
+
+    const res = await GET(makeRequest({ date: '2026-03-27' }));
+    const body = await res.json();
+
+    expect(body.map((r: { id: number }) => r.id)).toEqual(Array.from({ length: 4001 }, (_, i) => i + 1));
+    expect(maxInFlight).toBeGreaterThan(1);
+    expect((teeTimesChain.range as ReturnType<typeof vi.fn>).mock.calls.length).toBeLessThanOrEqual(6);
+  });
+
+  // ── CDN cache ─────────────────────────────────────────────────────────────
+
+  it('lets the CDN cache successful responses briefly (data is scraped hourly)', async () => {
+    seedLive([makeTeeTime()]);
+    const res = await GET(makeRequest({ date: '2026-03-27' }));
+    expect(res.status).toBe(200);
+    const cc = res.headers.get('cache-control') ?? '';
+    expect(cc).toMatch(/s-maxage=60\b/);
+    expect(cc).toMatch(/stale-while-revalidate=\d+/);
+  });
+
+  it('never lets the CDN cache an error response', async () => {
+    mockSupabase.__setResponse({ data: null, error: { message: 'DB connection failed' } });
+    const res = await GET(makeRequest({ date: '2026-03-27' }));
+    expect(res.status).toBe(500);
+    expect(res.headers.get('cache-control') ?? '').not.toMatch(/s-maxage/);
   });
 
   // ── Error handling ────────────────────────────────────────────────────────

@@ -7,6 +7,16 @@ const log = createLogger('tee-times');
 
 const PAGE_SIZE = 1000;
 const MAX_PAGES = 20; // safety ceiling: 20k rows
+// Pages requested at once. A date has ~5 result pages and ~3 tee-time pages; one
+// round trip per page made the warm response ~0.5s and the cold one ~4s.
+const PAGE_BATCH = 3;
+
+// Tee times change only when the hourly scrape lands, so let the CDN answer the
+// first visitor instead of a cold function + 3 sequential queries. Browsers keep
+// max-age=0 so the in-app refresh still reaches the CDN.
+const CDN_CACHE = 'public, max-age=0, s-maxage=60, stale-while-revalidate=600';
+const cached = (body: unknown) =>
+  NextResponse.json(body, { headers: { 'Cache-Control': CDN_CACHE } });
 
 type QueryPage<T> = {
   range: (from: number, to: number) => PromiseLike<{
@@ -19,13 +29,19 @@ async function fetchAllPages<T>(
   build: () => QueryPage<T>,
 ): Promise<{ data: T[]; error: { message: string } | null }> {
   const rows: T[] = [];
-  for (let page = 0; page < MAX_PAGES; page++) {
-    const from = page * PAGE_SIZE;
-    const { data, error } = await build().range(from, from + PAGE_SIZE - 1);
-    if (error) return { data: rows, error };
-    const batch = data ?? [];
-    rows.push(...batch);
-    if (batch.length < PAGE_SIZE) break;
+  for (let start = 0; start < MAX_PAGES; start += PAGE_BATCH) {
+    const pages = Array.from({ length: Math.min(PAGE_BATCH, MAX_PAGES - start) }, (_, i) => start + i);
+    // Fetch a batch concurrently, then append strictly in page order; the first
+    // short page proves the set is exhausted (later pages in the batch are empty).
+    const results = await Promise.all(
+      pages.map((p) => build().range(p * PAGE_SIZE, p * PAGE_SIZE + PAGE_SIZE - 1)),
+    );
+    for (const { data, error } of results) {
+      if (error) return { data: rows, error };
+      const batch = data ?? [];
+      rows.push(...batch);
+      if (batch.length < PAGE_SIZE) return { data: rows, error: null };
+    }
   }
   return { data: rows, error: null };
 }
@@ -120,34 +136,7 @@ export async function GET(request: NextRequest) {
 
     const jobIds = jobs.map((j) => j.id);
     if (jobIds.length === 0) {
-      return NextResponse.json([]);
-    }
-
-    // Thousands of success rows per date (hourly jobs × clubs). Must page —
-    // a single select is capped at 1000 and would pin S to an early scrape.
-    const { data: results, error: resultsError } = await fetchAllPages<{
-      club_id: string;
-      scraped_at: string | null;
-    }>(() =>
-      supabase
-        .from('scrape_club_results')
-        .select('club_id, scraped_at')
-        .in('job_id', jobIds)
-        .eq('status', 'success')
-        .order('id', { ascending: true }),
-    );
-
-    if (resultsError) {
-      log.error('Failed to fetch scrape results', { error: resultsError.message });
-      return NextResponse.json(
-        { error: 'Failed to fetch tee times' },
-        { status: 500 },
-      );
-    }
-
-    const sByClub = latestSuccessByClub(results);
-    if (sByClub.size === 0) {
-      return NextResponse.json([]);
+      return cached([]);
     }
 
     // Rebuild the filtered query per page: the builder is single-use, and each
@@ -171,9 +160,37 @@ export async function GET(request: NextRequest) {
       return query;
     };
 
-    const { data: rows, error: teeTimesError } = await fetchAllPages<
-      NonNullable<Awaited<ReturnType<typeof buildQuery>>['data']>[number]
-    >(buildQuery);
+    // S (latest success per club) and the tee-time rows are independent reads —
+    // run them together instead of back to back.
+    const [
+      { data: results, error: resultsError },
+      { data: rows, error: teeTimesError },
+    ] = await Promise.all([
+      // Thousands of success rows per date (hourly jobs × clubs). Must page —
+      // a single select is capped at 1000 and would pin S to an early scrape.
+      fetchAllPages<{ club_id: string; scraped_at: string | null }>(() =>
+        supabase
+          .from('scrape_club_results')
+          .select('club_id, scraped_at')
+          .in('job_id', jobIds)
+          .eq('status', 'success')
+          .order('id', { ascending: true }),
+      ),
+      fetchAllPages<NonNullable<Awaited<ReturnType<typeof buildQuery>>['data']>[number]>(buildQuery),
+    ]);
+
+    if (resultsError) {
+      log.error('Failed to fetch scrape results', { error: resultsError.message });
+      return NextResponse.json(
+        { error: 'Failed to fetch tee times' },
+        { status: 500 },
+      );
+    }
+
+    const sByClub = latestSuccessByClub(results);
+    if (sByClub.size === 0) {
+      return cached([]);
+    }
 
     if (teeTimesError) {
       log.error('Supabase error', { error: teeTimesError.message });
@@ -190,7 +207,7 @@ export async function GET(request: NextRequest) {
       cc_name: typeof row.cc_name === 'string' ? row.cc_name.replace(/^\[제휴\]\s*/, '') : row.cc_name,
     }));
 
-    return NextResponse.json(filterLiveTeeTimes(cleaned, sByClub));
+    return cached(filterLiveTeeTimes(cleaned, sByClub));
   } catch (err) {
     log.error('Unexpected error', { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json(
