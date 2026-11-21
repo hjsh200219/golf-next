@@ -18,6 +18,8 @@ GolfShin(골프신)은 한국 수도권 및 강원·충청 지역 골프장의 �
 - 명령어: /watch(알림 등록), /list(등록 목록 보기), /stop(알림 삭제), /cancel(설정 취소), /help(도움말)
 - 이용: 무료, 누구나 사용 가능 (별도 가입 불필요)
 - 안내 페이지: https://golfshin.vercel.app/chatbot
+- 개인정보처리방침: https://golfshin.vercel.app/privacy
+- 지원: https://golfshin.vercel.app/support
 
 ## 지원 골프장 (34개, 지역별 가나다순)
 

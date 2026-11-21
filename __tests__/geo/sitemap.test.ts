@@ -9,6 +9,8 @@ describe('sitemap', () => {
     expect(urls).toContain('https://golfshin.vercel.app');
     expect(urls).toContain('https://golfshin.vercel.app/weather');
     expect(urls).toContain('https://golfshin.vercel.app/chatbot');
+    expect(urls).toContain('https://golfshin.vercel.app/privacy');
+    expect(urls).toContain('https://golfshin.vercel.app/support');
   });
 
   it('excludes auth/user-specific and offline routes', () => {
