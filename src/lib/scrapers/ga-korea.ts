@@ -11,10 +11,6 @@ export default class GaKoreaScraper extends BaseScraper {
     return 'ga';
   }
 
-  protected get tlsRejectUnauthorized(): boolean {
-    return false;
-  }
-
   async scrape(): Promise<TeeTimeRow[]> {
     const origin = 'https://www.gakorea.com';
     const loginReferer = 'https://www.gakorea.com/join/login.asp';

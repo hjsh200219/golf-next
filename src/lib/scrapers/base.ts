@@ -1,3 +1,4 @@
+import tls from 'node:tls';
 import { CookieJar } from 'tough-cookie';
 import fetchCookie from 'fetch-cookie';
 import * as cheerio from 'cheerio';
@@ -49,9 +50,15 @@ export abstract class BaseScraper {
   protected day: number;
   protected credentials: LoginCredentials;
 
-  /** Override to false in subclass to skip TLS cert verification (e.g. incomplete cert chains) */
+  /** Override to false in subclass to skip TLS cert verification (e.g. incomplete cert chains).
+   *  Prefer extraCaCerts — disabling verification exposes the login password to MITM. */
   protected get tlsRejectUnauthorized(): boolean {
     return true;
+  }
+
+  /** Intermediate CA PEMs a site omits from its chain; verification stays on. */
+  protected get extraCaCerts(): string[] {
+    return [];
   }
 
   constructor(date: string, credentials: LoginCredentials) {
@@ -59,8 +66,13 @@ export abstract class BaseScraper {
 
     // Build a base fetch — optionally bypass TLS verification for sites with bad certs
     let baseFetch: typeof globalThis.fetch = globalThis.fetch;
-    if (!this.tlsRejectUnauthorized) {
-      const agent = new Agent({ connect: { rejectUnauthorized: false } });
+    const extraCa = this.extraCaCerts;
+    if (!this.tlsRejectUnauthorized || extraCa.length) {
+      const agent = new Agent({
+        connect: this.tlsRejectUnauthorized
+          ? { ca: [...tls.rootCertificates, ...extraCa] }
+          : { rejectUnauthorized: false },
+      });
       baseFetch = ((url: RequestInfo | URL, init?: RequestInit) =>
         globalThis.fetch(url, {
           ...init,

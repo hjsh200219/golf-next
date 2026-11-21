@@ -1,4 +1,5 @@
 import { BaseScraper, TeeTimeRow } from './base';
+import { SECTIGO_DV_R36 } from './intermediate-certs';
 
 export default class OwnersScraper extends BaseScraper {
   // Matches the golf_clubs row id (seeded as owners_new); /api/scrape dispatches by row id.
@@ -7,9 +8,9 @@ export default class OwnersScraper extends BaseScraper {
   }
 
   // ownersgc.co.kr omits its intermediate certificate → Node fetch fails with
-  // UNABLE_TO_VERIFY_LEAF_SIGNATURE (openssl verify return code 21, 2026-11-21).
-  protected get tlsRejectUnauthorized(): boolean {
-    return false;
+  // UNABLE_TO_VERIFY_LEAF_SIGNATURE (2026-11-21). Supply it and keep verification on.
+  protected get extraCaCerts(): string[] {
+    return [SECTIGO_DV_R36];
   }
 
   async scrape(): Promise<TeeTimeRow[]> {

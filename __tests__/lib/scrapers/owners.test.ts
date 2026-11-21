@@ -57,9 +57,15 @@ describe('OwnersScraper', () => {
     expect(CLUB_REGION_MAP.owners_new).toBe('강원');
   });
 
-  it('skips TLS verification (site omits its intermediate certificate)', () => {
-    const s = new OwnersScraper('20261123', MOCK_CREDENTIALS);
-    expect((s as unknown as { tlsRejectUnauthorized: boolean }).tlsRejectUnauthorized).toBe(false);
+  it('keeps TLS verification on and supplies the missing Sectigo DV R36 intermediate', () => {
+    // The site omits its intermediate certificate. Turning verification off would send
+    // the password over an unverified connection — add the intermediate instead.
+    const s = new OwnersScraper('20261123', MOCK_CREDENTIALS) as unknown as {
+      tlsRejectUnauthorized: boolean; extraCaCerts: string[];
+    };
+    expect(s.tlsRejectUnauthorized).toBe(true);
+    expect(s.extraCaCerts).toHaveLength(1);
+    expect(s.extraCaCerts[0]).toMatch(/^-----BEGIN CERTIFICATE-----/);
   });
 
   it('sends the login form _csrf with phone + password', async () => {
