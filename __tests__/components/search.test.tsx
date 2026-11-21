@@ -4,7 +4,7 @@
  * Verifies date tab rendering, default selection, and search button presence.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import React from 'react';
 import SearchBar from '@/components/search/SearchBar';
 import { getNextNDays } from '@/lib/utils/date';
@@ -17,6 +17,25 @@ vi.mock('next/navigation', () => ({
 }));
 
 // ── tests ─────────────────────────────────────────────────────────────────────
+
+describe('SearchBar compact (map sheet header)', () => {
+  it('keeps date tabs and an icon-only 조회 button on one row', () => {
+    const onSearch = vi.fn();
+    render(<SearchBar compact onSearch={onSearch} />);
+    const btn = screen.getByRole('button', { name: '조회' });
+    expect(btn).not.toHaveTextContent('조회');
+    expect(btn.parentElement?.className).toContain('flex-row');
+    fireEvent.click(btn);
+    expect(onSearch).toHaveBeenCalled();
+  });
+
+  it('uses short dates (M.D 요일) so the tabs fit a 360px sheet', () => {
+    render(<SearchBar compact />);
+    const tab = screen.getByRole('button', { name: /내일/ });
+    expect(tab.textContent).toMatch(/^내일\d{1,2}\.\d{1,2} \([일월화수목금토]\)$/);
+    expect(tab).not.toHaveTextContent('월 ');
+  });
+});
 
 describe('SearchBar', () => {
   beforeEach(() => {

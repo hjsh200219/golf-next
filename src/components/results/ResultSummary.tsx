@@ -2,6 +2,17 @@ interface ResultSummaryProps {
   count: number;
   scrapedAt?: string | null;
   isLoading?: boolean;
+  /** Map sheet header: time only (KST) so it never truncates */
+  compact?: boolean;
+}
+
+function formatScrapedTime(isoString: string): string {
+  return new Date(isoString).toLocaleTimeString('ko-KR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    timeZone: 'Asia/Seoul',
+  });
 }
 
 function formatScrapedAt(isoString: string): string {
@@ -18,6 +29,7 @@ export default function ResultSummary({
   count,
   scrapedAt,
   isLoading = false,
+  compact = false,
 }: ResultSummaryProps) {
   if (isLoading) {
     return (
@@ -38,7 +50,7 @@ export default function ResultSummary({
       </span>
       {scrapedAt && (
         <span className="min-w-0 truncate text-xs text-gray-400 tabular-nums">
-          {formatScrapedAt(scrapedAt)} 수집
+          {compact ? formatScrapedTime(scrapedAt) : formatScrapedAt(scrapedAt)} 수집
         </span>
       )}
     </div>

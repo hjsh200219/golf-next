@@ -72,7 +72,8 @@ export const useFilterStore = create<FilterState>((set) => ({
 
 // --- UI Preferences (separate from filter state) ---
 
-export type ViewMode = 'club' | 'time';
+/** 'map' = mobile 지도 + 바텀시트 (desktop renders it as 'club') */
+export type ViewMode = 'map' | 'club' | 'time';
 
 interface UIPreferencesState {
   viewMode: ViewMode;
@@ -80,7 +81,7 @@ interface UIPreferencesState {
 }
 
 export const useUIPreferences = create<UIPreferencesState>((set) => ({
-  viewMode: 'club',
+  viewMode: 'map',
   setViewMode: (mode) => set({ viewMode: mode }),
 }));
 

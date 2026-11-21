@@ -12,6 +12,12 @@ export function formatDateKorean(dateStr: string): string {
   return `${month}월 ${day}일 (${dow})`;
 }
 
+/** Short tab label for narrow screens: "11.22 (일)" */
+export function formatDateShort(dateStr: string): string {
+  const d = new Date(dateStr + 'T00:00:00');
+  return `${d.getMonth() + 1}.${d.getDate()} (${getKoreanDayOfWeek(d)})`;
+}
+
 export function toDateString(input: string | Date): string {
   if (input instanceof Date) {
     const y = input.getFullYear();

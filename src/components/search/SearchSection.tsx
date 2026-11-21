@@ -4,11 +4,16 @@ import SearchBar from '@/components/search/SearchBar';
 import FilterPanel from '@/components/search/FilterPanel';
 import TeeTimeTable from '@/components/results/TeeTimeTable';
 import ResultSummary from '@/components/results/ResultSummary';
+import { filterByCcRestrictions } from '@/lib/utils/ccFilter';
 import { useTeeTimes } from '@/hooks/useTeeTimes';
 import { useSearchParams } from 'next/navigation';
 import { toDateString } from '@/lib/utils/date';
-import { useCallback, useMemo, useState } from 'react';
-import { useFilterStore, useUIPreferences } from '@/hooks/useFilters';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useFilterStore, useUIPreferences, type ViewMode } from '@/hooks/useFilters';
+import MapExplorer from '@/components/map/MapExplorer';
+import { buildClubSpots } from '@/lib/utils/mapPins';
+import { getClubHomepageUrl } from '@/lib/utils/clubLink';
+import { useMediaQuery, useMobileNavHeight } from '@/hooks/useMediaQuery';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useClubs } from '@/hooks/useClubs';
 import { getEmptyClubs } from '@/lib/utils/group';
@@ -26,7 +31,13 @@ export default function SearchSection() {
   const ccRestrictions = useFilterStore((s) => s.ccRestrictions);
   const { favoriteIds } = useFavorites();
   const [favoritesOnly, setFavoritesOnly] = useState(false);
-  const { viewMode, setViewMode } = useUIPreferences();
+  const { viewMode: preferredView, setViewMode } = useUIPreferences();
+  const isDesktop = useMediaQuery('(min-width: 768px)');
+  const navHeight = useMobileNavHeight();
+  // 지도 보기는 모바일 전용 — 데스크톱은 기존 골프장별 목록으로 그린다
+  const viewMode: Exclude<ViewMode, 'map'> | 'map' =
+    isDesktop && preferredView === 'map' ? 'club' : preferredView;
+  const mapMode = viewMode === 'map';
 
   const effectiveClubs = favoritesOnly && favoriteIds.length > 0
     ? favoriteIds
@@ -42,13 +53,8 @@ export default function SearchSection() {
   const teeTimes = useMemo(() => {
     const all = data ?? [];
     if (favoritesOnly) return all;
-    if (Object.keys(ccRestrictions).length === 0) return all;
-    return all.filter((t) => {
-      const allowed = ccRestrictions[t.club_id];
-      if (!allowed) return true; // 제한 없는 클럽 → 통과
-      return allowed.includes(t.cc_name);
-    });
-  }, [data, ccRestrictions, favoritesOnly]);
+    return filterByCcRestrictions(all, ccRestrictions, allClubs ?? []);
+  }, [data, ccRestrictions, favoritesOnly, allClubs]);
   // 화면에 표시하는 "수집 시각"은 행 하나의 값(teeTimes[0])이 아닌 전체 중 최신 시각.
   // 특정 클럽 스크레이퍼가 오래전에 멈춰 있어도 다른 클럽의 최근 수집 기록이 반영된다.
   const scrapedAt = useMemo(() => {
@@ -75,6 +81,23 @@ export default function SearchSection() {
     return getEmptyClubs(teeTimes, expected, nameById);
   }, [allClubs, effectiveClubs, teeTimes]);
   const busy = isLoading || isValidating || isScraping;
+  const spots = useMemo(
+    () => (mapMode ? buildClubSpots(teeTimes, allClubs ?? []) : []),
+    [mapMode, teeTimes, allClubs],
+  );
+  const clubUrl = useCallback(
+    (clubId: string) => getClubHomepageUrl((allClubs ?? []).find((c) => c.id === clubId)),
+    [allClubs],
+  );
+
+  // 지도 보기에서는 페이지가 스크롤되지 않게 한다 (지도·시트가 화면을 채움)
+  useEffect(() => {
+    if (!mapMode) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, [mapMode]);
+
 
   const pollJobStatus = useCallback(async (jobId: number) => {
     const start = Date.now();
@@ -142,35 +165,45 @@ export default function SearchSection() {
     }
   }, [date, refresh, pollJobStatus]);
 
+  if (mapMode) {
+    return (
+      <div
+        className="fixed inset-x-0 top-14 z-30"
+        style={{ bottom: navHeight }}
+      >
+        <MapExplorer
+          spots={spots}
+          emptyClubs={emptyClubs}
+          clubUrl={clubUrl}
+          isLoading={isLoading}
+          error={error ?? null}
+          onRetry={() => refresh()}
+          header={<SearchBar compact onSearch={handleRefresh} />}
+          summary={
+            <div className="flex items-center gap-2">
+              <ResultSummary compact count={teeTimes.length} scrapedAt={scrapedAt} isLoading={isLoading} />
+              {scrapeProgress && <span className="text-xs text-golf-primary">{scrapeProgress}</span>}
+            </div>
+          }
+          filters={
+            <FilterPanel
+              favoritesOnly={favoritesOnly}
+              onToggleFavoritesOnly={() => setFavoritesOnly((p) => !p)}
+              hasFavorites={favoriteIds.length > 0}
+            />
+          }
+          viewSwitch={<ViewSwitch value={viewMode} onChange={setViewMode} withMap size="sm" />}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <SearchBar onSearch={handleRefresh} />
 
       <div className="flex">
-        <div className="flex rounded-lg ring-1 ring-gray-200 overflow-hidden">
-          <button
-            type="button"
-            onClick={() => setViewMode('club')}
-            className={`px-4 py-2 text-sm font-medium min-h-[44px] transition-colors ${
-              viewMode === 'club'
-                ? 'bg-golf-primary text-white'
-                : 'bg-white text-gray-600 hover:bg-gray-50'
-            }`}
-          >
-            골프장별
-          </button>
-          <button
-            type="button"
-            onClick={() => setViewMode('time')}
-            className={`px-4 py-2 text-sm font-medium min-h-[44px] transition-colors ${
-              viewMode === 'time'
-                ? 'bg-golf-primary text-white'
-                : 'bg-white text-gray-600 hover:bg-gray-50'
-            }`}
-          >
-            시간순
-          </button>
-        </div>
+        <ViewSwitch value={viewMode} onChange={setViewMode} withMap={!isDesktop} />
       </div>
 
       {/* 건수 · 수집 시각 · 필터를 한 줄에 둔다. 필터 본문은 줄바꿈되어 아래 전체 너비로 펼쳐진다 */}
@@ -217,6 +250,38 @@ export default function SearchSection() {
           viewMode={viewMode}
         />
       )}
+    </div>
+  );
+}
+
+const VIEW_LABEL: Record<ViewMode, string> = { map: '지도', club: '골프장별', time: '시간순' };
+
+function ViewSwitch({
+  value, onChange, withMap, size = 'md',
+}: {
+  value: ViewMode;
+  onChange: (v: ViewMode) => void;
+  withMap: boolean;
+  size?: 'sm' | 'md';
+}) {
+  const modes: ViewMode[] = withMap ? ['map', 'club', 'time'] : ['club', 'time'];
+  return (
+    <div className="flex shrink-0 overflow-hidden rounded-lg ring-1 ring-gray-200" role="group" aria-label="보기 방식">
+      {modes.map((m) => (
+        <button
+          key={m}
+          type="button"
+          aria-pressed={value === m}
+          onClick={() => onChange(m)}
+          className={[
+            'font-medium transition-colors min-h-[44px]',
+            size === 'sm' ? 'px-3 text-xs' : 'px-4 py-2 text-sm',
+            value === m ? 'bg-golf-primary text-white' : 'bg-white text-gray-600 hover:bg-gray-50',
+          ].join(' ')}
+        >
+          {VIEW_LABEL[m]}
+        </button>
+      ))}
     </div>
   );
 }
