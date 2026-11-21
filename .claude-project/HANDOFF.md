@@ -1,44 +1,38 @@
 ---
-created: 2026-10-17T16:35:00+09:00
+created: 2026-11-21T19:40:00+09:00
 project: golf-next
-summary: onetheclub 단일 세션 충돌(옛 write-loss) 해결·직렬 dispatch, 오크밸리 문장형 그린피 파서, 모바일 날짜·바로가기 줄바꿈. 7ca4530 운영 배포·확인 완료.
+summary: 모바일 예약 조회를 지도 + 바텀시트로 개편(0825f79·86d0ac3 운영 배포·화면 확인), 지역 필터 cc 표기 차이 버그 수정. 앞서 스크래퍼 5곳 수리(0c523f9·ddf175b·c1b9b4a).
 ---
 
 ## Session Digest
 
-신라CC가 내일(10-18) 사이트 39건인데 운영 0건이던 원인은 onetheclub 회원 계정 단일 세션이었다. 날짜별 `/api/scrape/club`이 동시에 로그인해 서로 밀어내고, 밀린 쪽이 본진 빈 목록으로 success를 기록해 S가 앞당겨졌다(옛 "write-loss 1~15%"의 정체). 직렬 dispatch + 빈 헤더 응답 실패 처리로 고쳤다. 성문안 「3원」은 `3~4인 시 290천원 / 2인 시 340천원`을 parseInt한 결과 — `parseOakValleyFee` 추가. 날짜 탭 2줄·바로가기 화면 밖 밀림도 수정.
+모바일 기본 보기를 지도(골프장별 최저가 핀) + 바텀시트(접힘·절반·전체)로 바꿨다. 데스크톱은 기존 목록 유지. 지역 필터가 코스 행 cc_name 과 티타임 cc_name 을 글자 그대로 비교해 골프존카운티 4곳·클럽72·크리스밸리·하이원·해피니스가 지역 선택 때 빠지던 버그를 토큰 비교(`lib/utils/ccFilter`)로 고쳤다.
 
 ## Progress
 
 **완료**
-- `onetheclub.ts`: `span.company_name` 비거나 non-200이면 throw, 본진·제휴 오류 삼킴 제거
-- `/api/scrape`: `SINGLE_SESSION_CLUBS={onetheclub}` 날짜 직렬 dispatch, `maxDuration=800`(fluid on)
-- `oakvalley.ts`: `parseOakValleyFee` (천원·만천·원 단위, 2인 가격은 event, 선셋)
-- `SearchBar` 날짜 nowrap·flex-1, `ClubGroupView` 헤더 min-w-0 + 모바일에서 지역 배지·「바로가기」 글자 숨김
-- 테스트 626 통과, tsc/lint/build 통과, `7ca4530` push → Vercel READY
-- 운영 확인(16:27 KST 수동 수집 job 33648~33651): onetheclub 날짜별 duration 1.6~2.4s 순차, 10-18 신라 39·10-21 신라 11, 오크밸리 1만 미만 0건, 360/390px 날짜 1줄·넘침 0
+- `components/map/{MapExplorer,TeeTimeMap,BottomSheet}`, `lib/maps/{pinIcon,declutter,loadGoogleMaps}`, `lib/utils/{mapPins,sheetSnap,ccFilter}`, `hooks/useMediaQuery`
+- 겹치는 가격 핀은 점으로(더 싼 곳·선택 핀 우선). 핀↔점 전환 때 마커 재생성(Google 이 옛 클릭 영역을 유지함)
+- `useMediaQuery` 는 SSR·하이드레이션 중 null → 데스크톱 하이드레이션 오류·지도 로드 없음
+- 테스트 746 통과, lint·tsc·build 통과, 운영 golfshin.vercel.app 모바일(핀·점 탭, 인천 필터 57건, 접힘 상태 날짜 선택)·데스크톱(1280, 지도 요청 0) 확인
+- 19시 운영 수집: owners_new·skyvalley·shinedale·pinestone·namchuncheon_new 7/7
 
 ## Next Steps
 
-1. ~~onetheclub `session invalid` 실패 비율 확인~~ — 2026-10-28 확인: Vercel 쪽 10-26~28 실패 0, 러너가 지연 실행(06:58Z)으로 Vercel :00 체인에 밀린 1건(run 40647118121). 러너가 :59:20~:02:30 UTC 를 피하고 밀리면 1회 재시도하도록 수정(`onetheclub-runner.ts`)
-2. 다른 로그인 클럽에 같은 단일 세션 증상이 있는지 (날짜별 빈 결과) 점검 → 있으면 `SINGLE_SESSION_CLUBS`에 추가
+1. 데스크톱 지도 보기(이번 범위 밖)
+2. 골프존카운티 코스 행이 「골프존카운티」(경기남부) 하나뿐 — 송도(인천)·안성·이글몬트 행을 좌표·지역과 함께 넣으면 지도 핀·지역 필터가 정확해진다(운영 DB 쓰기라 사용자 확인 필요)
 
 ## Blockers
 
-- 없음
+- 태광CC: `TAEKWANG_PW` env 미등록(open-loops `golf-next-taekwang-pw`)
+- 더 시에나 서울CC(옛 중부): Cloudflare 관리형 챌린지 + 로그인 — 브라우저 수집기 여부 사용자 결정(open-loops `golf-next-jungbu-siena`)
 
 ## Watch Out
 
-- Liveness는 클럽 단위 S. 하위 cc 실패를 삼키고 success를 내면 그 cc 행 전부 마감으로 보인다
-- 10-19·10-20 신라CC는 사이트에서 실제 `[ 마감 ]` — 버그 아님
-- 레이캐슬 가격 null은 사이트에 가격 표기가 없어서 정상
-- 모바일에서 지역 배지를 숨겼다 (sm 이상에서만 표시)
-- `.github/workflows/scrape-onetheclub.yml`은 백업 러너 — 삭제 금지
-- `CLAUDE.md`는 `AGENTS.md` 심볼릭 링크
+- `npm run build` 를 dev 서버와 같은 폴더에서 돌리면 `.next` 를 덮어써 dev 서버가 `Cannot find module './NNN.js'` 로 깨진다 — dev 서버를 끄고 빌드
+- Google Maps 키는 golfshin.vercel.app·localhost:3000 만 허용 — Vercel 미리보기 URL 에서는 지도가 안 뜬다(목록은 동작)
+- 지도 틀은 `overflow-clip` — `overflow-hidden` 이면 포커스·scrollIntoView 가 시트를 밀어 올린다
 
 ## Files Touched
 
-- `src/lib/scrapers/onetheclub.ts`, `src/lib/scrapers/oakvalley.ts`, `src/app/api/scrape/route.ts`
-- `src/components/search/SearchBar.tsx`, `src/components/results/ClubGroupView.tsx`
-- `__tests__/lib/scrapers/{onetheclub,oakvalley}.test.ts`, `__tests__/api/scrape-dispatch-serial.test.ts`, `__tests__/components/{search,club-group-view}.test.tsx`
-- `AGENTS.md`, `docs/DEPLOY_CRON_TELEGRAM.md`, `.github/workflows/scrape-onetheclub.yml`
+src/components/map/*, src/components/search/{SearchSection,SearchBar}.tsx, src/components/results/ResultSummary.tsx, src/hooks/{useMediaQuery,useFilters}.ts, src/lib/maps/*, src/lib/utils/{mapPins,sheetSnap,ccFilter,date}.ts, docs/FRONTEND.md
