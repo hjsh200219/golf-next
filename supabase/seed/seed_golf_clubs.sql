@@ -399,7 +399,7 @@ INSERT INTO golf_clubs (
  'https://www.ownersgc.co.kr/html/reservation/reservation_01_01.asp',
  '/html/member/login.asp',
  '/html/reservation/reservation_01_01.asp',
- 'playwright_inactive', false),
+ 'requests', true),
 
 ('lakeside_new',
  '레이크사이드CC',

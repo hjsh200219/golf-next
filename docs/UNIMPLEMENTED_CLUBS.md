@@ -15,7 +15,7 @@ golf(Python) 프로젝트에 ID/PW가 등록되어 있으나, golf-next에서 �
 
 | ID | 이름 | URL | 상태 |
 |---|---|---|---|
-| `jungbu` | 중부CC | akdjbcc.co.kr | 사이트 리빌드됨. 로그인 페이지(`/html/member/login.asp`) 404 반환. Python 원본도 stub (미완성) |
+| `jungbu` | 중부CC → **더 시에나 서울CC** | thesiena.co.kr (옛 akdjbcc.co.kr) | 2026-11-21 확인: 옛 도메인은 Cloudflare 530/1016(원본 없음). 골프장이 「더 시에나 서울CC」(회원제)로 개명·이전. 새 사이트와 API(`/api/v2/golf/reservation-times/alt`)는 서버 요청에 **Cloudflare 관리형 챌린지**(403 `cf-mitigated: challenge`) + 예약은 로그인 필요. 서버 fetch 스크래퍼로는 불가(포천힐스와 같은 유형) |
 
 ## 봇 차단 / 로그인 차단 (Playwright로도 클라우드 불가)
 
@@ -27,21 +27,16 @@ golf(Python) 프로젝트에 ID/PW가 등록되어 있으나, golf-next에서 �
 | `lakeside_new` | 레이크사이드CC | lakeside.kr | **reCAPTCHA + Imperva 봇차단**. 로그인 폼 `recaptchaToken`, 데이터 `.do`는 로그인으로 바운스(`<script defer src='/<uuid>/'>` JS 챌린지). 무로그인 경로 없음. |
 | `namyeoju` | 남여주CC | namyeoju.co.kr | **비회원** + 사이트 빈 껍데기(홈 1.7KB, 예약 링크 없음). Python 원본도 미완성 stub. |
 
-## 비활성 (코드는 있음)
-
-| ID | 이름 | 상태 |
-|---|---|---|
-| `owners_new` | 오너스GC | `golf_clubs` 행 `scraper_type='playwright_inactive'`·`is_active=false`(2026-04-07부터). 코드 레지스트리 키는 `owners`라 행 ID와도 다르다. 2026-11-21 운영 DB 조회로 확인 |
-
 ## 구현 완료 (미구현 → 활성)
 
 | ID | 이름 | 방식 | 일자 |
 |---|---|---|---|
 | `namchuncheon_new` | 남춘천CC | holeinonecloud.com REST API (JWT). `POST /api/v1/auth/login` → `GET /api/v1/booking/list/token?bookingDate=YYYY.MM.DD&bookingQueryType=ALL`, 헤더 `golfclubid:2`. 할인가(`greenFeeDiscountAmt`). | 2026-06-05 |
+| `owners_new` | 오너스GC | seed부터 `playwright_inactive`·비활성이라 한 번도 수집되지 않았고, 코드 키(`owners`)도 행 id와 달랐다. 키를 `owners_new`로 맞추고 TLS 중간 인증서 누락 우회·로그인 `_csrf`·로그인/세션 실패 throw·표 머리 기반 코스 매핑·UTF-8. 지역 경기북부→강원(춘천) | 2026-11-21 |
 
 ## 요약
 
 - 전체 등록(Python): 41개
-- golf-next 활성: 34개 (남춘천 추가)
-- 미구현: **6개** (WAF 2 + 사이트 개편 1 + 봇/로그인 차단 3) + 비활성 1개(오너스GC)
+- golf-next 활성: 34개 (2026-11-21 운영 `golf_clubs` is_active 33 + 오너스. 40행 중 비활성 6)
+- 미구현: **6개** (WAF 2 + 사이트 개편·봇 차단 1(중부→더 시에나 서울) + 봇/로그인 차단 3)
 - 제거: `sungmoon`(성문안) — oakvalley S1 코스와 동일 데이터(중복). oakvalley 스크래퍼가 `cc_name='성문안CC'`로 이미 커버. 2026-06-01 레지스트리에서 제거.

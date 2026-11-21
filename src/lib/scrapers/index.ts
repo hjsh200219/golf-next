@@ -66,7 +66,7 @@ export const SCRAPER_MAP: Record<string, ScraperConstructor> = {
   philosgc: PhilosgcScraper,
   cascadia: CascadiaScraper,
   oakvalley: OakValleyScraper,
-  owners: OwnersScraper,
+  owners_new: OwnersScraper,
   raycastle: RayCastleScraper,
   seowon: SeowonScraper,
   shinedale: ShineDaleScraper,

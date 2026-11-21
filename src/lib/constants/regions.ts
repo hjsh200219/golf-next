@@ -28,7 +28,7 @@ export const CLUB_REGION_MAP: Record<string, RegionKey> = {
   yangju: '경기북부',
   midas: '경기북부',
   seowon: '경기북부',
-  owners: '경기북부',
+  owners_new: '강원', // 춘천 (golf_clubs.id owners_new)
   tpcgolf: '경기북부',
 
   ga: '경기남부',
