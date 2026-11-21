@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
+import crypto from 'node:crypto';
 import TaekwangScraper from '@/lib/scrapers/taekwang';
 import type { LoginCredentials } from '@/lib/scrapers/base';
 
@@ -8,104 +9,158 @@ const MOCK_CREDENTIALS: LoginCredentials = {
   name: 'Test', mobile: '01012345678',
 };
 
-// Next.js Server Action RSC response. Real data lives on the `1:` line as
-// availableTimes[]. courseCode 11/22/33 = 회원제(M), 44 = 대중제(P).
-// discountPrice = 할인가; isLock:false = open.
-function rsc(times: object[]): string {
-  return `0:{"a":"$@1","f":"","b":"abc","q":"","i":false}\n` +
-    `1:${JSON.stringify({ availableTimes: times, apiResult: 0, apiMessage: '성공' })}\n`;
+// Server keypair: the scraper must RSA-OAEP(SHA-256) encrypt with the public key the
+// site hands out (getPublicKeyAction), so the test can decrypt what was sent.
+const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
+  modulusLength: 2048,
+  publicKeyEncoding: { type: 'spki', format: 'pem' },
+  privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
+});
+const decrypt = (b64: string) => crypto.privateDecrypt(
+  { key: privateKey, padding: crypto.constants.RSA_PKCS1_OAEP_PADDING, oaepHash: 'sha256' },
+  Buffer.from(b64, 'base64'),
+).toString();
+
+// Action IDs are build hashes; the scraper discovers getAvailableTimesAction from the
+// realtime page's chunks (2026-06 hardcoded ID went stale → 5 months of failures).
+const TIMES_ACTION = '60aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+const PAGE_HTML = `<html><head>
+<script src="/_next/static/chunks/other.js" async></script>
+<script src="/_next/static/chunks/a4923618258a2226.js" async></script>
+</head></html>`;
+const CHUNK_JS = `(e.s(["x"],1));let n=(0,r.createServerReference)("${TIMES_ACTION}",t.callServer,void 0,t.findSourceMapURL,"getAvailableTimesAction");` +
+  `let w=(0,r.createServerReference)("60bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",t.callServer,void 0,t.findSourceMapURL,"getWaitTimeAction");`;
+
+function rsc(payload: object): string {
+  return `0:{"a":"$@1","f":"","b":"abc","q":"","i":false}\n1:${JSON.stringify(payload)}\n`;
 }
 const M_TIMES = [
-  { date: '20260604', courseCode: '11', hourDisplay: '06:07', discountPrice: 230000, normalPrice: 260000, isLock: false },
-  { date: '20260604', courseCode: '22', hourDisplay: '06:00', discountPrice: 230000, normalPrice: 260000, isLock: false },
-  // booked — filtered by isLock
-  { date: '20260604', courseCode: '33', hourDisplay: '07:00', discountPrice: 260000, normalPrice: 260000, isLock: true },
+  { date: '20261122', courseCode: '11', hourDisplay: '06:07', discountPrice: 230000, normalPrice: 260000, isLock: false },
+  { date: '20261122', courseCode: '22', hourDisplay: '06:00', discountPrice: 230000, normalPrice: 260000, isLock: false },
+  { date: '20261122', courseCode: '33', hourDisplay: '07:00', discountPrice: 260000, normalPrice: 260000, isLock: true },
 ];
 const P_TIMES = [
-  { date: '20260604', courseCode: '44', hourDisplay: '06:00', discountPrice: 190000, normalPrice: 199000, isLock: false },
+  { date: '20261122', courseCode: '44', hourDisplay: '06:00', discountPrice: 190000, normalPrice: 199000, isLock: false },
 ];
-// Page fallback (no data) — what a stale next-action ID returns.
 const PAGE_RSC = `2:"$Sreact.fragment"\n4:I[39756,["/_next/static/chunks/x.js"],""]\n`;
 
-const ORIG_ENV = { ...process.env };
-beforeEach(() => {
-  process.env.TAEKWANG_ENC_ID = 'ENC_ID_BLOB';
-  process.env.TAEKWANG_ENC_PW = 'ENC_PW_BLOB';
-});
-afterEach(() => {
-  vi.restoreAllMocks();
-  process.env = { ...ORIG_ENV };
-});
-
-function mockFetch(
-  scraper: TaekwangScraper,
-  cap: { urls: string[]; bodies: string[]; loginBody: string[] },
-  opts: { stale?: boolean } = {},
-) {
-  return vi.spyOn(
-    scraper as unknown as { fetch: typeof globalThis.fetch },
-    'fetch',
-  ).mockImplementation(async (url: RequestInfo | URL, init?: RequestInit) => {
-    const u = String(url);
-    cap.urls.push(u);
-    const body = String(init?.body ?? '');
-    if (u.includes('/api/auth/login')) {
-      cap.loginBody.push(body);
-      return new Response(JSON.stringify({ ok: true }), {
-        status: 200,
-        headers: { 'content-type': 'application/json', 'set-cookie': 'accessToken=jwt; Path=/' },
-      });
-    }
-    // realtime server action
-    cap.bodies.push(body);
-    if (opts.stale) return new Response(new TextEncoder().encode(PAGE_RSC), { status: 200 });
-    const times = body.includes('"coGubun":"P"') ? P_TIMES : M_TIMES;
-    return new Response(new TextEncoder().encode(rsc(times)), { status: 200 });
-  });
+interface Opts {
+  login?: { status: number; body: object };
+  chunk?: string;
+  timesPayload?: (coGubun: string) => string;
+}
+interface Cap {
+  loginBody?: { encryptedId: string; encryptedPassword: string };
+  actionHeaders: string[];
+  actionBodies: unknown[][];
 }
 
+const ORIG_ENV = { ...process.env };
+beforeEach(() => { process.env.TAEKWANG_PW = 'TK_SECRET_PW'; });
+afterEach(() => { vi.restoreAllMocks(); process.env = { ...ORIG_ENV }; });
+
+function mockFetch(scraper: TaekwangScraper, cap: Cap, opts: Opts = {}) {
+  return vi.spyOn(scraper as unknown as { fetch: typeof globalThis.fetch }, 'fetch')
+    .mockImplementation(async (url: RequestInfo | URL, init?: RequestInit) => {
+      const u = String(url);
+      const method = (init?.method ?? 'GET').toUpperCase();
+      const headers = new Headers(init?.headers);
+      const body = String(init?.body ?? '');
+      if (method === 'GET' && u.endsWith('/reservation/realtime')) return new Response(PAGE_HTML);
+      if (u.includes('/_next/static/chunks/a4923618258a2226.js')) return new Response(opts.chunk ?? CHUNK_JS);
+      if (u.includes('/_next/static/chunks/')) return new Response('/* nothing */');
+      if (u.endsWith('/login') && headers.get('next-action')) {
+        return new Response(rsc({ success: true, publicKey }));
+      }
+      if (u.includes('/api/auth/login')) {
+        cap.loginBody = JSON.parse(body);
+        const l = opts.login ?? { status: 200, body: { success: true, token: 'TK_TOKEN', memberInfo: {} } };
+        return new Response(JSON.stringify(l.body), { status: l.status });
+      }
+      if (method === 'POST' && u.endsWith('/reservation/realtime')) {
+        cap.actionHeaders.push(headers.get('next-action') ?? '');
+        const args = JSON.parse(body) as unknown[];
+        cap.actionBodies.push(args);
+        const co = (args[0] as { coGubun: string }).coGubun;
+        const text = opts.timesPayload
+          ? opts.timesPayload(co)
+          : rsc({ availableTimes: co === 'P' ? P_TIMES : M_TIMES, needsLogin: false, apiResult: 0, apiMessage: '' });
+        return new Response(new TextEncoder().encode(text));
+      }
+      return new Response('not found', { status: 404 });
+    });
+}
+
+const newCap = (): Cap => ({ actionHeaders: [], actionBodies: [] });
+
 describe('TaekwangScraper', () => {
-  it('logs in at the JSON auth API with the encrypted credential blobs (not the dead ASP.NET flow)', async () => {
-    const cap = { urls: [] as string[], bodies: [] as string[], loginBody: [] as string[] };
-    const scraper = new TaekwangScraper('20260604', MOCK_CREDENTIALS);
+  it('RSA-OAEP(SHA-256)-encrypts id + TAEKWANG_PW with the site public key', async () => {
+    const cap = newCap();
+    const scraper = new TaekwangScraper('20261122', MOCK_CREDENTIALS);
     mockFetch(scraper, cap);
 
     await scraper.scrape();
 
-    expect(cap.urls.some((u) => u.includes('/api/auth/login'))).toBe(true);
-    expect(cap.urls.some((u) => u.includes('Login.aspx'))).toBe(false);
-    const login = JSON.parse(cap.loginBody[0]);
-    expect(login).toMatchObject({ encryptedId: 'ENC_ID_BLOB', encryptedPassword: 'ENC_PW_BLOB' });
+    expect(decrypt(cap.loginBody!.encryptedId)).toBe('tkid');
+    expect(decrypt(cap.loginBody!.encryptedPassword)).toBe('TK_SECRET_PW');
   });
 
-  it('fetches both 회원제(M) and 대중제(P), parses availableTimes, maps course, stores discountPrice', async () => {
-    const cap = { urls: [] as string[], bodies: [] as string[], loginBody: [] as string[] };
-    const scraper = new TaekwangScraper('20260604', MOCK_CREDENTIALS);
+  it('calls the action ID discovered from page chunks and passes the login token', async () => {
+    const cap = newCap();
+    const scraper = new TaekwangScraper('20261122', MOCK_CREDENTIALS);
     mockFetch(scraper, cap);
+
+    await scraper.scrape();
+
+    expect(cap.actionHeaders).toEqual([TIMES_ACTION, TIMES_ACTION]);
+    expect(cap.actionBodies.map((b) => b[1])).toEqual(['TK_TOKEN', 'TK_TOKEN']);
+    expect(cap.actionBodies.map((b) => (b[0] as { coGubun: string }).coGubun)).toEqual(['M', 'P']);
+  });
+
+  it('parses availableTimes, maps course, stores discountPrice, drops isLock', async () => {
+    const scraper = new TaekwangScraper('20261122', MOCK_CREDENTIALS);
+    mockFetch(scraper, newCap());
 
     const rows = await scraper.scrape();
 
-    // 2 calls: coGubun M + P
-    expect(cap.bodies.some((b) => b.includes('"coGubun":"M"'))).toBe(true);
-    expect(cap.bodies.some((b) => b.includes('"coGubun":"P"'))).toBe(true);
-
-    // 2 open M (the isLock:true is dropped) + 1 open P = 3
-    expect(rows.length).toBe(3);
-    const r0 = rows.find((r) => r.teeoff === '06:07');
-    expect(r0).toMatchObject({ course: '북서', cc_name: '태광CC', date: '2026-06-04' });
-    expect(String(r0!.price)).toBe('230000'); // discountPrice
-    expect(rows.find((r) => r.course === '동')).toBeDefined(); // courseCode 44
-    expect(rows.filter((r) => r.teeoff === '07:00')).toHaveLength(0); // isLock dropped
+    expect(rows).toHaveLength(3);
+    expect(rows.find((r) => r.teeoff === '06:07')).toMatchObject({
+      course: '북서', cc_name: '태광CC', date: '2026-11-22', price: 230000,
+    });
+    expect(rows.find((r) => r.course === '동')).toBeDefined();
+    expect(rows.filter((r) => r.teeoff === '07:00')).toHaveLength(0);
   });
 
-  it('throws when the server action returns the page fallback (stale next-action ID)', async () => {
-    // next-action is a build hash; if taekwang redeploys it stops resolving and the
-    // endpoint returns page RSC instead of data. Surface that as a failed scrape
-    // (prod status=failed) rather than success:0 — honors the liveness invariant.
-    const cap = { urls: [] as string[], bodies: [] as string[], loginBody: [] as string[] };
-    const scraper = new TaekwangScraper('20260604', MOCK_CREDENTIALS);
-    mockFetch(scraper, cap, { stale: true });
+  it('throws when TAEKWANG_PW is not set', async () => {
+    delete process.env.TAEKWANG_PW;
+    const scraper = new TaekwangScraper('20261122', MOCK_CREDENTIALS);
+    mockFetch(scraper, newCap());
+    await expect(scraper.scrape()).rejects.toThrow(/taekwang: TAEKWANG_PW/);
+  });
 
-    await expect(scraper.scrape()).rejects.toThrow(/action|taekwang/i);
+  it('throws with the site message when login is rejected', async () => {
+    const scraper = new TaekwangScraper('20261122', MOCK_CREDENTIALS);
+    mockFetch(scraper, newCap(), { login: { status: 401, body: { success: false, message: '비밀번호가 일치하지 않습니다.' } } });
+    await expect(scraper.scrape()).rejects.toThrow(/taekwang: login failed.*비밀번호가 일치하지 않습니다/);
+  });
+
+  it('throws when getAvailableTimesAction cannot be found in the page chunks', async () => {
+    const scraper = new TaekwangScraper('20261122', MOCK_CREDENTIALS);
+    mockFetch(scraper, newCap(), { chunk: '/* rebuilt, action renamed */' });
+    await expect(scraper.scrape()).rejects.toThrow(/taekwang: getAvailableTimesAction not found/);
+  });
+
+  it('throws when the action says needsLogin (not an empty success)', async () => {
+    const scraper = new TaekwangScraper('20261122', MOCK_CREDENTIALS);
+    mockFetch(scraper, newCap(), {
+      timesPayload: () => rsc({ availableTimes: [], needsLogin: true, apiResult: '$undefined', apiMessage: '' }),
+    });
+    await expect(scraper.scrape()).rejects.toThrow(/taekwang: needsLogin/);
+  });
+
+  it('throws when the action returns page RSC instead of data', async () => {
+    const scraper = new TaekwangScraper('20261122', MOCK_CREDENTIALS);
+    mockFetch(scraper, newCap(), { timesPayload: () => PAGE_RSC });
+    await expect(scraper.scrape()).rejects.toThrow(/taekwang: no availableTimes/);
   });
 });

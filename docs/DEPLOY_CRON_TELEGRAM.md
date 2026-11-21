@@ -28,7 +28,7 @@ It was never a write problem. The onetheclub **member account keeps one live ses
 
 ### Fix
 - `src/lib/scrapers/onetheclub.ts`: a 본진 response with a non-200 status or blank company heading throws `onetheclub session invalid …`; 본진 errors are no longer swallowed, so the whole scrape fails and S does not advance. A genuinely closed day still carries the heading (`신라CC [ 마감 ]`) and stays a success.
-- `src/app/api/scrape/route.ts`: `SINGLE_SESSION_CLUBS = {onetheclub}` dates are dispatched one after another inside `waitUntil` (`maxDuration = 800`, project has fluid compute on; ~25s/date × 7). Other clubs still fan out in parallel.
+- `src/app/api/scrape/route.ts`: `SINGLE_SESSION_CLUBS = {onetheclub, skyvalley, pinestone, namchuncheon_new}` dates are dispatched one after another inside `waitUntil` (`maxDuration = 800`, project has fluid compute on; onetheclub ~25s/date × 7), one chain per club so a slow onetheclub chain does not delay the others. Other clubs still fan out in parallel. skyvalley (loginChk `success:"E"`) and pinestone/namchuncheon (holeinonecloud `FN_COMMON_001` / `FM_LOGIN_002`) added 2026-11-21; their scrapers also retry a refused login and throw instead of reporting an empty success.
 
 ### Runner
 - **Keep `.github/workflows/scrape-onetheclub.yml`** as a backup (GitHub drops many scheduled runs — observed gaps of 2–5h, so it cannot be the primary). It does not write `scrape_club_results`, so its rows only show while they are newer than the last Vercel S. If a runner run overlaps the Vercel chain, the kicked side now fails loudly instead of writing empty 본진 data.

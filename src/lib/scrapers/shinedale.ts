@@ -62,24 +62,38 @@ export default class ShineDaleScraper extends BaseScraper {
     const $ = this.parseHtml(html);
     const rows: TeeTimeRow[] = [];
 
+    // 2026-11 layout: one table, th header row [부, 코스, 시간, 정상가요금, 할인가요금, 예약, 프로모션],
+    // course per row (no caption). Map by header so inserted columns can't shift teeoff.
     $('table.timeTbl').each((_, table) => {
-      const courseName = $(table).find('caption').text().trim();
+      const headers = $(table).find('tr').first().find('th').map((_i, th) => $(th).text().trim()).get();
+      const timeIdx = this.findColumn(headers, '시간');
+      const courseIdx = this.findColumn(headers, '코스');
+      const priceIdx = this.findColumn(headers, '할인가요금', '할인가');
+      const listPriceIdx = this.findColumn(headers, '정상가요금', '정상가');
+      const promoIdx = this.findColumn(headers, '프로모션');
+      if (timeIdx < 0 || courseIdx < 0 || (priceIdx < 0 && listPriceIdx < 0)) {
+        throw new Error(`shinedale: tee table header not recognized [${headers.join(',')}]`);
+      }
+
       $(table).find('tr').each((__, tr) => {
         const tds = $(tr).find('td');
         if (tds.length < 2) return;
 
-        const teeoff = this.formatTime($(tds[0]).text().trim());
-        const rawPrice = $(tds[1]).text().trim();
+        const teeoff = this.formatTime($(tds[timeIdx]).text().trim());
+        if (!this.isTeeTime(teeoff)) return;
 
-        if (!teeoff) return;
-
-        const { price, event } = this.processPrice(rawPrice, '');
+        const course = $(tds[courseIdx]).text().trim();
+        const event = promoIdx >= 0 ? $(tds[promoIdx]).text().replace(/\s+/g, ' ').trim() : '';
+        // 할인가요금 is "-" on days without a discount → use 정상가요금.
+        const cell = (i: number) => (i >= 0 ? this.processPrice($(tds[i]).text().trim(), '').price : '');
+        const discount = cell(priceIdx);
+        const price = /^\d+$/.test(discount) ? discount : cell(listPriceIdx);
 
         rows.push({
           date: this.dateDash,
           cc_name: '샤인데일',
           teeoff,
-          course: courseName,
+          course,
           price,
           event,
         });

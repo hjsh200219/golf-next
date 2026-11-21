@@ -5,10 +5,13 @@ import { createLogger } from '@/lib/logger';
 
 const log = createLogger('scrape');
 
-// Clubs whose login allows a single live session. Concurrent per-date scrapes
-// kick each other out (onetheclub, measured 2026-10-17: 7 parallel dates → 6
-// returned blank 본진 lists), so their dates are dispatched one at a time.
-const SINGLE_SESSION_CLUBS = new Set(['onetheclub']);
+// Clubs whose login breaks under concurrent per-date scrapes, so their dates are
+// dispatched one at a time (one chain per club). onetheclub: single live session,
+// 7 parallel dates → 6 blank 본진 lists (2026-10-17). skyvalley: overlapping
+// logins get loginChk success:"E" → 7 parallel dates → 6 empty lists (2026-11-21).
+// pinestone·namchuncheon_new (holeinonecloud): one session per account — overlapping
+// logins get FN_COMMON_001, a newer login kicks the older token (FM_LOGIN_002).
+const SINGLE_SESSION_CLUBS = new Set(['onetheclub', 'skyvalley', 'pinestone', 'namchuncheon_new']);
 
 // Serial chain: up to 14 dates × ~25s of onetheclub scraping must outlive the
 // response, so give waitUntil room beyond the platform default.
@@ -164,12 +167,13 @@ export async function POST(request: NextRequest) {
 
     // /api/scrape/club responds only after its scrape finishes, so awaiting
     // each trigger serialises the logins. triggerClub never rejects.
-    pendingFetches.push(
-      serialQueue.reduce<Promise<unknown>>(
-        (prev, t) => prev.then(() => triggerClub(t.jobId, t.clubId, t.date)),
-        Promise.resolve(),
-      ),
-    );
+    // One chain per club: a slow onetheclub chain must not delay skyvalley.
+    const chains = new Map<string, Promise<unknown>>();
+    for (const t of serialQueue) {
+      const prev = chains.get(t.clubId) ?? Promise.resolve();
+      chains.set(t.clubId, prev.then(() => triggerClub(t.jobId, t.clubId, t.date)));
+    }
+    pendingFetches.push(...chains.values());
 
     // Keep the function alive until the trigger fetches flush WITHOUT blocking
     // the response on them. Each /api/scrape/club runs as its own serverless

@@ -217,6 +217,28 @@ export abstract class BaseScraper {
     return decoder.decode(buffer);
   }
 
+  /**
+   * Index of the header cell matching `labels` (tried in priority order), or -1.
+   * Sites insert columns (e.g. skyvalley 캐디, shinedale 부) — map by header, not position.
+   */
+  protected findColumn(headers: string[], ...labels: string[]): number {
+    const norm = headers.map((h) => h.replace(/\s/g, ''));
+    for (const label of labels) {
+      const i = norm.indexOf(label);
+      if (i >= 0) return i;
+    }
+    return -1;
+  }
+
+  /** Overridable in tests (login retry pauses). */
+  protected sleep(ms: number): Promise<void> {
+    return new Promise((r) => setTimeout(r, ms));
+  }
+
+  protected isTeeTime(teeoff: string): boolean {
+    return /^\d{2}:\d{2}$/.test(teeoff);
+  }
+
   protected formatTime(time: string): string {
     const t = time.replace(/\s/g, '');
     if (t.length === 4 && !t.includes(':')) {

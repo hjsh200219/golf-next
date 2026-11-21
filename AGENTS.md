@@ -108,7 +108,9 @@ src/
 
 - Build always fails prerendering `/login` without Supabase env vars -- expected
 - Scrapers depend on external golf club websites -- fragile by nature
-- **단일 세션 클럽**: 동시 로그인 시 세션이 밀려나 빈 목록을 돌려주는 사이트(onetheclub)는 `src/app/api/scrape/route.ts`의 `SINGLE_SESSION_CLUBS`에 넣어 직렬 dispatch한다. 다른 클럽에 같은 증상(로그인 필요 + 날짜별 빈 결과)이 보이면 여기 추가
+- **단일 세션 클럽**: 동시 로그인 시 세션이 밀려나거나 로그인이 거절돼 빈 목록을 돌려주는 사이트(onetheclub·skyvalley·pinestone·namchuncheon_new)는 `src/app/api/scrape/route.ts`의 `SINGLE_SESSION_CLUBS`에 넣어 클럽별 직렬 체인으로 dispatch한다. 다른 클럽에 같은 증상(로그인 필요 + 날짜별 빈 결과)이 보이면 여기 추가하고, 스크래퍼는 로그인 결과를 검사해 실패를 throw한다(빈 success 금지)
+- **표 칸은 머리 글자로 찾는다**: 사이트가 칸을 끼워 넣으면(스카이밸리 캐디, 샤인데일 부) 위치 기반 파싱은 시간 자리에 「대중제」「1부」를 넣어 DB 저장이 깨진다. `findColumn`(base)으로 머리 글자를 찾고, 머리를 못 찾으면 throw
+- **태광CC**: 로그인은 사이트 공개키로 RSA-OAEP(SHA-256) 암호화(`TAEKWANG_PW` env 평문 + `GOLF_LOGIN_ID`). 조회 action ID는 매 실행 페이지 청크에서 찾는다(빌드마다 바뀜)
 - **Liveness는 클럽 단위 S**: 한 클럽 스크래퍼가 여러 cc를 긁을 때 일부 cc가 실패한 채 success를 보고하면 그 cc 행이 전부 마감으로 보인다. 하위 cc 실패는 삼키지 말고 스크랩 전체를 실패시킬 것
 - Weather cache expires based on `weather_cache.expires_at` -- stale data possible if cron misses
 

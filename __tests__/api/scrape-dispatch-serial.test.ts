@@ -36,6 +36,9 @@ const mockSupabase = (() => {
         data: [
           { id: 'ga', name: 'X', scraper_type: 'requests' },
           { id: 'onetheclub', name: 'O', scraper_type: 'requests' },
+          { id: 'skyvalley', name: 'S', scraper_type: 'requests' },
+          { id: 'pinestone', name: 'P', scraper_type: 'requests' },
+          { id: 'namchuncheon_new', name: 'N', scraper_type: 'requests' },
         ],
         error: null,
       }),
@@ -151,4 +154,35 @@ describe('POST /api/scrape — single-session clubs are dispatched serially', ()
     await new Promise((r) => setTimeout(r, 0));
     expect(calls('onetheclub')).toEqual(dates);
   });
+
+  it('runs skyvalley dates one at a time on its own chain, not behind onetheclub', async () => {
+    // skyvalley loginChk returns success:"E" when logins overlap (measured 2026-11-21:
+    // 7 parallel dates → 1 got rows, 6 silent zero).
+    const dates = ['2026-11-22', '2026-11-23'];
+    await POST(makeRequest({ dates }));
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(calls('onetheclub')).toEqual(['2026-11-22']);
+    expect(calls('skyvalley')).toEqual(['2026-11-22']);
+
+    pending.find((p) => p.clubId === 'skyvalley' && p.date === '2026-11-22')!.resolve();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(calls('skyvalley')).toEqual(dates);
+    expect(calls('onetheclub')).toEqual(['2026-11-22']);
+  });
+
+  it.each(['pinestone', 'namchuncheon_new'])(
+    '%s (holeinonecloud one-session account) dispatches dates one at a time',
+    async (clubId) => {
+      // Overlapping logins: FN_COMMON_001 refusal or FM_LOGIN_002 kick (measured 2026-11-21).
+      const dates = ['2026-11-22', '2026-11-23'];
+      await POST(makeRequest({ dates }));
+      await new Promise((r) => setTimeout(r, 0));
+      expect(calls(clubId)).toEqual(['2026-11-22']);
+
+      pending.find((p) => p.clubId === clubId && p.date === '2026-11-22')!.resolve();
+      await new Promise((r) => setTimeout(r, 0));
+      expect(calls(clubId)).toEqual(dates);
+    },
+  );
 });

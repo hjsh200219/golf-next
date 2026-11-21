@@ -81,4 +81,58 @@ describe('PineStoneScraper', () => {
     expect(rows.find((r) => r.teeoff === '18:50')!.course).toBe('스톤');
     expect(rows.filter((r) => r.teeoff === '18:57')).toHaveLength(0);
   });
+
+  // Live responses 2026-11-21: overlapping logins on the one-session account.
+  const LOGIN_CONFLICT_JSON = {
+    contents: null,
+    result: { resultCodeType: 'FN', resultCode: 'FN_COMMON_001', resultMessage: '문제가 발생했습니다. 관리자에게 문의하세요.' },
+  };
+  const KICKED_JSON = {
+    contents: null,
+    result: { resultCodeType: 'LM', resultCode: 'FM_LOGIN_002', resultMessage: '다른 기기에서 로그인되어 자동 로그아웃되었습니다. 다시 로그인해 주세요.' },
+  };
+
+  function stubSleep(scraper: PineStoneScraper) {
+    return vi.spyOn(scraper as unknown as { sleep: (ms: number) => Promise<void> }, 'sleep')
+      .mockResolvedValue(undefined);
+  }
+
+  it('retries login after FN_COMMON_001 and scrapes once it succeeds', async () => {
+    const scraper = new PineStoneScraper('20261122', MOCK_CREDENTIALS);
+    const sleep = stubSleep(scraper);
+    let logins = 0;
+    vi.spyOn(scraper as unknown as { fetch: typeof globalThis.fetch }, 'fetch')
+      .mockImplementation(async (url: RequestInfo | URL) => {
+        if (String(url).includes('/api/v1/auth/login')) {
+          logins++;
+          return new Response(JSON.stringify(logins < 2 ? LOGIN_CONFLICT_JSON : LOGIN_JSON));
+        }
+        return new Response(JSON.stringify(BOOKING_JSON));
+      });
+
+    const rows = await scraper.scrape();
+    expect(logins).toBe(2);
+    expect(sleep).toHaveBeenCalledTimes(1);
+    expect(rows).toHaveLength(2);
+  });
+
+  it('throws with the result code when every login attempt is refused', async () => {
+    const scraper = new PineStoneScraper('20261122', MOCK_CREDENTIALS);
+    stubSleep(scraper);
+    vi.spyOn(scraper as unknown as { fetch: typeof globalThis.fetch }, 'fetch')
+      .mockImplementation(async () => new Response(JSON.stringify(LOGIN_CONFLICT_JSON)));
+
+    await expect(scraper.scrape()).rejects.toThrow(/pinestone: login failed.*FN_COMMON_001/);
+  });
+
+  it('throws when the booking list says the session was kicked (FM_LOGIN_002), not an empty success', async () => {
+    const scraper = new PineStoneScraper('20261122', MOCK_CREDENTIALS);
+    stubSleep(scraper);
+    vi.spyOn(scraper as unknown as { fetch: typeof globalThis.fetch }, 'fetch')
+      .mockImplementation(async (url: RequestInfo | URL) => new Response(JSON.stringify(
+        String(url).includes('/api/v1/auth/login') ? LOGIN_JSON : KICKED_JSON,
+      )));
+
+    await expect(scraper.scrape()).rejects.toThrow(/pinestone: booking list FM_LOGIN_002/);
+  });
 });
