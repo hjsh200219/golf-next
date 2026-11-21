@@ -15,7 +15,7 @@ golf(Python) 프로젝트에 ID/PW가 등록되어 있으나, golf-next에서 �
 
 | ID | 이름 | URL | 상태 |
 |---|---|---|---|
-| `jungbu` | 중부CC → **더 시에나 서울CC** | thesiena.co.kr (옛 akdjbcc.co.kr) | 2026-11-21 확인: 옛 도메인은 Cloudflare 530/1016(원본 없음). 골프장이 「더 시에나 서울CC」(회원제)로 개명·이전. 새 사이트와 API(`/api/v2/golf/reservation-times/alt`)는 서버 요청에 **Cloudflare 관리형 챌린지**(403 `cf-mitigated: challenge`) + 예약은 로그인 필요. 서버 fetch 스크래퍼로는 불가(포천힐스와 같은 유형) |
+| `jungbu` | 중부CC → **더 시에나 서울CC** | thesiena.co.kr (옛 akdjbcc.co.kr) | 2026-11-21 확인: 옛 도메인은 Cloudflare 530/1016(원본 없음). 골프장이 「더 시에나 서울CC」(회원제)로 개명·이전. 새 사이트와 API(`/api/v2/golf/reservation-times/alt`)는 서버 요청에 **Cloudflare 관리형 챌린지**(403 `cf-mitigated: challenge`) + 예약은 로그인 필요. 서버 fetch 스크래퍼로는 불가(포천힐스와 같은 유형). 실제 크롬은 챌린지를 통과하므로 막힘은 계정 — 시에나 계정이 없어 보류(11-21) |
 
 ## 봇 차단 / 로그인 차단 (Playwright로도 클라우드 불가)
 
