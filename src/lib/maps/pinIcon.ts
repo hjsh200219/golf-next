@@ -40,12 +40,15 @@ export function pinIcon(text: string, selected: boolean): PinIcon {
   };
 }
 
-/** Small dot for a course whose price pill is hidden by a cheaper overlapping one. */
+/**
+ * Small dot for a course whose price pill is hidden by a cheaper overlapping one.
+ * The visible dot is ~11px; the transparent 24px canvas is the tap target.
+ */
 export function dotIcon(): PinIcon {
-  const size = 12;
+  const size = 24;
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">` +
-    `<circle cx="6" cy="6" r="4.5" fill="#15803d" stroke="#ffffff" stroke-width="2"/></svg>`;
+    `<circle cx="12" cy="12" r="4.5" fill="#15803d" stroke="#ffffff" stroke-width="2"/></svg>`;
   return {
     url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
     width: size,

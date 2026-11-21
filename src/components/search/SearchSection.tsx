@@ -34,10 +34,12 @@ export default function SearchSection() {
   const { viewMode: preferredView, setViewMode } = useUIPreferences();
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const navHeight = useMobileNavHeight();
-  // 지도 보기는 모바일 전용 — 데스크톱은 기존 골프장별 목록으로 그린다
+  // 지도 보기는 모바일 전용 — 데스크톱은 기존 골프장별 목록으로 그린다.
+  // isDesktop 이 null(서버 렌더·하이드레이션)일 때는 지도 틀만 그리고 md 이상에서는 CSS 로 숨긴다.
   const viewMode: Exclude<ViewMode, 'map'> | 'map' =
-    isDesktop && preferredView === 'map' ? 'club' : preferredView;
+    isDesktop === true && preferredView === 'map' ? 'club' : preferredView;
   const mapMode = viewMode === 'map';
+  const mapLive = mapMode && isDesktop === false;
 
   const effectiveClubs = favoritesOnly && favoriteIds.length > 0
     ? favoriteIds
@@ -92,11 +94,11 @@ export default function SearchSection() {
 
   // 지도 보기에서는 페이지가 스크롤되지 않게 한다 (지도·시트가 화면을 채움)
   useEffect(() => {
-    if (!mapMode) return;
+    if (!mapLive) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = prev; };
-  }, [mapMode]);
+  }, [mapLive]);
 
 
   const pollJobStatus = useCallback(async (jobId: number) => {
@@ -168,10 +170,11 @@ export default function SearchSection() {
   if (mapMode) {
     return (
       <div
-        className="fixed inset-x-0 top-14 z-30"
+        className="fixed inset-x-0 top-14 z-30 md:hidden"
         style={{ bottom: navHeight }}
       >
         <MapExplorer
+          mapEnabled={mapLive}
           spots={spots}
           emptyClubs={emptyClubs}
           clubUrl={clubUrl}
@@ -203,7 +206,7 @@ export default function SearchSection() {
       <SearchBar onSearch={handleRefresh} />
 
       <div className="flex">
-        <ViewSwitch value={viewMode} onChange={setViewMode} withMap={!isDesktop} />
+        <ViewSwitch value={viewMode} onChange={setViewMode} withMap={isDesktop !== true} />
       </div>
 
       {/* 건수 · 수집 시각 · 필터를 한 줄에 둔다. 필터 본문은 줄바꿈되어 아래 전체 너비로 펼쳐진다 */}

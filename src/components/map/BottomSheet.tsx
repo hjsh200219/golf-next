@@ -11,6 +11,8 @@ interface BottomSheetProps {
   children: ReactNode;
   /** Reports the peek height so the map can keep pins clear of the sheet */
   onPeekHeight?: (px: number) => void;
+  /** Reports the height the sheet covers (capped at half) so the map can center a pin above it */
+  onVisibleHeight?: (px: number) => void;
 }
 
 const NEXT: Record<SheetSnap, SheetSnap> = { peek: 'half', half: 'full', full: 'peek' };
@@ -24,7 +26,7 @@ const useIsoLayoutEffect = typeof window === 'undefined' ? useEffect : useLayout
  * (handle + header) to resize; the handle button cycles sizes for keyboard and
  * screen-reader users. Body scrolls inside the visible height only.
  */
-export default function BottomSheet({ snap, onSnapChange, header, children, onPeekHeight }: BottomSheetProps) {
+export default function BottomSheet({ snap, onSnapChange, header, children, onPeekHeight, onVisibleHeight }: BottomSheetProps) {
   const sheetRef = useRef<HTMLDivElement>(null);
   const topRef = useRef<HTMLDivElement>(null);
   const [containerH, setContainerH] = useState(0);
@@ -57,6 +59,10 @@ export default function BottomSheet({ snap, onSnapChange, header, children, onPe
     full: Math.max(peekH, containerH - 12),
   }), [peekH, containerH]);
   const visible = dragVisible ?? heights[snap];
+  const covered = Math.min(heights[snap], heights.half);
+  useEffect(() => {
+    onVisibleHeight?.(covered);
+  }, [covered, onVisibleHeight]);
   const translate = containerH ? Math.max(0, containerH - visible) : 0;
 
   const onPointerDown = useCallback((e: React.PointerEvent) => {

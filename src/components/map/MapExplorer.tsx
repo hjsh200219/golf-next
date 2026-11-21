@@ -24,6 +24,8 @@ interface MapExplorerProps {
   filters: ReactNode;
   /** 지도 / 골프장별 / 시간순 switch */
   viewSwitch?: ReactNode;
+  /** false until the screen size is known — keeps Google Maps from loading on desktop hydration */
+  mapEnabled?: boolean;
 }
 
 /**
@@ -32,12 +34,13 @@ interface MapExplorerProps {
  * own, so a map failure never blocks 조회.
  */
 export default function MapExplorer({
-  spots, emptyClubs, clubUrl, isLoading, error, onRetry, header, summary, filters, viewSwitch,
+  spots, emptyClubs, clubUrl, isLoading, error, onRetry, header, summary, filters, viewSwitch, mapEnabled = true,
 }: MapExplorerProps) {
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [snap, setSnap] = useState<SheetSnap>('half');
   const [mapError, setMapError] = useState<string | null>(null);
   const [peekH, setPeekH] = useState(160);
+  const [coveredH, setCoveredH] = useState(0);
 
   const pinned = useMemo(() => spots.filter((s) => s.lat != null && s.lon != null), [spots]);
   const selected = spots.find((s) => s.key === selectedKey) ?? null;
@@ -49,20 +52,32 @@ export default function MapExplorer({
   const onMapError = useCallback((m: string) => setMapError(m), []);
 
   return (
-    <div className="relative h-full w-full overflow-hidden">
-      <TeeTimeMap
-        spots={pinned}
-        selectedKey={selectedKey}
-        onSelect={select}
-        onError={onMapError}
-        bottomInset={snap === 'full' ? peekH : Math.max(peekH, 0)}
-      />
+    <div className="relative h-full w-full overflow-clip">
+      {mapEnabled ? (
+        <TeeTimeMap
+          spots={pinned}
+          selectedKey={selectedKey}
+          onSelect={select}
+          onError={onMapError}
+          bottomInset={peekH}
+          sheetHeight={coveredH || peekH}
+        />
+      ) : (
+        <div className="absolute inset-0 bg-[#e8eee9]" />
+      )}
       <BottomSheet
         snap={snap}
         onSnapChange={setSnap}
         onPeekHeight={setPeekH}
+        onVisibleHeight={setCoveredH}
         header={
-          <div className="space-y-2.5 px-4 pb-3">
+          <div
+            className="space-y-2.5 px-4 pb-3"
+            // A popover input (date picker) opens below the header — show room for it
+            onFocus={(e) => {
+              if (e.target instanceof HTMLInputElement) setSnap((s) => (s === 'peek' ? 'half' : s));
+            }}
+          >
             {header}
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">{summary}</div>

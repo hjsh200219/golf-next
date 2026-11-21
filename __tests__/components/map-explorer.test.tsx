@@ -97,6 +97,27 @@ describe('MapExplorer', () => {
     expect(screen.getByRole('list', { name: '골프장 목록' })).toBeInTheDocument();
   });
 
+  it('clips (not hides) overflow so focus/scrollIntoView cannot shift the sheet', () => {
+    const { container } = renderExplorer();
+    expect(container.firstElementChild?.className).toContain('overflow-clip');
+  });
+
+  it('does not mount the map until the screen size is known', () => {
+    renderExplorer({ mapEnabled: false });
+    expect(screen.queryByTestId('map')).not.toBeInTheDocument();
+    expect(screen.getByRole('list', { name: '골프장 목록' })).toBeInTheDocument();
+  });
+
+  it('opens a collapsed sheet to half when an input in the header gets focus (date picker)', () => {
+    renderExplorer({ header: <input aria-label="날짜 입력" /> });
+    const handle = () => screen.getByRole('button', { name: /시트 크기/ });
+    fireEvent.click(handle()); // half → full
+    fireEvent.click(handle()); // full → peek
+    expect(handle()).toHaveAccessibleName(/접힘/);
+    fireEvent.focus(screen.getByLabelText('날짜 입력'));
+    expect(handle()).toHaveAccessibleName(/절반/);
+  });
+
   it('shows a loading state while tee times load', () => {
     renderExplorer({ spots: [], isLoading: true });
     expect(screen.getByRole('status')).toHaveTextContent('불러오는 중');
@@ -118,6 +139,14 @@ describe('MapExplorer', () => {
 });
 
 describe('BottomSheet', () => {
+  it('reports the visible sheet height (capped at half) so the map can center pins above it', () => {
+    const onVisibleHeight = vi.fn();
+    render(
+      <BottomSheet snap="full" onSnapChange={vi.fn()} onVisibleHeight={onVisibleHeight} header={<div>머리</div>}>본문</BottomSheet>,
+    );
+    expect(onVisibleHeight).toHaveBeenCalled();
+  });
+
   it('the handle cycles peek → half → full → peek and reports the size', () => {
     const onSnapChange = vi.fn();
     const { rerender } = render(

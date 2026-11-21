@@ -28,9 +28,10 @@ describe('pinIcon', () => {
     expect(decodeURIComponent(pinIcon('<b>&', false).url)).toContain('&lt;b&gt;&amp;');
   });
 
-  it('dotIcon is a small centered dot for pins hidden by overlap', () => {
+  it('dotIcon is a small centered dot with a 24px transparent tap area', () => {
     const d = dotIcon();
-    expect(d.width).toBeLessThanOrEqual(14);
+    expect(d.width).toBeGreaterThanOrEqual(24);
+    expect(decodeURIComponent(d.url)).toMatch(/r="[3-6](\.\d)?"/);
     expect(d.anchorX).toBe(d.width / 2);
     expect(d.anchorY).toBe(d.height / 2);
     expect(decodeURIComponent(d.url)).toContain('<circle');

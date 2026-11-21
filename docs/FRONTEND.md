@@ -20,13 +20,13 @@
 ### Search (`components/search/`)
 | Component | Type | Description |
 |-----------|------|-------------|
-| `SearchSection` | Client | Main search orchestrator — date tabs, filters, results |
+| `SearchSection` | Client | Main search orchestrator — date tabs, filters, results. Mobile defaults to `viewMode: 'map'` (MapExplorer); desktop (md+) renders `map` as `club`. `useMediaQuery` is `null` during SSR/hydration so desktop never hydrates the map |
 | `FilterPanel` | Client | Collapsible filter container |
 | `RegionFilter` | Client | Region-based club filtering (7 regions) |
 | `ClubFilter` | Client | Individual club selection |
 | `TimeFilter` | Client | Time range slider |
 | `PriceFilter` | Client | Price range slider |
-| `SearchBar` | Client | Text search input |
+| `SearchBar` | Client | Date tabs + 조회 button; `compact` = one row with short dates (`11.22 (일)`) for the map sheet |
 
 ### Results (`components/results/`)
 | Component | Type | Description |
@@ -34,7 +34,7 @@
 | `TeeTimeTable` | Client | Main results table (uses @tanstack/react-table) |
 | `TeeTimeCard` | Client | Mobile card view for tee-time result |
 | `ClubGroupView` | Client | Club-grouped tee-time view |
-| `ResultSummary` | Client | Count + filter summary bar |
+| `ResultSummary` | Client | Count + last scrape time; `compact` shows KST `HH:MM 수집` only |
 | `LoadingState` | Server | Shimmer loading skeleton |
 
 ### Map (`components/map/`)
@@ -43,6 +43,11 @@
 | `GolfMap` | Client | Google Maps with club markers |
 | `ClubMarker` | Client | Individual club pin |
 | `MapTooltip` | Client | Hover tooltip for club info |
+| `MapExplorer` | Client | Mobile 예약 조회: price-pin map + bottom sheet (date tabs, filters, course list, tee-time detail with 바로가기). List works when the map fails |
+| `TeeTimeMap` | Client | Google map, one lowest-price pill per course (`lib/utils/mapPins`). Overlapping pills collapse to dots (`lib/maps/declutter`); a pill↔dot switch recreates the marker because Google keeps the old click area |
+| `BottomSheet` | Client | Non-modal sheet, snaps peek/half/full (drag or handle button). Root uses `overflow-clip` so focus/scrollIntoView cannot shift it |
+
+Region filter cc restrictions are applied with `lib/utils/ccFilter` (token match — course rows and scraped cc names are spelled differently).
 
 ### Weather (`components/weather/`)
 | Component | Type | Description |

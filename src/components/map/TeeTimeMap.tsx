@@ -13,8 +13,10 @@ interface TeeTimeMapProps {
   selectedKey: string | null;
   onSelect: (key: string) => void;
   onError: (message: string) => void;
-  /** Height covered by the sheet at the bottom — keeps fitted pins above it */
+  /** Height of the collapsed sheet — keeps fitted pins above it */
   bottomInset: number;
+  /** Height the sheet covers now — a selected pin is centered in the map area above it */
+  sheetHeight: number;
 }
 
 const SEOUL = { lat: 37.45, lng: 127.2 };
@@ -23,10 +25,10 @@ const SEOUL = { lat: 37.45, lng: 127.2 };
  * Google map with one price pill per golf course (lowest price of the day).
  * One-finger pan (gestureHandling greedy) because the page itself does not scroll.
  */
-export default function TeeTimeMap({ spots, selectedKey, onSelect, onError, bottomInset }: TeeTimeMapProps) {
+export default function TeeTimeMap({ spots, selectedKey, onSelect, onError, bottomInset, sheetHeight }: TeeTimeMapProps) {
   const el = useRef<HTMLDivElement>(null);
   const map = useRef<google.maps.Map | null>(null);
-  const markers = useRef(new Map<string, google.maps.Marker>());
+  const markers = useRef(new Map<string, { mk: google.maps.Marker; dot: boolean }>());
   const fittedFor = useRef('');
   const [ready, setReady] = useState(false);
   // Keys whose price pill is shown; the rest render as dots (null = not computed yet)
@@ -117,14 +119,17 @@ export default function TeeTimeMap({ spots, selectedKey, onSelect, onError, bott
         optimized: false,
       };
       const existing = markers.current.get(s.key);
-      if (existing) existing.setOptions(opts);
+      // Google keeps the old click area when the icon size changes, so a pill↔dot
+      // switch recreates the marker instead of setOptions
+      if (existing && existing.dot === asDot) existing.mk.setOptions(opts);
       else {
+        existing?.mk.setMap(null);
         const mk = new g.maps.Marker({ ...opts, map: m });
         mk.addListener('click', () => onSelectRef.current(s.key));
-        markers.current.set(s.key, mk);
+        markers.current.set(s.key, { mk, dot: asDot });
       }
     }
-    for (const [key, mk] of markers.current) {
+    for (const [key, { mk }] of markers.current) {
       if (!seen.has(key)) {
         mk.setMap(null);
         markers.current.delete(key);
@@ -151,8 +156,10 @@ export default function TeeTimeMap({ spots, selectedKey, onSelect, onError, bott
     const s = spots.find((x) => x.key === selectedKey);
     if (!ready || !m || !s || s.lat == null || s.lon == null) return;
     m.panTo({ lat: s.lat, lng: s.lon });
-    m.panBy(0, Math.round(bottomInset / 2));
-  }, [ready, selectedKey, spots, bottomInset]);
+    m.panBy(0, Math.round(sheetHeight / 2));
+    // sheetHeight is read at selection time only; resizing the sheet must not re-pan
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, selectedKey, spots]);
 
   return (
     <div className="absolute inset-0 bg-[#e8eee9]">
