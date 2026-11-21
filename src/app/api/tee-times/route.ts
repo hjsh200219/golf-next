@@ -12,9 +12,12 @@ const MAX_PAGES = 20; // safety ceiling: 20k rows
 const PAGE_BATCH = 3;
 
 // Tee times change only when the hourly scrape lands, so let the CDN answer the
-// first visitor instead of a cold function + 3 sequential queries. Browsers keep
-// max-age=0 so the in-app refresh still reaches the CDN.
-const CDN_CACHE = 'public, max-age=0, s-maxage=60, stale-while-revalidate=600';
+// first visitor instead of a cold function + 3 sequential queries. The stale
+// window spans one scrape cycle: the first open after a quiet spell is served
+// from the CDN (measured 3.8s cold MISS vs 0.1–0.4s HIT) while it refetches in
+// the background, so the next refresh is current. Browsers keep max-age=0 so
+// the in-app refresh still reaches the CDN.
+const CDN_CACHE = 'public, max-age=0, s-maxage=60, stale-while-revalidate=3600';
 const cached = (body: unknown) =>
   NextResponse.json(body, { headers: { 'Cache-Control': CDN_CACHE } });
 

@@ -525,7 +525,10 @@ describe('GET /api/tee-times', () => {
     expect(res.status).toBe(200);
     const cc = res.headers.get('cache-control') ?? '';
     expect(cc).toMatch(/s-maxage=60\b/);
-    expect(cc).toMatch(/stale-while-revalidate=\d+/);
+    // Must outlast the hourly scrape cycle: the first open after a quiet spell
+    // should still be a CDN hit (refreshed in the background), not a ~4s cold call.
+    const swr = Number(cc.match(/stale-while-revalidate=(\d+)/)?.[1] ?? 0);
+    expect(swr).toBeGreaterThanOrEqual(3600);
   });
 
   it('never lets the CDN cache an error response', async () => {
