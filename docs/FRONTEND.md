@@ -20,7 +20,7 @@
 ### Search (`components/search/`)
 | Component | Type | Description |
 |-----------|------|-------------|
-| `SearchSection` | Client | Main search orchestrator — date tabs, filters, results. Mobile defaults to `viewMode: 'map'` (MapExplorer); desktop (md+) renders `map` as `club`. `useMediaQuery` is `null` during SSR/hydration so desktop never hydrates the map |
+| `SearchSection` | Client | Main search orchestrator — date tabs, filters, results. Mobile defaults to `viewMode: 'map'` (MapExplorer); `map` is the default at every width (md+ = split layout with a left side panel, <768px = bottom sheet). `useMediaQuery` is `null` during SSR/hydration so Google Maps is never mounted before the size is known |
 | `FilterPanel` | Client | Collapsible filter container |
 | `RegionFilter` | Client | Region-based club filtering (7 regions) |
 | `ClubFilter` | Client | Individual club selection |
@@ -43,7 +43,7 @@
 | `GolfMap` | Client | Google Maps with club markers |
 | `ClubMarker` | Client | Individual club pin |
 | `MapTooltip` | Client | Hover tooltip for club info |
-| `MapExplorer` | Client | Mobile 예약 조회: price-pin map + bottom sheet (date tabs, filters, course list, tee-time detail with 바로가기). List works when the map fails |
+| `MapExplorer` | Client | 예약 조회: price-pin map + bottom sheet (<768px) or left side panel (`layout="split"`, md+) (date tabs, filters, course list, tee-time detail with 바로가기). List works when the map fails |
 | `TeeTimeMap` | Client | Google map, one lowest-price pill per course (`lib/utils/mapPins`). Overlapping pills collapse to dots (`lib/maps/declutter`); a pill↔dot switch recreates the marker because Google keeps the old click area |
 | `BottomSheet` | Client | Non-modal sheet, snaps peek/half/full (drag or handle button). Root uses `overflow-clip` so focus/scrollIntoView cannot shift it |
 

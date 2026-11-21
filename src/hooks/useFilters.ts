@@ -72,7 +72,7 @@ export const useFilterStore = create<FilterState>((set) => ({
 
 // --- UI Preferences (separate from filter state) ---
 
-/** 'map' = mobile 지도 + 바텀시트 (desktop renders it as 'club') */
+/** 'map' = 지도 + 목록 패널 (mobile 바텀시트, md+ 왼쪽 패널) */
 export type ViewMode = 'map' | 'club' | 'time';
 
 interface UIPreferencesState {

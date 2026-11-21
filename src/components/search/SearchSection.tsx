@@ -34,12 +34,11 @@ export default function SearchSection() {
   const { viewMode: preferredView, setViewMode } = useUIPreferences();
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const navHeight = useMobileNavHeight();
-  // 지도 보기는 모바일 전용 — 데스크톱은 기존 골프장별 목록으로 그린다.
-  // isDesktop 이 null(서버 렌더·하이드레이션)일 때는 지도 틀만 그리고 md 이상에서는 CSS 로 숨긴다.
-  const viewMode: Exclude<ViewMode, 'map'> | 'map' =
-    isDesktop === true && preferredView === 'map' ? 'club' : preferredView;
+  // 지도 보기는 모든 너비에서 기본이다. md 이상(펼친 폴더블·태블릿·데스크톱)은 왼쪽 패널 + 지도(split),
+  // 모바일은 바텀시트. isDesktop 이 null(서버 렌더·하이드레이션)이면 지도 틀만 그리고 구글 지도는 올리지 않는다.
+  const viewMode: ViewMode = preferredView;
   const mapMode = viewMode === 'map';
-  const mapLive = mapMode && isDesktop === false;
+  const mapLive = mapMode && isDesktop !== null;
 
   const effectiveClubs = favoritesOnly && favoriteIds.length > 0
     ? favoriteIds
@@ -170,10 +169,11 @@ export default function SearchSection() {
   if (mapMode) {
     return (
       <div
-        className="fixed inset-x-0 top-14 z-30 md:hidden"
-        style={{ bottom: navHeight }}
+        className="fixed inset-x-0 top-14 z-30"
+        style={{ bottom: isDesktop ? 0 : navHeight }}
       >
         <MapExplorer
+          layout={isDesktop ? 'split' : 'sheet'}
           mapEnabled={mapLive}
           spots={spots}
           emptyClubs={emptyClubs}
@@ -195,7 +195,7 @@ export default function SearchSection() {
               hasFavorites={favoriteIds.length > 0}
             />
           }
-          viewSwitch={<ViewSwitch value={viewMode} onChange={setViewMode} withMap size="sm" />}
+          viewSwitch={<ViewSwitch value={viewMode} onChange={setViewMode} size="sm" />}
         />
       </div>
     );
@@ -206,7 +206,7 @@ export default function SearchSection() {
       <SearchBar onSearch={handleRefresh} />
 
       <div className="flex">
-        <ViewSwitch value={viewMode} onChange={setViewMode} withMap={isDesktop !== true} />
+        <ViewSwitch value={viewMode} onChange={setViewMode} />
       </div>
 
       {/* 건수 · 수집 시각 · 필터를 한 줄에 둔다. 필터 본문은 줄바꿈되어 아래 전체 너비로 펼쳐진다 */}
@@ -260,14 +260,13 @@ export default function SearchSection() {
 const VIEW_LABEL: Record<ViewMode, string> = { map: '지도', club: '골프장별', time: '시간순' };
 
 function ViewSwitch({
-  value, onChange, withMap, size = 'md',
+  value, onChange, size = 'md',
 }: {
   value: ViewMode;
   onChange: (v: ViewMode) => void;
-  withMap: boolean;
   size?: 'sm' | 'md';
 }) {
-  const modes: ViewMode[] = withMap ? ['map', 'club', 'time'] : ['club', 'time'];
+  const modes: ViewMode[] = ['map', 'club', 'time'];
   return (
     <div className="flex shrink-0 overflow-hidden rounded-lg ring-1 ring-gray-200" role="group" aria-label="보기 방식">
       {modes.map((m) => (

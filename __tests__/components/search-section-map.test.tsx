@@ -1,7 +1,7 @@
 /**
  * SearchSection — 지도 보기 연결.
  * Mobile defaults to 지도 + 바텀시트; 골프장별·시간순 lists stay one tap away.
- * Desktop (md+) keeps the existing list layout with no 지도 option.
+ * Wide screens (md+, unfolded foldables, tablets, desktop) also default to 지도, in a split layout.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
@@ -20,7 +20,9 @@ vi.mock('@/hooks/useClubs', () => ({
 }));
 vi.mock('@/hooks/useFavorites', () => ({ useFavorites: () => ({ favoriteIds: [] }) }));
 vi.mock('@/components/map/MapExplorer', () => ({
-  default: (p: { viewSwitch?: React.ReactNode }) => <div data-testid="map-explorer">{p.viewSwitch}</div>,
+  default: (p: { viewSwitch?: React.ReactNode; layout?: string; mapEnabled?: boolean }) => (
+    <div data-testid="map-explorer" data-layout={p.layout} data-map-enabled={String(p.mapEnabled)}>{p.viewSwitch}</div>
+  ),
 }));
 vi.mock('@/components/results/TeeTimeTable', () => ({
   default: (p: { viewMode: string }) => <div data-testid="table">{p.viewMode}</div>,
@@ -55,11 +57,37 @@ describe('SearchSection map view', () => {
     expect(screen.queryByTestId('map-explorer')).not.toBeInTheDocument();
   });
 
-  it('desktop keeps the list and offers no 지도 option', async () => {
+  it('mobile uses the bottom-sheet layout', async () => {
+    setDesktop(false);
+    await renderSection();
+    expect(screen.getByTestId('map-explorer')).toHaveAttribute('data-layout', 'sheet');
+    expect(screen.getByTestId('map-explorer')).toHaveAttribute('data-map-enabled', 'true');
+  });
+
+  it('wide screens default to the map in the split layout and keep the 지도 option', async () => {
     setDesktop(true);
     await renderSection();
-    expect(screen.queryByTestId('map-explorer')).not.toBeInTheDocument();
+    expect(screen.getByTestId('map-explorer')).toHaveAttribute('data-layout', 'split');
+    expect(screen.getByTestId('map-explorer')).toHaveAttribute('data-map-enabled', 'true');
+    expect(screen.queryByTestId('table')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '지도' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('wide screens can switch to 골프장별 and back to 지도', async () => {
+    setDesktop(true);
+    await renderSection();
+    fireEvent.click(screen.getByRole('button', { name: '골프장별' }));
     expect(screen.getByTestId('table')).toHaveTextContent('club');
-    expect(screen.queryByRole('button', { name: '지도' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '지도' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '지도' }));
+    expect(screen.getByTestId('map-explorer')).toBeInTheDocument();
+  });
+
+  it('locks body scroll only while the map view is shown', async () => {
+    setDesktop(true);
+    await renderSection();
+    expect(document.body.style.overflow).toBe('hidden');
+    fireEvent.click(screen.getByRole('button', { name: '골프장별' }));
+    expect(document.body.style.overflow).not.toBe('hidden');
   });
 });

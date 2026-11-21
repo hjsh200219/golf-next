@@ -26,15 +26,21 @@ interface MapExplorerProps {
   viewSwitch?: ReactNode;
   /** false until the screen size is known — keeps Google Maps from loading on desktop hydration */
   mapEnabled?: boolean;
+  /**
+   * 'sheet' (default, <768px): map fills the area, bottom sheet holds the panel.
+   * 'split' (md+): left side panel (own scroll) + map filling the rest; no sheet.
+   */
+  layout?: 'sheet' | 'split';
 }
 
 /**
- * Mobile 예약 조회: price pins on a map + a bottom sheet holding the date tabs,
- * filters, course list and the selected course's tee times. The list works on its
- * own, so a map failure never blocks 조회.
+ * 예약 조회: price pins on a map + the date tabs, filters, course list and the
+ * selected course's tee times. Mobile uses a bottom sheet; wide screens (md+) use a
+ * left side panel next to the map. The list works on its own, so a map failure never
+ * blocks 조회.
  */
 export default function MapExplorer({
-  spots, emptyClubs, clubUrl, isLoading, error, onRetry, header, summary, filters, viewSwitch, mapEnabled = true,
+  spots, emptyClubs, clubUrl, isLoading, error, onRetry, header, summary, filters, viewSwitch, mapEnabled = true, layout = 'sheet',
 }: MapExplorerProps) {
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [snap, setSnap] = useState<SheetSnap>('half');
@@ -51,61 +57,90 @@ export default function MapExplorer({
   }, []);
   const onMapError = useCallback((m: string) => setMapError(m), []);
 
+  const split = layout === 'split';
+
+  const errorNotice = mapError && (
+    <p
+      role="alert"
+      className={`mx-4 mt-3 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-800 ring-1 ring-amber-200`}
+    >
+      지도를 불러오지 못했습니다. 아래 목록으로 조회할 수 있습니다.
+    </p>
+  );
+
+  const body = selected ? (
+    <SpotDetail spot={selected} url={clubUrl(selected.clubId)} onBack={() => setSelectedKey(null)} />
+  ) : (
+    <div className="px-4 pb-6 pt-3">
+      <div className="mb-3">{filters}</div>
+      <SpotList
+        spots={spots}
+        emptyClubs={emptyClubs}
+        isLoading={isLoading}
+        error={error}
+        onRetry={onRetry}
+        onSelect={select}
+      />
+    </div>
+  );
+
+  const headerBlock = (
+    <div
+      className="space-y-2.5 px-4 pb-3"
+      // A popover input (date picker) opens below the header — show room for it
+      onFocus={(e) => {
+        if (!split && e.target instanceof HTMLInputElement) setSnap((s) => (s === 'peek' ? 'half' : s));
+      }}
+    >
+      {header}
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">{summary}</div>
+        {viewSwitch}
+      </div>
+    </div>
+  );
+
+  const mapNode = mapEnabled ? (
+    <TeeTimeMap
+      spots={pinned}
+      selectedKey={selectedKey}
+      onSelect={select}
+      onError={onMapError}
+      bottomInset={split ? 0 : peekH}
+      sheetHeight={split ? 0 : coveredH || peekH}
+    />
+  ) : (
+    <div className="absolute inset-0 bg-[#e8eee9]" />
+  );
+
+  if (split) {
+    return (
+      <div className="flex h-full w-full overflow-clip">
+        <aside
+          aria-label="예약 조회 패널"
+          className="h-full w-[400px] shrink-0 overflow-y-auto overscroll-contain border-r border-gray-200 bg-white pt-3 shadow-card"
+        >
+          {headerBlock}
+          {errorNotice}
+          {body}
+        </aside>
+        <div className="relative h-full min-w-0 flex-1">{mapNode}</div>
+      </div>
+    );
+  }
+
   return (
     <div className="relative h-full w-full overflow-clip">
-      {mapEnabled ? (
-        <TeeTimeMap
-          spots={pinned}
-          selectedKey={selectedKey}
-          onSelect={select}
-          onError={onMapError}
-          bottomInset={peekH}
-          sheetHeight={coveredH || peekH}
-        />
-      ) : (
-        <div className="absolute inset-0 bg-[#e8eee9]" />
-      )}
+      {mapNode}
       <BottomSheet
         snap={snap}
         onSnapChange={setSnap}
         onPeekHeight={setPeekH}
         onVisibleHeight={setCoveredH}
-        header={
-          <div
-            className="space-y-2.5 px-4 pb-3"
-            // A popover input (date picker) opens below the header — show room for it
-            onFocus={(e) => {
-              if (e.target instanceof HTMLInputElement) setSnap((s) => (s === 'peek' ? 'half' : s));
-            }}
-          >
-            {header}
-            <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0">{summary}</div>
-              {viewSwitch}
-            </div>
-          </div>
-        }
+        header={headerBlock}
       >
-        {mapError && (
-          <p role="alert" className="mx-4 mt-3 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-800 ring-1 ring-amber-200">
-            지도를 불러오지 못했습니다. 아래 목록으로 조회할 수 있습니다.
-          </p>
-        )}
-        {selected ? (
-          <SpotDetail spot={selected} url={clubUrl(selected.clubId)} onBack={() => setSelectedKey(null)} />
-        ) : (
-          <div className="px-4 pb-6 pt-3">
-            <div className="mb-3">{filters}</div>
-            <SpotList
-              spots={spots}
-              emptyClubs={emptyClubs}
-              isLoading={isLoading}
-              error={error}
-              onRetry={onRetry}
-              onSelect={select}
-            />
-          </div>
-        )}
+        {errorNotice}
+        {body}
       </BottomSheet>
     </div>
   );

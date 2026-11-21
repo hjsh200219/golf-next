@@ -138,6 +138,50 @@ describe('MapExplorer', () => {
   });
 });
 
+describe('MapExplorer layout="split" (md+)', () => {
+  it('renders a left side panel with header, summary, switch, filters and list — and no bottom sheet', () => {
+    renderExplorer({ layout: 'split', viewSwitch: <div>보기 방식</div> });
+    const panel = screen.getByRole('complementary', { name: '예약 조회 패널' });
+    expect(within(panel).getByText('날짜 탭')).toBeInTheDocument();
+    expect(within(panel).getByText('3건')).toBeInTheDocument();
+    expect(within(panel).getByText('보기 방식')).toBeInTheDocument();
+    expect(within(panel).getByText('필터')).toBeInTheDocument();
+    expect(within(panel).getByRole('list', { name: '골프장 목록' })).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: '예약 조회 시트' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /시트 크기/ })).not.toBeInTheDocument();
+  });
+
+  it('keeps the map outside the panel and never insets pins for a sheet', () => {
+    renderExplorer({ layout: 'split' });
+    const panel = screen.getByRole('complementary', { name: '예약 조회 패널' });
+    expect(within(panel).queryByTestId('map')).not.toBeInTheDocument();
+    expect(screen.getByTestId('map')).toBeInTheDocument();
+    expect(mapProps.current?.bottomInset).toBe(0);
+    expect(mapProps.current?.sheetHeight).toBe(0);
+  });
+
+  it('row click opens the detail in the panel and highlights the pin; 목록으로 returns', () => {
+    renderExplorer({ layout: 'split' });
+    fireEvent.click(screen.getByRole('button', { name: /샤인데일/ }));
+    const panel = screen.getByRole('complementary', { name: '예약 조회 패널' });
+    expect(within(panel).getByRole('heading', { name: '샤인데일' })).toBeInTheDocument();
+    expect(mapProps.current?.selectedKey).toBe('shinedale|샤인데일');
+    fireEvent.click(screen.getByRole('button', { name: '목록으로 돌아가기' }));
+    expect(screen.getByRole('list', { name: '골프장 목록' })).toBeInTheDocument();
+  });
+
+  it('shows the map-error notice and does not mount the map while mapEnabled is false', () => {
+    renderExplorer({ layout: 'split', mapEnabled: false });
+    expect(screen.queryByTestId('map')).not.toBeInTheDocument();
+    expect(screen.getByRole('list', { name: '골프장 목록' })).toBeInTheDocument();
+  });
+
+  it('the panel scrolls on its own', () => {
+    renderExplorer({ layout: 'split' });
+    expect(screen.getByRole('complementary', { name: '예약 조회 패널' }).className).toContain('overflow-y-auto');
+  });
+});
+
 describe('BottomSheet', () => {
   it('reports the visible sheet height (capped at half) so the map can center pins above it', () => {
     const onVisibleHeight = vi.fn();
